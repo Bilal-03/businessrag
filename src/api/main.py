@@ -13,19 +13,24 @@ from src.retrieval.hybrid_search import search_documents, format_docs
 from src.retrieval.query_router import extract_query_metadata, BUSINESS_TYPES, STATES
 from src.generation.llm_client import generate_response
 
-# ── Preload embedding model at startup ────────────────────────────────────────
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Preloads the ChromaDB vectorstore (and HuggingFace model) at startup.
-    This prevents the first /api/chat request from hanging for 1-2 minutes."""
-    print("[startup] Loading embedding model and vectorstore...")
+# ── Preload embedding model at startup (background thread) ────────────────────
+import threading
+
+def _preload_vectorstore():
+    """Downloads + loads the HuggingFace model in background so startup is fast."""
+    print("[startup] Preloading vectorstore in background thread...")
     try:
         from src.embeddings.embed_and_store import get_vectorstore
         get_vectorstore()  # Triggers model download + load into RAM
         print("[startup] Vectorstore ready ✅")
     except Exception as e:
         print(f"[startup] WARNING: Could not preload vectorstore: {e}")
-    yield  # App runs here
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start background preload then yield immediately so port binds fast."""
+    threading.Thread(target=_preload_vectorstore, daemon=True).start()
+    yield  # Server is live — port is bound — model loads in background
 
 app = FastAPI(title="Business Registration RAG API", version="2.0", lifespan=lifespan)
 
