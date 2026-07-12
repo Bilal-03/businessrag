@@ -7,12 +7,27 @@ os.environ["MKL_NUM_THREADS"] = "1"
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from src.api.schemas import ChatRequest, ChatResponse, SuggestionResponse
 from src.retrieval.hybrid_search import search_documents, format_docs
 from src.retrieval.query_router import extract_query_metadata, BUSINESS_TYPES, STATES
 from src.generation.llm_client import generate_response
 
-app = FastAPI(title="Business Registration RAG API", version="2.0")
+# ── Preload embedding model at startup ────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Preloads the ChromaDB vectorstore (and HuggingFace model) at startup.
+    This prevents the first /api/chat request from hanging for 1-2 minutes."""
+    print("[startup] Loading embedding model and vectorstore...")
+    try:
+        from src.embeddings.embed_and_store import get_vectorstore
+        get_vectorstore()  # Triggers model download + load into RAM
+        print("[startup] Vectorstore ready ✅")
+    except Exception as e:
+        print(f"[startup] WARNING: Could not preload vectorstore: {e}")
+    yield  # App runs here
+
+app = FastAPI(title="Business Registration RAG API", version="2.0", lifespan=lifespan)
 
 # CORS for frontend
 app.add_middleware(
@@ -71,6 +86,18 @@ POPULAR_SUGGESTIONS = [
     {"query": "What are the annual compliance requirements for a Pvt Ltd company?", "category": "Compliance", "icon": "📅"},
     {"query": "How to get an Import Export Code (IEC)?", "category": "Import/Export", "icon": "🌍"},
 ]
+
+
+@app.get("/health")
+async def health():
+    """Quick health check — also confirms vectorstore is loaded."""
+    try:
+        from src.embeddings.embed_and_store import get_vectorstore
+        vs = get_vectorstore()
+        count = vs._collection.count()
+        return {"status": "ok", "vectorstore_docs": count}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
 
 
 @app.get("/api/business-types")
