@@ -388,6 +388,28 @@ st.markdown("""
         outline: none !important;
         transform: translateY(0);
     }
+    /* ── Chat input ──────────────────────────────────────────────── */
+    [data-testid="stChatInputContainer"],
+    [data-testid="stChatInputContainer"] > div {
+        background: rgba(15, 23, 42, 0.85) !important;
+        border: 1px solid rgba(99, 102, 241, 0.25) !important;
+        border-radius: 14px !important;
+    }
+    [data-testid="stChatInput"] textarea {
+        background: transparent !important;
+        color: #e2e8f0 !important;
+        caret-color: #818cf8 !important;
+    }
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: #475569 !important;
+    }
+    /* Bottom bar wrapper (full-width strip) */
+    .stChatFloatingInputContainer {
+        background: rgba(8, 15, 30, 0.95) !important;
+        border-top: 1px solid rgba(99, 102, 241, 0.1) !important;
+        backdrop-filter: blur(12px) !important;
+        padding: 0.75rem 1rem !important;
+    }
     /* Sidebar buttons — left-aligned */
     [data-testid="stSidebar"] .stButton > button {
         background: rgba(15, 23, 42, 0.6) !important;
@@ -651,16 +673,10 @@ if prompt:
                 > Always verify with official government portals and consult a CA/CS/legal advisor.*
                 """)
 
-                # ── Follow-up buttons (session already saved above — single click works)
-                if follow_ups:
-                    st.markdown('<div class="followup-label">📌 You might also want to know:</div>',
-                                unsafe_allow_html=True)
-                    fu_cols = st.columns(min(len(follow_ups), 3))
-                    for j, fq in enumerate(follow_ups):
-                        with fu_cols[j % 3]:
-                            if st.button(fq, key=f"fu_new_{msg_idx}_{j}",
-                                         use_container_width=True):
-                                st.session_state.selected_query = fq
+                # NOTE: Follow-up buttons are rendered by the history loop above.
+                # They must NOT be duplicated here — buttons inside `if prompt:` disappear
+                # on the very next rerun (prompt=None), causing Streamlit to lose the click
+                # and requiring a second tap. The history loop renders them reliably every run.
                 
             except Exception as e:
                 error_msg = f"⚠️ **Error:** {str(e)}"
