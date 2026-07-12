@@ -362,43 +362,25 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ─── API Config ────────────────────────────────────────────────────────────────
+# ─── RAG Engine (local — no backend needed) ───────────────────────────────────
+import sys
 import os
-API_BASE = os.environ.get("BACKEND_URL", "http://localhost:8000").rstrip("/")
-
-def fetch_api(endpoint, method="GET", json_data=None):
-    """Helper to call the backend API."""
-    try:
-        if method == "GET":
-            resp = requests.get(f"{API_BASE}{endpoint}", timeout=60)
-        else:
-            resp = requests.post(f"{API_BASE}{endpoint}", json=json_data, timeout=180)
-        resp.raise_for_status()
-        return resp.json()
-    except Exception as e:
-        return None
-
-# ─── Load dynamic data from API ───────────────────────────────────────────────
-@st.cache_data(ttl=300)
-def load_business_types():
-    data = fetch_api("/api/business-types")
-    if data:
-        return data.get("business_types", [])
-    return []
-
-@st.cache_data(ttl=300)
-def load_states():
-    data = fetch_api("/api/states")
-    if data:
-        return data.get("states", [])
-    return []
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+from rag_engine import ask, search_documents
 
 @st.cache_data(ttl=300)
 def load_suggestions():
-    data = fetch_api("/api/suggestions")
-    if data:
-        return data.get("suggestions", [])
-    return []
+    return [
+        {"query": "How to register a Private Limited Company in India?", "icon": "🏢"},
+        {"query": "What is the difference between LLP and Pvt Ltd?", "icon": "⚖️"},
+        {"query": "Steps to get GST registration", "icon": "📊"},
+        {"query": "How to get FSSAI license for a restaurant?", "icon": "🍽️"},
+        {"query": "What are the benefits of Startup India registration?", "icon": "🚀"},
+        {"query": "How to register as an MSME on Udyam portal?", "icon": "🏭"},
+        {"query": "What licenses do I need for an e-commerce business?", "icon": "🛒"},
+        {"query": "Tax compliance for freelancers in India", "icon": "💻"},
+        {"query": "What funding schemes are available for women entrepreneurs?", "icon": "💰"},
+    ]
 
 # ─── Session State Init ───────────────────────────────────────────────────────
 if "messages" not in st.session_state:
@@ -573,32 +555,20 @@ if prompt:
         
         # Animated loading
         with st.spinner("🔍 Analyzing your query & retrieving relevant information..."):
-            # Build API request
-            payload = {"query": prompt}
-            
             try:
-                response = requests.post(f"{API_BASE}/api/chat", json=payload, timeout=180)
-                response.raise_for_status()
-                data = response.json()
+                result = ask(prompt)
                 
-                answer = data.get("answer", "I couldn't find a relevant answer. Please try rephrasing your question.")
-                sources = data.get("sources", [])
-                follow_ups = data.get("follow_up_questions", [])
-                detected_biz = data.get("detected_business_type")
-                detected_state = data.get("detected_state")
-                detected_intent = data.get("detected_intent")
+                answer = result.get("answer", "I couldn't find a relevant answer. Please try rephrasing.")
+                sources = result.get("sources", [])
+                follow_ups = result.get("follow_up_questions", [])
+                detected_biz = result.get("detected_business_type", "general")
                 
-                # Show detected intent badges
-                intent_info = ""
+                # Show detected intent badge
                 if detected_biz and detected_biz != "general":
-                    intent_info += f'<span class="intent-badge">🏢 {detected_biz.replace("_", " ").title()}</span>'
-                if detected_state and detected_state != "national":
-                    intent_info += f'<span class="intent-badge">📍 {detected_state}</span>'
-                if detected_intent and detected_intent != "general":
-                    intent_info += f'<span class="intent-badge">🎯 {detected_intent.title()}</span>'
-                
-                if intent_info:
-                    st.markdown(f'<div style="margin-bottom: 0.5rem;">{intent_info}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<span class="intent-badge">🏢 {detected_biz.replace("_", " ").title()}</span>',
+                        unsafe_allow_html=True
+                    )
                 
                 # Display answer
                 message_placeholder.markdown(answer)
@@ -628,10 +598,10 @@ if prompt:
                             </div>
                             """, unsafe_allow_html=True)
                 
-                # Add disclaimer
+                # Disclaimer
                 st.markdown("""
                 > ⚠️ *Disclaimer: This information is AI-generated from official sources and is for guidance only. 
-                > Always verify with official government portals and consult a CA/CS/legal advisor before acting on this information.*
+                > Always verify with official government portals and consult a CA/CS/legal advisor.*
                 """)
                 
                 # Follow-up questions
@@ -654,10 +624,6 @@ if prompt:
                     "idx": len(st.session_state.messages)
                 })
                 
-            except requests.exceptions.ConnectionError:
-                error_msg = "🔴 **Cannot connect to the backend server.**\n\nPlease make sure FastAPI is running:\n```bash\nbash run_api.sh\n```"
-                message_placeholder.error(error_msg)
-                st.session_state.messages.append({"role": "assistant", "content": error_msg})
             except Exception as e:
                 error_msg = f"⚠️ **Error:** {str(e)}"
                 message_placeholder.error(error_msg)
