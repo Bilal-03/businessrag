@@ -4,10 +4,10 @@ pydantic==2.6.1
 streamlit==1.31.1
 chromadb==0.4.22
 sentence-transformers==2.3.1
-groq
-langchain
-langchain-community
-langchain-huggingface
-langchain-core
 python-dotenv==1.0.1
-langchain-groq
+# Pinned langchain stack — prevents pip backtracking (all must be compatible)
+langchain==0.3.25
+langchain-core==0.3.65
+langchain-community==0.3.25
+langchain-groq==0.2.5
+langchain-huggingface==0.1.2
