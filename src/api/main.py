@@ -1,4 +1,10 @@
 import os
+import torch
+# Limit PyTorch to 1 thread to massively reduce RAM usage on free tiers (like Render 512MB)
+torch.set_num_threads(1)
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.api.schemas import ChatRequest, ChatResponse, SuggestionResponse
