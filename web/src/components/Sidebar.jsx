@@ -1,66 +1,153 @@
 import React from 'react';
-import { Home, FileText, Settings, UploadCloud, Folder, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Home, Folder, UploadCloud, FileText, Settings, Plus, MessageSquare, ChevronRight, Trash2, Menu, X } from 'lucide-react';
+import Logo from './Logo';
 
-const Sidebar = () => {
+const NAV_ITEMS = [
+  { id: 'home',       label: 'Home',             icon: Home },
+  { id: 'businesses', label: 'My Businesses',     icon: Folder },
+  { id: 'upload',     label: 'Upload Documents',  icon: UploadCloud },
+  { id: 'checklists', label: 'Checklists',        icon: FileText },
+];
+
+const Sidebar = ({
+  currentView,
+  setCurrentView,
+  onNewChat,
+  conversations,
+  onSelectConversation,
+  activeConversationId,
+  onDeleteConversation,
+  collapsed,
+  onToggleCollapse,
+}) => {
+  const recentConvos = (conversations || []).slice(0, 8);
+
   return (
-    <div className="sidebar">
-      <div className="logo-container">
-        <div className="logo-icon">B</div>
-        <span>BizGuide</span>
-      </div>
+    <>
+      {/* Mobile/collapse overlay */}
+      <AnimatePresence>
+        {!collapsed && (
+          <motion.aside
+            initial={false}
+            className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}
+          >
+            {/* Logo */}
+            <div className="sidebar-logo">
+              <Logo size={36} showText={!collapsed} textSize={20} />
+              <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Collapse sidebar">
+                <X size={18} />
+              </button>
+            </div>
 
-      <button className="glass-panel" style={{ 
-        padding: '12px 16px', 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '12px',
-        background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2))',
-        border: '1px solid rgba(99,102,241,0.3)',
-        color: 'white',
-        fontWeight: '600',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        width: '100%'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 8px 16px rgba(99,102,241,0.2)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = 'none';
-      }}
-      >
-        <Plus size={20} />
-        New Consultation
-      </button>
+            {/* New Consultation Button */}
+            <motion.button
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              className="new-chat-btn"
+              onClick={onNewChat}
+            >
+              <Plus size={18} />
+              <span>New Consultation</span>
+            </motion.button>
 
-      <div className="nav-links" style={{ marginTop: '16px' }}>
-        <div className="nav-item active">
-          <Home size={20} />
-          <span>Home</span>
-        </div>
-        <div className="nav-item">
-          <Folder size={20} />
-          <span>My Businesses</span>
-        </div>
-        <div className="nav-item">
-          <UploadCloud size={20} />
-          <span>Upload Documents</span>
-        </div>
-        <div className="nav-item">
-          <FileText size={20} />
-          <span>Checklists</span>
-        </div>
-      </div>
+            {/* Main Nav */}
+            <nav className="sidebar-nav">
+              {NAV_ITEMS.map(item => (
+                <motion.button
+                  key={item.id}
+                  whileHover={{ x: 2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className={`nav-item ${currentView === item.id ? 'active' : ''}`}
+                  onClick={() => setCurrentView(item.id)}
+                >
+                  <item.icon size={19} />
+                  <span>{item.label}</span>
+                  {currentView === item.id && (
+                    <motion.div layoutId="active-indicator" className="nav-active-indicator" />
+                  )}
+                </motion.button>
+              ))}
+            </nav>
 
-      <div style={{ marginTop: 'auto' }}>
-        <div className="nav-item">
-          <Settings size={20} />
-          <span>Settings</span>
+            {/* Recent Conversations */}
+            {recentConvos.length > 0 && (
+              <div className="sidebar-section">
+                <div className="sidebar-section-label">Recent Conversations</div>
+                <div className="conversation-list">
+                  <AnimatePresence>
+                    {recentConvos.map(conv => (
+                      <motion.div
+                        key={conv.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        className={`conversation-item ${activeConversationId === conv.id ? 'active-conv' : ''}`}
+                        onClick={() => onSelectConversation(conv.id)}
+                      >
+                        <MessageSquare size={14} className="conv-icon" />
+                        <span className="conv-title">{conv.title || 'Untitled'}</span>
+                        <button
+                          className="conv-delete-btn"
+                          onClick={e => { e.stopPropagation(); onDeleteConversation(conv.id); }}
+                          title="Delete conversation"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+
+            {/* Settings at bottom */}
+            <div className="sidebar-bottom">
+              <motion.button
+                whileHover={{ x: 2 }}
+                whileTap={{ scale: 0.97 }}
+                className={`nav-item ${currentView === 'settings' ? 'active' : ''}`}
+                onClick={() => setCurrentView('settings')}
+              >
+                <Settings size={19} />
+                <span>Settings</span>
+                {currentView === 'settings' && (
+                  <motion.div layoutId="active-indicator" className="nav-active-indicator" />
+                )}
+              </motion.button>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* Collapsed sidebar — just icon strip */}
+      {collapsed && (
+        <div className="sidebar-icon-strip">
+          <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Expand sidebar">
+            <Menu size={20} />
+          </button>
+          <Logo size={32} showText={false} />
+          <div style={{ flex: 1 }} />
+          {NAV_ITEMS.map(item => (
+            <button
+              key={item.id}
+              className={`icon-strip-btn ${currentView === item.id ? 'active' : ''}`}
+              onClick={() => { setCurrentView(item.id); onToggleCollapse(); }}
+              title={item.label}
+            >
+              <item.icon size={20} />
+            </button>
+          ))}
+          <button
+            className={`icon-strip-btn ${currentView === 'settings' ? 'active' : ''}`}
+            onClick={() => { setCurrentView('settings'); onToggleCollapse(); }}
+            title="Settings"
+          >
+            <Settings size={20} />
+          </button>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 

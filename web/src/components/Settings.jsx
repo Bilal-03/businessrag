@@ -1,0 +1,232 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Globe, Trash2, Info, Check, ChevronRight, Palette, Shield, Bell } from 'lucide-react';
+import Logo from './Logo';
+
+const APP_VERSION = '1.0.0';
+
+const ACCENT_COLORS = [
+  { name: 'Indigo', primary: '#6366f1', secondary: '#8b5cf6' },
+  { name: 'Teal', primary: '#14b8a6', secondary: '#06b6d4' },
+  { name: 'Rose', primary: '#f43f5e', secondary: '#ec4899' },
+  { name: 'Amber', primary: '#f59e0b', secondary: '#f97316' },
+  { name: 'Emerald', primary: '#10b981', secondary: '#059669' },
+  { name: 'Sky', primary: '#0ea5e9', secondary: '#6366f1' },
+];
+
+const Settings = ({ onClearHistory, onApiUrlChange, currentApiUrl }) => {
+  const [profile, setProfile] = useState({ name: '', email: '', company: '' });
+  const [apiUrl, setApiUrl] = useState(currentApiUrl || 'https://businessrag.onrender.com');
+  const [saved, setSaved] = useState(false);
+  const [selectedAccent, setSelectedAccent] = useState(0);
+  const [notifications, setNotifications] = useState(true);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [activeSection, setActiveSection] = useState('profile');
+
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('bizguide_profile');
+    if (savedProfile) setProfile(JSON.parse(savedProfile));
+    const savedAccent = localStorage.getItem('bizguide_accent');
+    if (savedAccent) setSelectedAccent(parseInt(savedAccent, 10));
+    const savedApiUrl = localStorage.getItem('bizguide_api_url');
+    if (savedApiUrl) setApiUrl(savedApiUrl);
+    const savedNotifs = localStorage.getItem('bizguide_notifications');
+    if (savedNotifs !== null) setNotifications(savedNotifs === 'true');
+  }, []);
+
+  const handleSaveProfile = () => {
+    localStorage.setItem('bizguide_profile', JSON.stringify(profile));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleAccentChange = (idx) => {
+    setSelectedAccent(idx);
+    localStorage.setItem('bizguide_accent', idx.toString());
+    const color = ACCENT_COLORS[idx];
+    document.documentElement.style.setProperty('--accent-primary', color.primary);
+    document.documentElement.style.setProperty('--accent-secondary', color.secondary);
+  };
+
+  const handleSaveApiUrl = () => {
+    localStorage.setItem('bizguide_api_url', apiUrl);
+    if (onApiUrlChange) onApiUrlChange(apiUrl);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleClearHistory = () => {
+    if (confirmClear) {
+      onClearHistory();
+      localStorage.removeItem('bizguide_conversations');
+      setConfirmClear(false);
+    } else {
+      setConfirmClear(true);
+      setTimeout(() => setConfirmClear(false), 4000);
+    }
+  };
+
+  const SECTIONS = [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'api', label: 'API & Data', icon: Globe },
+    { id: 'about', label: 'About', icon: Info },
+  ];
+
+  return (
+    <div className="panel-container">
+      <div className="panel-header">
+        <div>
+          <h2 className="panel-title">Settings</h2>
+          <p className="panel-subtitle">Customize your BizGuide experience.</p>
+        </div>
+      </div>
+
+      <div className="settings-layout">
+        {/* Settings Nav */}
+        <div className="settings-nav">
+          {SECTIONS.map(s => (
+            <button
+              key={s.id}
+              className={`settings-nav-item ${activeSection === s.id ? 'active' : ''}`}
+              onClick={() => setActiveSection(s.id)}
+            >
+              <s.icon size={18} /> {s.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Settings Content */}
+        <div className="settings-content">
+          <AnimatePresence mode="wait">
+            {activeSection === 'profile' && (
+              <motion.div key="profile" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+                <div className="settings-section-title">Profile Information</div>
+                <p className="settings-section-desc">This information is stored locally in your browser and helps personalize your experience.</p>
+                <div className="settings-fields">
+                  <div className="form-group full">
+                    <label>Your Name</label>
+                    <input className="form-input" placeholder="e.g. Rajesh Kumar" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} />
+                  </div>
+                  <div className="form-group full">
+                    <label>Email Address</label>
+                    <input className="form-input" type="email" placeholder="you@example.com" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} />
+                  </div>
+                  <div className="form-group full">
+                    <label>Company / Business Name</label>
+                    <input className="form-input" placeholder="Your company name" value={profile.company} onChange={e => setProfile({ ...profile, company: e.target.value })} />
+                  </div>
+                </div>
+                <motion.button whileHover={{ scale: 1.03 }} className="btn-primary" onClick={handleSaveProfile}>
+                  {saved ? <><Check size={16} /> Saved!</> : <><Check size={16} /> Save Profile</>}
+                </motion.button>
+              </motion.div>
+            )}
+
+            {activeSection === 'appearance' && (
+              <motion.div key="appearance" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+                <div className="settings-section-title">Appearance</div>
+                <p className="settings-section-desc">Choose an accent color theme for your BizGuide interface.</p>
+                <div className="accent-grid">
+                  {ACCENT_COLORS.map((color, idx) => (
+                    <motion.button
+                      key={color.name}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`accent-swatch ${selectedAccent === idx ? 'selected' : ''}`}
+                      onClick={() => handleAccentChange(idx)}
+                      title={color.name}
+                    >
+                      <div className="accent-circle" style={{ background: `linear-gradient(135deg, ${color.primary}, ${color.secondary})` }} />
+                      <span className="accent-name">{color.name}</span>
+                      {selectedAccent === idx && <Check size={14} className="accent-check" />}
+                    </motion.button>
+                  ))}
+                </div>
+                <div className="settings-toggle-row">
+                  <div>
+                    <div className="toggle-label"><Bell size={16} /> Browser Notifications</div>
+                    <div className="toggle-desc">Get notified when AI processing completes</div>
+                  </div>
+                  <button
+                    className={`toggle-switch ${notifications ? 'on' : 'off'}`}
+                    onClick={() => {
+                      setNotifications(!notifications);
+                      localStorage.setItem('bizguide_notifications', (!notifications).toString());
+                    }}
+                  >
+                    <motion.div className="toggle-thumb" animate={{ x: notifications ? 20 : 0 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {activeSection === 'api' && (
+              <motion.div key="api" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+                <div className="settings-section-title">API & Data</div>
+                <p className="settings-section-desc">Configure the backend API endpoint. Only change this if you're running your own server.</p>
+                <div className="form-group full" style={{ marginBottom: '24px' }}>
+                  <label>API Base URL</label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <input className="form-input" placeholder="https://your-api.com" value={apiUrl} onChange={e => setApiUrl(e.target.value)} style={{ flex: 1 }} />
+                    <motion.button whileHover={{ scale: 1.03 }} className="btn-primary" style={{ flexShrink: 0 }} onClick={handleSaveApiUrl}>
+                      Save
+                    </motion.button>
+                  </div>
+                </div>
+                <div className="danger-zone">
+                  <div className="danger-title"><Shield size={16} /> Danger Zone</div>
+                  <div className="danger-row">
+                    <div>
+                      <div className="danger-item-label">Clear Conversation History</div>
+                      <div className="danger-item-desc">Permanently delete all saved conversations from this browser.</div>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      className={`btn-danger ${confirmClear ? 'confirming' : ''}`}
+                      onClick={handleClearHistory}
+                    >
+                      <Trash2 size={16} /> {confirmClear ? 'Click again to confirm' : 'Clear History'}
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeSection === 'about' && (
+              <motion.div key="about" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+                <div className="settings-section-title">About BizGuide AI</div>
+                <div className="about-card glass-panel">
+                  <Logo size={56} showText={false} />
+                  <div className="about-info">
+                    <div className="about-name">BizGuide AI</div>
+                    <div className="about-tagline">Your Personal Agent for Business Compliance in India</div>
+                    <div className="about-version">Version {APP_VERSION}</div>
+                  </div>
+                </div>
+                <div className="about-features">
+                  {[
+                    { icon: '🤖', title: 'Multi-Agent AI', desc: 'Powered by specialized Legal, Tax, and General agents using Llama 3.3' },
+                    { icon: '🔍', title: 'RAG-Powered', desc: 'Retrieval-augmented generation with Pinecone vector search and Gemini embeddings' },
+                    { icon: '📑', title: 'Document Intelligence', desc: 'Upload your business PDFs to get answers grounded in your actual documents' },
+                    { icon: '🇮🇳', title: 'India-Focused', desc: 'Specialized in Indian business laws, GST, MCA regulations, and compliance' },
+                  ].map(f => (
+                    <div key={f.title} className="about-feature-item">
+                      <span className="about-feature-icon">{f.icon}</span>
+                      <div>
+                        <div className="about-feature-title">{f.title}</div>
+                        <div className="about-feature-desc">{f.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Settings;
