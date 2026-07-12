@@ -363,7 +363,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── API Config ────────────────────────────────────────────────────────────────
-API_BASE = "http://localhost:8000"
+import os
+API_BASE = os.environ.get("BACKEND_URL", "http://localhost:8000").rstrip("/")
 
 def fetch_api(endpoint, method="GET", json_data=None):
     """Helper to call the backend API."""
