@@ -1,0 +1,1267 @@
+[
+  {
+    "text": "Sole Proprietorship is the simplest form of business entity in India. It does not require any formal registration under the Companies Act. The business and the owner are legally the same entity — the owner has unlimited personal liability for all business debts and obligations.",
+    "metadata": {
+      "business_type": "sole_proprietorship",
+      "state": "national",
+      "authority": "General",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "To start a Sole Proprietorship in India, you need: (1) PAN Card of the owner, (2) Aadhaar Card, (3) A current bank account in the business name, (4) GST Registration if turnover exceeds Rs 40 lakh (Rs 20 lakh for services), (5) Shop and Establishment Act registration from your local municipal body, and (6) Any industry-specific licenses (FSSAI for food, Drug License for pharma, etc.).",
+    "metadata": {
+      "business_type": "sole_proprietorship",
+      "state": "national",
+      "authority": "General",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Sole Proprietorship does not have a separate legal identity from its owner. This means the proprietor is personally liable for all debts. However, it has the advantage of minimal compliance burden — no annual filings with MCA, no board meetings, and full control over decision-making. Suitable for small businesses, freelancers, and local shops.",
+    "metadata": {
+      "business_type": "sole_proprietorship",
+      "state": "national",
+      "authority": "General",
+      "doc_type": "compliance",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "A sole proprietor must file Income Tax Return using ITR-3 (if business income) or ITR-4 (if opting for presumptive taxation under Section 44AD/44ADA). Under presumptive taxation, businesses with turnover up to Rs 2 crore can declare 8% of turnover as profit (6% for digital transactions) without maintaining detailed books of account.",
+    "metadata": {
+      "business_type": "sole_proprietorship",
+      "state": "national",
+      "authority": "Income Tax Department",
+      "doc_type": "tax",
+      "source_url": "https://www.incometax.gov.in/",
+      "last_updated": "2024-04-01"
+    }
+  },
+  {
+    "text": "The Shops and Establishment Act registration is mandatory for a sole proprietorship operating from a physical premises. In Telangana, this is obtained from the Labour Department through the Telangana State Portal of Labour. The application requires: Form A, proof of premises, identity proof, and a fee of Rs 500–2000 depending on the number of employees.",
+    "metadata": {
+      "business_type": "sole_proprietorship",
+      "state": "Telangana",
+      "authority": "Telangana Labour Department",
+      "doc_type": "license",
+      "source_url": "https://labour.telangana.gov.in/",
+      "last_updated": "2024-03-15"
+    }
+  },
+  {
+    "text": "In Karnataka, the Shops and Establishment Act registration is obtained from the Karnataka Labour Department. For Bengaluru, apply through the BBMP portal or the Karnataka Seva Sindhu portal. Required documents: Identity proof, address proof of business premises, and a nominal fee. The license must be renewed annually.",
+    "metadata": {
+      "business_type": "sole_proprietorship",
+      "state": "Karnataka",
+      "authority": "Karnataka Labour Department",
+      "doc_type": "license",
+      "source_url": "https://sevasindhu.karnataka.gov.in/",
+      "last_updated": "2024-03-15"
+    }
+  },
+  {
+    "text": "In Maharashtra, the Shops and Establishment Act registration is obtained online through the MAITRI portal (Maharashtra Industry, Trade and Investment Facilitation Cell). The registration is valid for the lifetime of the business and does not need annual renewal as per the 2017 amendment.",
+    "metadata": {
+      "business_type": "sole_proprietorship",
+      "state": "Maharashtra",
+      "authority": "Maharashtra Labour Department",
+      "doc_type": "license",
+      "source_url": "https://maitri.mahaonline.gov.in/",
+      "last_updated": "2024-03-15"
+    }
+  },
+  {
+    "text": "Partnership Firm is governed by the Indian Partnership Act, 1932. A partnership requires at least 2 and a maximum of 50 partners. Each partner contributes capital, shares profits/losses, and has unlimited personal liability unless it is registered as an LLP.",
+    "metadata": {
+      "business_type": "partnership",
+      "state": "national",
+      "authority": "Registrar of Firms",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "To register a Partnership Firm: (1) Draft a Partnership Deed on stamp paper (stamp duty varies by state — Rs 500 in Telangana, Rs 1000 in Maharashtra, Rs 500 in Karnataka), (2) Apply to the Registrar of Firms in your state, (3) Obtain PAN for the firm, (4) Open a current bank account, (5) Apply for GST registration if applicable. Registration is optional but recommended for legal protection.",
+    "metadata": {
+      "business_type": "partnership",
+      "state": "national",
+      "authority": "Registrar of Firms",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Partnership Deed must include: (1) Name of the firm, (2) Names and addresses of all partners, (3) Nature of business, (4) Capital contribution by each partner, (5) Profit/loss sharing ratio, (6) Rights and duties of partners, (7) Rules for admission/retirement of partners, (8) Procedure for dissolution, (9) Salary/interest provisions if any.",
+    "metadata": {
+      "business_type": "partnership",
+      "state": "national",
+      "authority": "Registrar of Firms",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "An unregistered Partnership Firm cannot: (1) Sue any third party, (2) Claim set-off in legal proceedings, (3) File a suit against other partners. However, the firm is still liable to be sued by third parties. Registration provides legal legitimacy and access to courts.",
+    "metadata": {
+      "business_type": "partnership",
+      "state": "national",
+      "authority": "Registrar of Firms",
+      "doc_type": "compliance",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "A Private Limited Company (Pvt. Ltd.) is incorporated under the Companies Act, 2013. It requires a minimum of 2 directors and 2 shareholders (can be the same persons). Maximum 200 shareholders allowed. It has a separate legal identity from its owners, providing limited liability protection.",
+    "metadata": {
+      "business_type": "pvt_ltd",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Steps to incorporate a Private Limited Company: (1) Obtain Digital Signature Certificate (DSC) for all directors — cost Rs 1500-3000, (2) Apply for Director Identification Number (DIN) through SPICe+ form, (3) Reserve company name through RUN (Reserve Unique Name) service on MCA portal — Rs 1000 fee, (4) File SPICe+ (INC-32) form with MCA — includes MOA, AOA, and application for PAN, TAN, EPFO, ESIC, and GST in a single form.",
+    "metadata": {
+      "business_type": "pvt_ltd",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "SPICe+ (Simplified Proforma for Incorporating Company Electronically Plus) is an integrated web form that combines: (Part A) Name reservation, (Part B) Incorporation with PAN, TAN, EPFO, ESIC, Professional Tax, and bank account opening. Government fee depends on authorized capital — Rs 0 for up to Rs 10 lakh, Rs 2000 for up to Rs 15 lakh, and so on. Professional (CA/CS) charges: Rs 5000-15000.",
+    "metadata": {
+      "business_type": "pvt_ltd",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Annual compliance for a Private Limited Company includes: (1) Annual Return (Form MGT-7) — due within 60 days of AGM, (2) Financial Statements (Form AOC-4) — due within 30 days of AGM, (3) Income Tax Return — ITR-6, (4) Board meetings — minimum 4 per year with not more than 120 days gap, (5) AGM — within 6 months from end of financial year, (6) Statutory audit by a Chartered Accountant, (7) DIR-3 KYC for all directors annually.",
+    "metadata": {
+      "business_type": "pvt_ltd",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "compliance",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Pvt Ltd Company penalty for non-compliance: Late filing of Annual Return (MGT-7) attracts a penalty of Rs 100 per day of delay. Late filing of Financial Statements (AOC-4) attracts Rs 100 per day. Non-holding of AGM can result in a penalty of Rs 1 lakh on the company and Rs 5000 on every officer in default. Non-filing of DIR-3 KYC leads to DIN deactivation.",
+    "metadata": {
+      "business_type": "pvt_ltd",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "compliance",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Minimum authorized capital requirement for Pvt Ltd has been abolished since the Companies (Amendment) Act, 2015. There is no minimum paid-up capital requirement either. However, stamp duty on MOA and AOA varies by state — Telangana: 0.15% of authorized capital, Karnataka: 0.6%, Maharashtra: 0.3%, Delhi: 0.4%.",
+    "metadata": {
+      "business_type": "pvt_ltd",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "A Limited Liability Partnership (LLP) is a hybrid structure combining features of a partnership and a company. It is governed by the LLP Act, 2008. An LLP provides limited liability to its partners — personal assets are protected from business debts. Minimum 2 designated partners required, at least one must be an Indian resident.",
+    "metadata": {
+      "business_type": "llp",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Steps to register an LLP: (1) Obtain DSC for designated partners, (2) Apply for DPIN (Designated Partner Identification Number) — integrated in FiLLiP form, (3) Reserve LLP name through RUN-LLP service on MCA portal, (4) File FiLLiP (Form for incorporation of LLP) — includes details of partners, registered office, and capital contribution, (5) File LLP Agreement (Form 3) within 30 days of incorporation. Government fee: Rs 500-5600 depending on partner contribution.",
+    "metadata": {
+      "business_type": "llp",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "LLP Annual Compliance: (1) Annual Return (Form 11) — due by May 30 each year, (2) Statement of Account and Solvency (Form 8) — due by October 30, (3) Income Tax Return — ITR-5, (4) Tax Audit under Section 44AB if turnover exceeds Rs 1 crore (Rs 10 crore if 95%+ transactions are digital), (5) No requirement for statutory audit if turnover < Rs 40 lakh AND contribution < Rs 25 lakh.",
+    "metadata": {
+      "business_type": "llp",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "compliance",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "LLP vs Pvt Ltd — Key differences: (1) LLP has no minimum capital requirement and lower compliance costs, (2) Pvt Ltd can raise equity funding (Angel/VC) — LLPs cannot issue shares, (3) LLP has no dividend distribution tax, (4) Pvt Ltd has higher credibility with banks and investors, (5) LLP can be converted to Pvt Ltd later, (6) LLP is ideal for professional services firms; Pvt Ltd is preferred for startups seeking funding.",
+    "metadata": {
+      "business_type": "llp",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "One Person Company (OPC) is a type of Private Limited Company with only one member. Introduced under Section 2(62) of the Companies Act, 2013. The single member can be both the director and shareholder. A nominee must be appointed who will become the member in case of death/incapacity of the original member.",
+    "metadata": {
+      "business_type": "opc",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "OPC registration process: (1) Obtain DSC for the sole director, (2) Obtain DIN, (3) File SPICe+ form with MCA — specify nominee in INC-3, (4) Nominee consent in Form INC-3. OPC restrictions: (a) Cannot raise equity from public, (b) Must convert to Pvt Ltd if paid-up capital exceeds Rs 50 lakh or annual turnover exceeds Rs 2 crore, (c) Cannot carry out Non-Banking Financial Investment activities.",
+    "metadata": {
+      "business_type": "opc",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "OPC compliance advantages over Pvt Ltd: (1) No requirement to hold AGM, (2) Board meeting — only 1 per half-year if only 1 director (vs 4 per year for Pvt Ltd), (3) Cash Flow Statement not required in financial statements, (4) Fewer secretarial compliances. However, OPC must still file annual returns (MGT-7A), financial statements (AOC-4), and ITR-6.",
+    "metadata": {
+      "business_type": "opc",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "compliance",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "GST Registration is mandatory if: (1) Annual aggregate turnover exceeds Rs 40 lakh for goods (Rs 20 lakh for special category states), (2) Annual turnover exceeds Rs 20 lakh for services (Rs 10 lakh for special category states), (3) You are making inter-state supplies regardless of turnover, (4) You are an e-commerce operator or seller, (5) You are required to deduct TDS/TCS. Apply on gst.gov.in using Form REG-01.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "GST Council",
+      "doc_type": "tax",
+      "source_url": "https://www.gst.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "GST Registration process: (1) Visit gst.gov.in, (2) Fill Form GST REG-01 with business details, promoter/partner details, authorized signatory, business premises details, goods/services details, bank account details, (3) Upload documents: PAN, Aadhaar, proof of business premises (rent agreement/electricity bill), bank statement/cancelled cheque, photograph, (4) Verify through Aadhaar authentication or EVC. Processing time: 3-7 working days. GSTIN is issued on approval.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "GST Council",
+      "doc_type": "tax",
+      "source_url": "https://www.gst.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "GST Return Filing: (1) GSTR-1 (outward supplies) — due by 11th of next month, (2) GSTR-3B (summary return with tax payment) — due by 20th of next month, (3) GSTR-9 (annual return) — due by 31st December, (4) Composition scheme dealers file GSTR-4 quarterly. Late fee: Rs 50/day for GSTR-3B (Rs 20 for nil return), capped at Rs 5000 per return.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "GST Council",
+      "doc_type": "tax",
+      "source_url": "https://www.gst.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "GST Composition Scheme: Available for businesses with turnover up to Rs 1.5 crore (Rs 75 lakh for special category states). Tax rates: 1% for manufacturers and traders, 5% for restaurants, 6% for other service providers. Benefits: file returns quarterly instead of monthly, no need to maintain detailed records, no e-way bill. Limitations: cannot collect GST from customers, no input tax credit, cannot make inter-state supplies.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "GST Council",
+      "doc_type": "tax",
+      "source_url": "https://www.gst.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Startup India registration (DPIIT Recognition): An entity is eligible if: (1) It is incorporated as a Pvt Ltd, LLP, or Partnership Firm, (2) It has been incorporated for less than 10 years, (3) Annual turnover has not exceeded Rs 100 crore in any financial year, (4) It is working towards innovation/improvement of products/services, (5) It is not formed by splitting or reconstruction of an existing business.",
+    "metadata": {
+      "business_type": "startup",
+      "state": "national",
+      "authority": "DPIIT",
+      "doc_type": "registration",
+      "source_url": "https://www.startupindia.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Startup India — Steps for DPIIT Recognition: (1) Register on startupindia.gov.in, (2) Fill the recognition application with details of the entity, innovation description, and how the product/service is unique, (3) Upload: Certificate of Incorporation/Registration, brief about the business and innovation (2-page pitch), (4) Self-certify compliance with labour and environmental laws. Approval is typically within 2-3 working days.",
+    "metadata": {
+      "business_type": "startup",
+      "state": "national",
+      "authority": "DPIIT",
+      "doc_type": "registration",
+      "source_url": "https://www.startupindia.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Startup India Benefits: (1) Tax exemption under Section 80-IAC — 100% tax exemption on profits for 3 consecutive years out of the first 10 years (requires Inter-Ministerial Board approval), (2) Angel Tax exemption under Section 56(2)(viib), (3) Self-certification of compliance under 9 labour and 3 environmental laws, (4) Fast-track patent application at 80% rebate on patent filing fee, (5) Easy winding up — company can be wound up within 90 days under Insolvency & Bankruptcy Code.",
+    "metadata": {
+      "business_type": "startup",
+      "state": "national",
+      "authority": "DPIIT",
+      "doc_type": "tax",
+      "source_url": "https://www.startupindia.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Startup India — Funding Support: (1) Fund of Funds for Startups (FFS) — Rs 10,000 crore corpus managed by SIDBI, invested through SEBI-registered Alternative Investment Funds, (2) Startup India Seed Fund Scheme — up to Rs 50 lakh for proof of concept, prototype, product trials, (3) Credit Guarantee Scheme — collateral-free loans up to Rs 10 crore through SIDBI, (4) Various state-specific startup policies and incubation programs.",
+    "metadata": {
+      "business_type": "startup",
+      "state": "national",
+      "authority": "DPIIT",
+      "doc_type": "funding",
+      "source_url": "https://www.startupindia.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Telangana State Innovation Policy (T-Hub, WE-Hub): Telangana offers Startup benefits through T-Hub (Technology Hub) — India's largest startup incubator. Benefits: (1) Incubation space at T-Hub/WE-Hub, (2) Mentorship from industry experts, (3) Access to funding networks, (4) Telangana Innovation Fund, (5) Patent reimbursement up to Rs 2 lakh (Indian patents) and Rs 10 lakh (International patents), (6) State GST reimbursement for first 3 years.",
+    "metadata": {
+      "business_type": "startup",
+      "state": "Telangana",
+      "authority": "Telangana IT Department",
+      "doc_type": "funding",
+      "source_url": "https://t-hub.co/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Karnataka Startup Policy: Karnataka offers benefits through Elevate programme and NASSCOM 10,000 Startups. Key benefits: (1) Seed funding up to Rs 50 lakh, (2) VAT/CST reimbursement (now subsumed in GST exemption for first 2 years), (3) Stamp duty exemption, (4) Marketing support up to Rs 5 lakh, (5) Patent support up to Rs 2 lakh (national) and Rs 10 lakh (international), (6) Access to incubators across Bengaluru, Mysuru, Hubballi.",
+    "metadata": {
+      "business_type": "startup",
+      "state": "Karnataka",
+      "authority": "Karnataka IT Department",
+      "doc_type": "funding",
+      "source_url": "https://startup.karnataka.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "MSME / Udyam Registration: Any business involved in manufacturing or services can register as an MSME on the Udyam Registration portal (udyamregistration.gov.in). Classification: Micro — investment up to Rs 1 crore AND turnover up to Rs 5 crore; Small — investment up to Rs 10 crore AND turnover up to Rs 50 crore; Medium — investment up to Rs 50 crore AND turnover up to Rs 250 crore.",
+    "metadata": {
+      "business_type": "msme",
+      "state": "national",
+      "authority": "MSME Ministry",
+      "doc_type": "registration",
+      "source_url": "https://udyamregistration.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Udyam Registration Process: (1) Visit udyamregistration.gov.in, (2) Enter Aadhaar number and validate with OTP, (3) Enter PAN and verify with GSTIN (if applicable), (4) Enter business details — type, NIC code, number of employees, investment, turnover, (5) The system auto-fetches ITR and GST data, (6) Submit — Udyam Registration Number (URN) is generated immediately. It is completely FREE — no fees, no documents to upload, no renewal required.",
+    "metadata": {
+      "business_type": "msme",
+      "state": "national",
+      "authority": "MSME Ministry",
+      "doc_type": "registration",
+      "source_url": "https://udyamregistration.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "MSME Benefits: (1) Priority sector lending from banks at lower interest rates, (2) Collateral-free loans up to Rs 1 crore under CGTMSE scheme, (3) 50% subsidy on patent registration costs, (4) Delayed payment protection — buyers must pay within 45 days, else interest at 3x RBI bank rate, (5) Government procurement preference — 25% of procurement reserved for MSMEs (3% for women-owned), (6) Lower electricity rates in many states, (7) ISO certification reimbursement, (8) CLCSS (Credit Linked Capital Subsidy Scheme) — 15% subsidy on technology upgradation.",
+    "metadata": {
+      "business_type": "msme",
+      "state": "national",
+      "authority": "MSME Ministry",
+      "doc_type": "registration",
+      "source_url": "https://msme.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Any person desiring to commence or carry on any food business shall make an application for grant of a license to the Designated Officer in Form B appended to Schedule 2 of these Regulations. This includes food trucks, restaurants, cloud kitchens, catering services, and mobile food vendors. FSSAI registration (Form A) is sufficient for petty food businesses with annual turnover up to Rs 12 lakh.",
+    "metadata": {
+      "business_type": "food_business",
+      "state": "national",
+      "authority": "FSSAI",
+      "doc_type": "license",
+      "source_url": "https://fssai.gov.in/",
+      "last_updated": "2024-01-01"
+    }
+  },
+  {
+    "text": "FSSAI License categories: (1) Basic Registration (Form A) — annual turnover up to Rs 12 lakh, covers petty food businesses, hawkers, small retailers. Fee: Rs 100/year, (2) State License (Form B) — turnover Rs 12 lakh to Rs 20 crore. Fee: Rs 2000-5000/year, (3) Central License (Form B) — turnover above Rs 20 crore, or operating in multiple states, or importing food. Fee: Rs 7500/year. Apply on FoSCoS portal (foscos.fssai.gov.in).",
+    "metadata": {
+      "business_type": "food_business",
+      "state": "national",
+      "authority": "FSSAI",
+      "doc_type": "license",
+      "source_url": "https://fssai.gov.in/",
+      "last_updated": "2024-01-01"
+    }
+  },
+  {
+    "text": "For operating a food truck in municipal limits, a No Objection Certificate (NOC) from the local municipal corporation's traffic police and health department is mandatory. In Hyderabad, this is obtained from the Greater Hyderabad Municipal Corporation (GHMC). In Bengaluru, from BBMP. In Mumbai, from BMC.",
+    "metadata": {
+      "business_type": "food_business",
+      "state": "national",
+      "authority": "Municipal Corporation",
+      "doc_type": "compliance",
+      "source_url": "https://ghmc.gov.in/",
+      "last_updated": "2024-05-15"
+    }
+  },
+  {
+    "text": "Food trucks fall under the 'mobile premises' category of FSSAI. The registration fee is Rs 100 per annum, and the license fee depends on the turnover, typically Rs 2000 per annum for small vendors. Additional requirements: (1) Vehicle fitness certificate, (2) Fire safety NOC if using LPG, (3) Waste disposal plan, (4) Pest control measures, (5) Food handler medical fitness certificates.",
+    "metadata": {
+      "business_type": "food_business",
+      "state": "national",
+      "authority": "FSSAI",
+      "doc_type": "license",
+      "source_url": "https://fssai.gov.in/",
+      "last_updated": "2024-01-01"
+    }
+  },
+  {
+    "text": "Fire safety clearance is required if the food truck/restaurant uses commercial gas cylinders (LPG) for cooking. In Telangana: obtained from the Telangana State Disaster Response and Fire Services Department. In Karnataka: from Karnataka State Fire and Emergency Services. Required documents: building/vehicle plan, fire safety equipment details, LPG installation certificate.",
+    "metadata": {
+      "business_type": "food_business",
+      "state": "national",
+      "authority": "Fire Services",
+      "doc_type": "safety",
+      "source_url": "https://fire.telangana.gov.in/",
+      "last_updated": "2024-02-10"
+    }
+  },
+  {
+    "text": "Restaurant/Cafe specific licenses in addition to FSSAI: (1) Eating House License from local police commissioner (in metros), (2) Music/Entertainment License from local police if playing music/hosting events, (3) Liquor License from State Excise Department if serving alcohol — cost varies significantly by state (Rs 5 lakh to Rs 50 lakh), (4) Signage License from municipal corporation, (5) Environmental clearance if using diesel generator above 15 KVA.",
+    "metadata": {
+      "business_type": "food_business",
+      "state": "national",
+      "authority": "Multiple",
+      "doc_type": "license",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "E-commerce business in India requires: (1) Business registration (as any entity type — sole prop, Pvt Ltd, LLP), (2) GST Registration — mandatory regardless of turnover if selling online through any marketplace, (3) Compliance with Consumer Protection (E-Commerce) Rules, 2020 — display seller details, return/refund policy, grievance officer details, (4) Payment gateway integration with RBI-compliant payment aggregator, (5) Data privacy policy compliant with IT Act 2000 and DPDP Act 2023.",
+    "metadata": {
+      "business_type": "ecommerce",
+      "state": "national",
+      "authority": "MCA / GST Council",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "E-commerce GST obligations: (1) GST registration is mandatory regardless of turnover, (2) Tax Collection at Source (TCS) — marketplaces must collect 1% TCS on net taxable supplies, (3) File GSTR-8 (TCS return) monthly, (4) For sellers: GSTR-1 and GSTR-3B monthly, (5) Interstate sales are common in e-commerce — cannot use composition scheme, (6) Place of supply rules: for goods — location of delivery; for services — location of recipient.",
+    "metadata": {
+      "business_type": "ecommerce",
+      "state": "national",
+      "authority": "GST Council",
+      "doc_type": "tax",
+      "source_url": "https://www.gst.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Consumer Protection (E-Commerce) Rules, 2020 require: (1) Display legal name, address, and contact details of the seller, (2) Clear return/refund/exchange policy, (3) No manipulation of price or misleading advertisements, (4) Appoint a Grievance Officer and display contact details prominently, (5) Acknowledge complaints within 48 hours, resolve within 1 month, (6) No flash sales that limit consumer choice, (7) Country of origin must be displayed for imported goods.",
+    "metadata": {
+      "business_type": "ecommerce",
+      "state": "national",
+      "authority": "Consumer Affairs Ministry",
+      "doc_type": "compliance",
+      "source_url": "https://consumeraffairs.nic.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Starting an online/D2C brand: Platform options — (1) Own website using Shopify/WooCommerce/Dukaan (India-focused), (2) Marketplace presence: Amazon India, Flipkart, Meesho, (3) Social commerce: Instagram/WhatsApp Business. Legal setup: minimum — Sole Prop + GST + current bank account. Recommended — Pvt Ltd/LLP + GST + MSME + trademark for brand protection.",
+    "metadata": {
+      "business_type": "ecommerce",
+      "state": "national",
+      "authority": "General",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Import Export Code (IEC) is mandatory for importing or exporting goods/services from India. Obtained from the Directorate General of Foreign Trade (DGFT). Process: (1) Apply online at dgft.gov.in, (2) Submit: PAN, Aadhaar, bank certificate/cancelled cheque, address proof, (3) Fee: Rs 500, (4) Processing time: 1-2 days. IEC is a lifetime code — no renewal needed. Exemption: IEC not needed for personal imports or exports below Rs 25,000.",
+    "metadata": {
+      "business_type": "import_export",
+      "state": "national",
+      "authority": "DGFT",
+      "doc_type": "registration",
+      "source_url": "https://dgft.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Import/Export compliance: (1) Customs clearance — file Bill of Entry (imports) or Shipping Bill (exports) through ICEGATE portal, (2) GST on imports — IGST is levied on CIF value + customs duty (called CVD), (3) Export benefits — zero-rated under GST, can claim refund of ITC, (4) Advance Authorisation — duty-free import of raw materials for export production, (5) MEIS/RoDTEP — export incentive schemes, (6) AD Code registration with customs for bank realization.",
+    "metadata": {
+      "business_type": "import_export",
+      "state": "national",
+      "authority": "DGFT / Customs",
+      "doc_type": "compliance",
+      "source_url": "https://dgft.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Freelancer/Consultant tax compliance in India: (1) PAN is mandatory, (2) GST registration required if turnover exceeds Rs 20 lakh (Rs 10 lakh in special category states), (3) File ITR-3 or ITR-4 (presumptive taxation under 44ADA — 50% of gross receipts deemed profit for professionals with receipts up to Rs 50 lakh), (4) Advance tax payment in 4 quarterly instalments if tax liability exceeds Rs 10,000, (5) TDS at 10% (Section 194J) is typically deducted by clients.",
+    "metadata": {
+      "business_type": "freelancer",
+      "state": "national",
+      "authority": "Income Tax Department",
+      "doc_type": "tax",
+      "source_url": "https://www.incometax.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Professional Tax is a state-level tax on income from profession, trade, or employment. Rates vary by state: (1) Telangana — Rs 2500/year for income above Rs 20,000/month, (2) Karnataka — Rs 2400/year for income above Rs 15,000/month, (3) Maharashtra — Rs 2500/year for income above Rs 10,000/month, (4) Delhi — No professional tax, (5) Tamil Nadu — Rs 2500/year for income above Rs 21,000/month. Must be registered and paid by both employers and self-employed professionals.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "State Governments",
+      "doc_type": "tax",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Freelancers working internationally must: (1) Receive payments through proper banking channels (FIRC/FIRA required), (2) Convert within specified timeframes under FEMA, (3) GST: export of services is zero-rated IF — supplier is in India, recipient is outside India, place of supply is outside India, payment is received in convertible foreign exchange, supplier and recipient are not merely establishments of same entity, (4) File SOFTEX/BPO forms with STPI/SEZ for software exports, (5) Claim refund of input GST as exporter.",
+    "metadata": {
+      "business_type": "freelancer",
+      "state": "national",
+      "authority": "DGFT / RBI",
+      "doc_type": "compliance",
+      "source_url": "https://rbi.org.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Manufacturing business registration in India: (1) Business entity registration (Pvt Ltd/LLP recommended for liability protection), (2) Factory License under the Factories Act, 1948 — required if using power and employing 10+ workers, or without power and 20+ workers, (3) Pollution NOC from State Pollution Control Board (Consent to Establish + Consent to Operate), (4) Fire Safety Certificate, (5) BIS Certification for products under mandatory certification, (6) Udyam/MSME registration for benefits.",
+    "metadata": {
+      "business_type": "manufacturing",
+      "state": "national",
+      "authority": "Multiple",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Factory License process: (1) Apply to the Chief Inspector of Factories in your state, (2) Submit factory plan/layout approved by licensed architect, (3) Obtain NOC from Fire Department, Pollution Control Board, and local authority, (4) Provide details of manufacturing process, machinery, raw materials, and expected output, (5) Ensure compliance with safety provisions — adequate ventilation, lighting, drinking water, sanitation, protective equipment, (6) Annual renewal required. Fee varies by state and number of workers — typically Rs 100 per worker.",
+    "metadata": {
+      "business_type": "manufacturing",
+      "state": "national",
+      "authority": "Chief Inspector of Factories",
+      "doc_type": "license",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Environmental clearances for manufacturing: (1) Consent to Establish (CTE) — obtained BEFORE setting up the factory, from the State Pollution Control Board, (2) Consent to Operate (CTO) — obtained AFTER factory is set up, before starting production, (3) For Red/Orange category industries, Environmental Impact Assessment (EIA) may be required from the Ministry of Environment, (4) Hazardous Waste Management rules apply if generating hazardous waste, (5) E-waste rules if manufacturing electronic products.",
+    "metadata": {
+      "business_type": "manufacturing",
+      "state": "national",
+      "authority": "State Pollution Control Board",
+      "doc_type": "compliance",
+      "source_url": "https://cpcb.nic.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "BIS (Bureau of Indian Standards) Certification: Mandatory for certain products including electronics, electrical equipment, cement, steel, packaged drinking water, food products, toys, helmets. Two schemes: (1) ISI Mark — for domestic manufacturing, (2) Foreign Manufacturer Certification Scheme (FMCS) — for imports. Process: Apply on manakonline.bis.gov.in, factory inspection, product testing, annual surveillance. Fee: Rs 1000 application + Rs 1000/product/year.",
+    "metadata": {
+      "business_type": "manufacturing",
+      "state": "national",
+      "authority": "BIS",
+      "doc_type": "license",
+      "source_url": "https://bis.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Telangana TS-iPASS (Telangana State Industrial Project Approval and Self Certification System): Single-window clearance system for industrial projects. All approvals (land allotment, environmental clearance, factory license, electrical connection, fire NOC, building permission) through one portal — ts-ipass.telangana.gov.in. Processing time: 15 days for Mega projects, 15 days for Large, 15 days for Medium, 15 days for Micro & Small. Deemed approved if not responded within timeline.",
+    "metadata": {
+      "business_type": "manufacturing",
+      "state": "Telangana",
+      "authority": "Telangana Industries Department",
+      "doc_type": "registration",
+      "source_url": "https://ts-ipass.telangana.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Karnataka Udyog Mitra (formerly Single Window Agency): Online portal for industrial approvals in Karnataka — kum.karnataka.gov.in. Services: (1) Land allotment in KIADB industrial areas, (2) Consent from KSPCB, (3) Factory license, (4) Building plan approval, (5) Electricity connection, (6) Water/sewage connection. Benefits: time-bound approvals, deemed approval provision, online tracking.",
+    "metadata": {
+      "business_type": "manufacturing",
+      "state": "Karnataka",
+      "authority": "Karnataka Industries Department",
+      "doc_type": "registration",
+      "source_url": "https://kum.karnataka.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Healthcare/Clinical Establishment registration: Required under the Clinical Establishments (Registration and Regulation) Act, 2010. Covers hospitals, clinics, nursing homes, diagnostic labs, dental clinics, physiotherapy centers. Registration with State/UT authority. Documents: qualification certificates of all practitioners, building safety certificate, biomedical waste management agreement, fire NOC, list of equipment.",
+    "metadata": {
+      "business_type": "healthcare",
+      "state": "national",
+      "authority": "Health Ministry",
+      "doc_type": "registration",
+      "source_url": "https://clinicalestablishments.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Drug License: Required for manufacturing, selling, or distributing drugs and pharmaceuticals. Types: (1) Retail Drug License (Form 20/21 under D&C Act) — for pharmacies, (2) Wholesale Drug License (Form 20B/21B), (3) Manufacturing License (Form 25/28). Issued by State Drug Controller (State FDA). Documents: premises plan, qualification of pharmacist, cold storage details (if required), NOC from landlord. Fee varies by state — Rs 250 to Rs 6000.",
+    "metadata": {
+      "business_type": "healthcare",
+      "state": "national",
+      "authority": "CDSCO / State FDA",
+      "doc_type": "license",
+      "source_url": "https://cdsco.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Biomedical Waste Management Rules, 2016: All healthcare facilities generating biomedical waste must: (1) Register with State Pollution Control Board, (2) Segregate waste into color-coded categories (Yellow, Red, White, Blue), (3) Either set up treatment facility or tie-up with authorized Common Biomedical Waste Treatment Facility (CBWTF), (4) Maintain waste records, (5) Annual report to SPCB. Penalty: up to Rs 5 lakh for violation.",
+    "metadata": {
+      "business_type": "healthcare",
+      "state": "national",
+      "authority": "State Pollution Control Board",
+      "doc_type": "compliance",
+      "source_url": "https://cpcb.nic.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Education/Coaching Institute registration: (1) Entity registration (Trust/Society/Section 8 Company for schools; any entity for coaching), (2) Registration with the Education Department of the state — required for formal schools, (3) For coaching institutes: Shops & Establishment Act registration is usually sufficient, (4) Fire Safety NOC mandatory for commercial coaching centers, (5) GST: Educational services by institutions providing qualifications recognized by law are exempt; coaching/tuition classes are taxable at 18%.",
+    "metadata": {
+      "business_type": "education",
+      "state": "national",
+      "authority": "Education Department",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "EdTech/Online Education compliance: (1) IT Act 2000 compliance for online platforms, (2) DPDP Act 2023 compliance for student data, (3) AICTE approval required for online degree programs, (4) UGC regulations for online courses offering credits/degrees, (5) Consumer Protection rules apply for refund/cancellation policies, (6) GST at 18% on online coaching services, (7) If offering professional courses (CA, CS, Medical), respective regulatory body approval needed.",
+    "metadata": {
+      "business_type": "education",
+      "state": "national",
+      "authority": "Multiple",
+      "doc_type": "compliance",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "RERA (Real Estate Regulatory Authority) Registration: Mandatory for real estate projects with land area > 500 sq. meters or > 8 apartments. Developer must register before advertising/selling. Documents: title deed, development plan, approvals from local authority, financial statements, estimated project cost. Registration valid for project completion period. 70% of buyer payments must be deposited in a separate escrow account.",
+    "metadata": {
+      "business_type": "real_estate",
+      "state": "national",
+      "authority": "RERA",
+      "doc_type": "registration",
+      "source_url": "https://rera.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Real Estate business licenses: (1) RERA Registration, (2) Building plan approval from local development authority, (3) Environmental clearance from MoEFCC for large projects (> 20,000 sq.m.), (4) Commencement Certificate, (5) Occupation Certificate, (6) Land use change permission (if applicable), (7) NOC from Fire, Water, Electricity, and Airport Authority (if near airport). State-specific portals: Telangana — tsrera.telangana.gov.in, Karnataka — rera.karnataka.gov.in, Maharashtra — maharera.mahaonline.gov.in.",
+    "metadata": {
+      "business_type": "real_estate",
+      "state": "national",
+      "authority": "RERA / Local Authority",
+      "doc_type": "license",
+      "source_url": "https://rera.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Labour Law Compliance for businesses with employees: (1) Employees' Provident Fund (EPF) — mandatory if 20+ employees, employer contributes 12% of basic wages, register on epfindia.gov.in, (2) Employees' State Insurance (ESI) — mandatory if 10+ employees (some states) and wages up to Rs 21,000/month, employer contributes 3.25%, register on esic.gov.in, (3) Professional Tax — state-specific, (4) Minimum Wages — vary by state and skill level, (5) Gratuity — payable after 5 years of service, at the rate of 15 days wages per year.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "Labour Ministry",
+      "doc_type": "compliance",
+      "source_url": "https://labour.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "New Labour Codes (expected to be fully implemented): Four new codes consolidating 29 existing labour laws: (1) Code on Wages, 2019 — universal minimum wage, overtime, (2) Industrial Relations Code, 2020 — trade unions, industrial disputes, standing orders, (3) Code on Social Security, 2020 — PF, ESI, gratuity, maternity benefit for gig workers too, (4) Occupational Safety, Health and Working Conditions Code, 2020 — inter-state workers, contract workers, hours of work. Key change: definition of wages redefined — basic pay must be at least 50% of CTC.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "Labour Ministry",
+      "doc_type": "compliance",
+      "source_url": "https://labour.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Trademark Registration in India: Protects your brand name, logo, tagline, or product name. Process: (1) Conduct trademark search on ipindia.gov.in to check availability, (2) File application on ipindia.gov.in (Form TM-A) — Rs 4500 per class (Rs 9000 for non-MSME), (3) Examination by Registrar within 30 days, (4) If no objection — published in Trademark Journal, (5) If no opposition within 4 months — Registration Certificate issued. Total timeline: 6-12 months. Valid for 10 years, renewable.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "IP India",
+      "doc_type": "registration",
+      "source_url": "https://ipindia.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "PAN (Permanent Account Number) for business: Required for all businesses for tax purposes. (1) For companies/LLPs — PAN is allotted automatically through SPICe+/FiLLiP during incorporation, (2) For sole proprietors — use personal PAN, (3) For partnership firms — apply separately on incometax.gov.in using Form 49A. TAN (Tax Deduction Account Number) is required if the business deducts TDS — apply using Form 49B on NSDL portal.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "Income Tax Department",
+      "doc_type": "tax",
+      "source_url": "https://www.incometax.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Income Tax Return (ITR) filing — which form to use: (1) ITR-1 (Sahaj) — salaried individuals with total income up to Rs 50 lakh, (2) ITR-2 — individuals/HUF with capital gains, foreign assets, (3) ITR-3 — individuals/HUF with business/profession income, (4) ITR-4 (Sugam) — presumptive taxation for individuals/HUF/firms, (5) ITR-5 — LLPs and partnership firms, (6) ITR-6 — companies (other than exempt), (7) ITR-7 — trusts, political parties, Section 8 companies.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "Income Tax Department",
+      "doc_type": "tax",
+      "source_url": "https://www.incometax.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Digital India compliance essentials for online businesses: (1) IT Act 2000 — legal framework for electronic commerce, (2) Information Technology (Reasonable Security Practices) Rules, 2011 — mandate 'reasonable security' for sensitive personal data, (3) Digital Personal Data Protection (DPDP) Act, 2023 — consent-based data collection, data principal rights, cross-border data transfer rules, (4) Intermediary Guidelines (IT Rules, 2021) — applicable to social media platforms, e-commerce, (5) RBI guidelines for digital payments and fintech.",
+    "metadata": {
+      "business_type": "ecommerce",
+      "state": "national",
+      "authority": "MeitY",
+      "doc_type": "compliance",
+      "source_url": "https://www.meity.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Business Bank Account: Opening a current account is essential for any business. Required documents vary by entity type: (1) Sole Proprietorship — PAN, Aadhaar, GST certificate (if registered), Shop & Establishment license, (2) Partnership — Partnership deed, PAN of firm and partners, (3) Pvt Ltd/LLP — Certificate of Incorporation, MOA/AOA or LLP Agreement, Board Resolution, PAN of company and directors, (4) Choose between traditional banks (SBI, HDFC, ICICI) or digital-first banks (RazorpayX, Open, Jupiter) for faster onboarding.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "RBI",
+      "doc_type": "registration",
+      "source_url": "https://rbi.org.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Delhi specific business setup: (1) Delhi does not levy Professional Tax, (2) Shop & Establishment Act registration from Delhi Labour Department (e-district portal), (3) Trade License from Municipal Corporation of Delhi (MCD) — mandatory for any commercial activity within Delhi, (4) Pollution NOC from Delhi Pollution Control Committee (DPCC), (5) Delhi's startup policy offers: capital interest subsidy up to Rs 5 lakh, reimbursement of quality certification up to Rs 2 lakh, collateral-free loans.",
+    "metadata": {
+      "business_type": "general",
+      "state": "Delhi",
+      "authority": "Delhi Government",
+      "doc_type": "registration",
+      "source_url": "https://edistrict.delhigovt.nic.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Tamil Nadu specific business setup: (1) Professional Tax at Rs 2500/year for income above Rs 21,000/month, (2) Shop & Establishment registration through Tamil Nadu Labour Department, (3) For manufacturing: SIPCOT (State Industries Promotion Corporation of Tamil Nadu) for land allotment, (4) TNPCB (Tamil Nadu Pollution Control Board) for environmental clearances, (5) Tamil Nadu Startup Policy benefits: seed fund up to Rs 10 lakh, subsidy on patent filing, co-working space subsidies.",
+    "metadata": {
+      "business_type": "general",
+      "state": "Tamil Nadu",
+      "authority": "Tamil Nadu Government",
+      "doc_type": "registration",
+      "source_url": "https://www.tn.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Maharashtra specific business setup: (1) Professional Tax at Rs 2500/year for income above Rs 10,000/month (highest PT liability in India), (2) Shop & Establishment registration through MAITRI portal — lifetime validity, (3) Maharashtra Industrial Development Corporation (MIDC) for industrial land, (4) MPCB (Maharashtra Pollution Control Board) for environmental clearances, (5) Mumbai has additional requirements: BMC trade license, health license for food businesses.",
+    "metadata": {
+      "business_type": "general",
+      "state": "Maharashtra",
+      "authority": "Maharashtra Government",
+      "doc_type": "registration",
+      "source_url": "https://maitri.mahaonline.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "How to choose the right business structure: (1) Sole Proprietorship — best for: freelancers, small shops, service providers; liability: unlimited; funding: limited; compliance: minimal, (2) Partnership — best for: family businesses, professional firms; liability: unlimited; funding: moderate; compliance: low, (3) LLP — best for: professional services, consulting firms; liability: limited; funding: cannot issue shares; compliance: moderate, (4) Pvt Ltd — best for: startups seeking funding, scalable businesses; liability: limited; funding: can issue shares (VC/PE); compliance: high, (5) OPC — best for: solo entrepreneurs wanting limited liability; liability: limited; funding: limited; compliance: moderate.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Cost comparison for business registration (approximate): (1) Sole Proprietorship — Rs 0-2000 (just GST + Shop & Est.), (2) Partnership Firm — Rs 1000-5000 (stamp duty + registration), (3) LLP — Rs 3000-8000 (govt fee + professional charges), (4) Pvt Ltd — Rs 7000-15000 (DSC + govt fee + professional charges), (5) OPC — Rs 7000-12000 (similar to Pvt Ltd). Note: These are government fees; total costs including professional (CA/CS) charges may be higher.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "General",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Intellectual Property Protection for businesses: (1) Trademark — protects brand name/logo — Rs 4500 per class (MSME) or Rs 9000 (others), (2) Patent — protects inventions — Rs 1600 (individuals/startups) or Rs 4000 (small entity) for filing, examination extra, total timeline 3-5 years, (3) Copyright — protects original creative works — Rs 500 per work, auto-registered upon creation but formal registration recommended, (4) Design Registration — protects product appearance — Rs 1000 per design, (5) Geographical Indication (GI) — protects region-specific products.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "IP India",
+      "doc_type": "registration",
+      "source_url": "https://ipindia.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Business Insurance essentials: (1) Shop Insurance / Commercial Property Insurance — covers fire, theft, natural disasters, (2) Product Liability Insurance — required under Consumer Protection Act for manufacturers, (3) Workers' Compensation Insurance — covers work injuries (mandatory under ESI for eligible employees), (4) Professional Indemnity Insurance — for consultants, doctors, CA/CS firms, (5) Cyber Insurance — for IT/tech businesses, (6) Keyman Insurance — on key personnel, tax-deductible as business expense.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "IRDAI",
+      "doc_type": "compliance",
+      "source_url": "https://www.irdai.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Government Tenders and Public Procurement for MSMEs: (1) Register on GeM (Government e-Marketplace) — gem.gov.in — free registration, (2) 25% of government procurement reserved for MSMEs, (3) 3% of 25% sub-reserved for women-owned MSMEs, (4) Price preference of 15% in government tenders, (5) Exemption from Earnest Money Deposit (EMD) and security deposit, (6) Products manufactured by MSMEs can be listed on GeM for direct purchase by government departments.",
+    "metadata": {
+      "business_type": "msme",
+      "state": "national",
+      "authority": "MSME Ministry",
+      "doc_type": "compliance",
+      "source_url": "https://gem.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "MUDRA Loan for business funding: Micro Units Development & Refinance Agency (MUDRA) provides loans up to Rs 10 lakh through banks, NBFCs, and MFIs. Three categories: (1) Shishu — up to Rs 50,000 (for starting), (2) Kishore — Rs 50,000 to Rs 5 lakh (for expanding), (3) Tarun — Rs 5 lakh to Rs 10 lakh (for growth). No collateral required. Apply through any bank or through mudra.org.in portal. Interest rates vary by bank — typically 7-12%.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "MUDRA / RBI",
+      "doc_type": "funding",
+      "source_url": "https://www.mudra.org.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Stand-Up India Scheme: Loans from Rs 10 lakh to Rs 1 crore for SC/ST and Women entrepreneurs for setting up a new enterprise. One per bank branch — at least one to SC/ST and one to women borrower. Composite loan covering term loan and working capital. Repayment: 7 years with moratorium of up to 18 months. Apply through standupmitra.in portal.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "SIDBI",
+      "doc_type": "funding",
+      "source_url": "https://www.standupmitra.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "IT/Software Company specific requirements: (1) STPI (Software Technology Parks of India) registration — benefits: bonded warehouse facility, high-speed data communication, (2) SEZ registration if operating from Special Economic Zone — benefits: 100% tax exemption for first 5 years, 50% for next 5 years, (3) Compliance with IT Act and data protection laws, (4) For SaaS products: GST at 18% on software services, (5) For IT exports: zero-rated under GST, file SOFTEX forms quarterly.",
+    "metadata": {
+      "business_type": "it_software",
+      "state": "national",
+      "authority": "STPI / MeitY",
+      "doc_type": "registration",
+      "source_url": "https://www.stpi.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Hyderabad (Telangana) IT/Software Hub: (1) Register with STPI Hyderabad, (2) TS-iPASS for all industrial clearances, (3) Telangana ICT Policy incentives: investment subsidy up to 25% on fixed assets, stamp duty exemption, power tariff subsidy of Rs 1/unit for 5 years, (4) IT parks: HITEC City, Genome Valley (biotech), Hardware Park, Fab City, (5) Special benefits for data center operators, (6) T-Hub for startup incubation and mentoring.",
+    "metadata": {
+      "business_type": "it_software",
+      "state": "Telangana",
+      "authority": "Telangana IT Department",
+      "doc_type": "registration",
+      "source_url": "https://it.telangana.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Bengaluru (Karnataka) IT/Software Hub: (1) STPI Bengaluru registration, (2) Karnataka IT/ITeS Policy: stamp duty exemption, entry tax exemption, power tariff subsidy, (3) Karnataka Startup Policy: seed funding, patent support, marketing support, (4) NASSCOM has strong presence in Bengaluru, (5) IT parks: Electronics City, Whitefield, Manyata Tech Park, Outer Ring Road tech corridor, (6) Karnataka also has specific policies for AI, Gaming, and Animation companies with additional incentives.",
+    "metadata": {
+      "business_type": "it_software",
+      "state": "Karnataka",
+      "authority": "Karnataka IT Department",
+      "doc_type": "registration",
+      "source_url": "https://itbt.karnataka.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Annual compliance calendar for a Pvt Ltd company: April — DIR-3 KYC (DIN verification) + advance tax (Q4). May — nothing specific. June — Q1 advance tax. July — ITR filing if no audit, TDS returns (Q1). August — nothing specific. September — AGM (if FY ended March), advance tax (Q2). October — TDS returns (Q2), Annual Return (MGT-7). November — AOC-4 (financial statements). December — Advance tax (Q3), GSTR-9. January — TDS returns (Q3). February — nothing specific. March — statutory audit completion, financial year end.",
+    "metadata": {
+      "business_type": "pvt_ltd",
+      "state": "national",
+      "authority": "MCA / Income Tax",
+      "doc_type": "compliance",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Annual compliance calendar for an LLP: April — nothing specific. May — Form 11 (Annual Return) due by May 30. June — nothing specific. July — ITR-5 filing (if no audit due). August — nothing specific. September — ITR-5 filing (if audit applicable, due September 30). October — Form 8 (Statement of Account & Solvency) due by October 30, TDS returns. November — nothing specific. December — GSTR-9 (GST annual return). January-March — advance tax payments, TDS returns.",
+    "metadata": {
+      "business_type": "llp",
+      "state": "national",
+      "authority": "MCA / Income Tax",
+      "doc_type": "compliance",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "FEMA Compliance for businesses with foreign transactions: (1) Any business receiving foreign investment must file FC-GPR with RBI via AD Bank within 30 days, (2) Annual Return on Foreign Liabilities and Assets (FLA) — due by July 15, (3) External Commercial Borrowing (ECB) — file Form ECB to RBI, (4) Overseas Direct Investment — prior RBI approval may be needed, (5) Foreign exchange receipts for exports — must be realized within 9 months (recently extended to 15 months for certain exports). Violation penalties under FEMA: up to 3x the amount involved.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "RBI",
+      "doc_type": "compliance",
+      "source_url": "https://rbi.org.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Accounting and Bookkeeping obligations by entity type: (1) Sole Proprietorship — books of accounts mandatory if income > Rs 2.5 lakh or turnover > Rs 25 lakh, (2) Partnership Firm — maintain accounts per Partnership Deed and IT Act, (3) LLP — maintain books on double-entry system, audit if turnover > Rs 40 lakh or contribution > Rs 25 lakh, (4) Pvt Ltd/OPC — mandatory double-entry, statutory audit by CA every year, books must be maintained for 8 years from the year they relate to.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "Income Tax / MCA",
+      "doc_type": "compliance",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Cloud Kitchen / Dark Kitchen business setup: (1) FSSAI License (State License for turnover Rs 12 lakh–Rs 20 crore), (2) GST Registration — mandatory for food delivery through aggregators, (3) No customer-facing premises needed — reduces costs, (4) Zomato/Swiggy onboarding: FSSAI license, GST certificate, bank details, menu, (5) Fire NOC if using LPG/gas, (6) No Eating House License needed (since no dine-in), (7) Trade License from municipal corporation, (8) Packaging compliance — FSSAI labelling rules for packed food.",
+    "metadata": {
+      "business_type": "food_business",
+      "state": "national",
+      "authority": "FSSAI",
+      "doc_type": "registration",
+      "source_url": "https://fssai.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Salon/Beauty Parlor/Spa business setup: (1) Shop & Establishment Act registration, (2) Trade License from municipal corporation, (3) GST registration if turnover > Rs 20 lakh (services at 18% GST), (4) Fire NOC for commercial premises, (5) No special industry-specific license for basic salon services, (6) For spa with massage services — check state-specific Spa and Wellness regulations, (7) Pollution Control Board NOC usually not required for small salons, (8) Professional Tax registration for self and employees.",
+    "metadata": {
+      "business_type": "services",
+      "state": "national",
+      "authority": "Municipal Corporation",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Gym/Fitness Center business setup: (1) Shop & Establishment Act registration, (2) Trade License from municipal corporation, (3) GST registration — gym services taxed at 18% GST (12% if part of hotel with declared tariff up to Rs 7500), (4) Fire NOC mandatory for commercial premises, (5) Health and safety compliance — first aid kit, emergency exits, proper ventilation, (6) If offering swimming pool — local health department permission and water quality testing, (7) Music License from PPL/IPRS for playing music in the premises.",
+    "metadata": {
+      "business_type": "services",
+      "state": "national",
+      "authority": "Municipal Corporation",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Tuition/Private Coaching business: (1) For small home-based tuition — no specific registration needed beyond ITR filing, (2) For coaching institutes with commercial premises — Shop & Establishment Act registration, (3) Fire NOC if commercial building, (4) GST at 18% on coaching services (no exemption unlike formal education), (5) TDS under Section 194J applicable if paying visiting faculty, (6) Franchise model — additional compliance under Franchise Disclosure rules, (7) Consider Pvt Ltd/LLP structure for scaling with multiple branches.",
+    "metadata": {
+      "business_type": "education",
+      "state": "national",
+      "authority": "General",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Retail Shop/Store business setup: (1) Shop & Establishment Act registration — mandatory, (2) Trade License from municipal body, (3) GST registration if turnover > Rs 40 lakh, (4) FSSAI registration if selling packaged food, (5) Legal Metrology (Weights & Measures) compliance — licensed stamp on weighing instruments, proper MRP display, (6) Signage/hoarding permission from municipal body, (7) Fire NOC for commercial premises, (8) POS system with GST-compliant billing.",
+    "metadata": {
+      "business_type": "retail",
+      "state": "national",
+      "authority": "Municipal Corporation",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Logistics/Transport business: (1) Entity registration (Pvt Ltd/LLP recommended for fleet operations), (2) Vehicle Registration Certificate (RC), (3) Commercial Vehicle Permit — apply to Regional Transport Authority (RTO), (4) Goods Carriage Permit for goods transport, (5) GST Registration — transport of goods by road (GTA) taxed at 5% (no ITC) or 12% (with ITC), (6) E-way bill mandatory for goods worth > Rs 50,000 being transported, (7) Insurance — comprehensive motor + goods-in-transit insurance.",
+    "metadata": {
+      "business_type": "logistics",
+      "state": "national",
+      "authority": "Ministry of Road Transport",
+      "doc_type": "registration",
+      "source_url": "https://parivahan.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Consulting/Advisory firm setup: (1) LLP is the most popular structure for consulting firms (limited liability, low compliance), (2) GST at 18% on consulting services, (3) File ITR-5 (LLP) or ITR-3 (sole prop), (4) TDS: clients deduct 10% TDS (Section 194J) on professional fees, (5) Professional Tax in applicable states, (6) No industry-specific license needed for general business consulting, (7) For specialized consulting (legal, medical, financial) — respective regulatory body registration needed, (8) Consider Professional Indemnity Insurance.",
+    "metadata": {
+      "business_type": "services",
+      "state": "national",
+      "authority": "General",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Agriculture/Agribusiness: (1) No GST on most fresh agricultural produce, (2) APMC Mandi License required for wholesale trading of agricultural produce in many states (being reformed under APMC Act), (3) FSSAI license if processing food products, (4) For agricultural startups — RKVY-RAFTAAR scheme offers up to Rs 25 lakh funding, (5) Kisan Credit Card (KCC) for farmers — subsidized credit at 7% interest (4% with prompt repayment), (6) Agriculture income is exempt from income tax, but income from processing/trading is taxable.",
+    "metadata": {
+      "business_type": "agriculture",
+      "state": "national",
+      "authority": "Agriculture Ministry",
+      "doc_type": "registration",
+      "source_url": "https://agricoop.nic.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Renewable Energy business setup: (1) Register company/LLP, (2) MNRE (Ministry of New and Renewable Energy) registration, (3) State Electricity Regulatory Commission (SERC) license for power generation/distribution, (4) Net metering policy registration with state DISCOM for rooftop solar, (5) Environmental clearance may be exempt for solar/wind projects below certain capacity, (6) Incentives: Accelerated depreciation (40%) on solar equipment, Generation-Based Incentive (GBI), Viability Gap Funding for solar parks, PLI scheme for solar module manufacturing.",
+    "metadata": {
+      "business_type": "renewable_energy",
+      "state": "national",
+      "authority": "MNRE",
+      "doc_type": "registration",
+      "source_url": "https://mnre.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Co-working Space / Shared Office business: (1) Entity registration (Pvt Ltd/LLP), (2) Commercial space lease with 'commercial use' permission in building plan, (3) Shop & Establishment Act registration, (4) Fire Safety Certificate — crucial for open-plan offices with many occupants, (5) GST at 18% on rental/membership services, (6) If providing virtual office addresses — compliance with Companies Act requirements for registered office, (7) Internet/ISP license not needed for providing wifi to members (it's a Value Added Service, not ISP activity), (8) Music License if playing background music.",
+    "metadata": {
+      "business_type": "services",
+      "state": "national",
+      "authority": "Municipal Corporation",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Event Management Company: (1) Entity registration (Pvt Ltd/LLP for credibility with corporate clients), (2) GST at 18% on event management services, (3) Police permission for large public events, (4) Fire NOC for event venues, (5) Noise pollution compliance from State Pollution Control Board (no loudspeakers after 10 PM), (6) FSSAI license if catering is part of services, (7) Entertainment Tax (subsumed in GST but state-specific permissions may still be needed), (8) Public liability insurance recommended for large events.",
+    "metadata": {
+      "business_type": "services",
+      "state": "national",
+      "authority": "Multiple",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Franchise Business model in India: (1) No specific franchise law in India — governed by Indian Contract Act, (2) Franchise agreement must be detailed — territory, fees, royalties, supply chain, IP usage, exit clause, (3) Franchisor must register trademark before offering franchises, (4) GST: franchise fee/royalty is 'supply of service' at 18%, (5) Franchisee needs all regular business licenses (GST, Shop & Est., industry-specific), (6) FDI in franchise: 100% FDI allowed in single-brand retail, 51% in multi-brand retail (with conditions).",
+    "metadata": {
+      "business_type": "retail",
+      "state": "national",
+      "authority": "General",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Foreign company setting up in India: Options — (1) Wholly Owned Subsidiary (WOS) — incorporate Pvt Ltd with 100% FDI (most common for tech companies), (2) Joint Venture — partner with Indian entity, (3) Liaison Office — for market research and liaison only, no commercial activity, RBI approval needed, (4) Branch Office — can carry on activities of parent company, RBI approval needed, (5) Project Office — for specific project execution. FDI: 100% allowed in most sectors through automatic route; some sectors (defence, telecom, insurance) have caps requiring government approval.",
+    "metadata": {
+      "business_type": "pvt_ltd",
+      "state": "national",
+      "authority": "RBI / DPIIT",
+      "doc_type": "registration",
+      "source_url": "https://www.investindia.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Non-Profit / NGO Registration options: (1) Trust — governed by Indian Trusts Act, 1882. Minimum 2 trustees. Register with Sub-Registrar. Irrevocable once created, (2) Society — governed by Societies Registration Act, 1860. Minimum 7 members. Register with Registrar of Societies, (3) Section 8 Company — incorporated under Companies Act, 2013. Apply for license from Central Government. Most credible for large-scale operations and CSR funding. All three can apply for 12A (income tax exemption) and 80G (donor tax deduction) certificates from Income Tax Department.",
+    "metadata": {
+      "business_type": "ngo",
+      "state": "national",
+      "authority": "MCA / Registrar of Societies",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "FCRA (Foreign Contribution Regulation Act) registration for NGOs: Required if receiving foreign donations/grants. Process: (1) Must have been registered and active for 3 years, (2) Must have spent at least Rs 15 lakh on core activities in last 3 years, (3) Apply to MHA (Ministry of Home Affairs) on fcraonline.nic.in, (4) FCRA registration valid for 5 years, renewable, (5) Must maintain separate FCRA bank account at SBI, New Delhi Main Branch, (6) Annual FCRA return (FC-4) due by December 31. Penalty for violation: cancellation of registration and seizure of foreign funds.",
+    "metadata": {
+      "business_type": "ngo",
+      "state": "national",
+      "authority": "MHA",
+      "doc_type": "compliance",
+      "source_url": "https://fcraonline.nic.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Conversion between business structures: (1) Sole Prop → Partnership: execute Partnership Deed, no formal process, (2) Sole Prop → Pvt Ltd: incorporate new Pvt Ltd, transfer assets as going concern, (3) Partnership → LLP: apply to MCA using Form 17, seamless with no tax implication if conditions met, (4) LLP → Pvt Ltd: apply to MCA in Form 18, requires compliance with Section 366, (5) Pvt Ltd → Public Ltd: pass special resolution, alter MOA/AOA, file with ROC, (6) OPC → Pvt Ltd: mandatory if turnover > Rs 2 crore, voluntary otherwise via Form INC-6.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "registration",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Closing/Winding up a business: (1) Sole Prop — no formal winding up, just close GST, bank accounts, surrender licenses, (2) Partnership — dissolution as per Deed, settle debts, file final return, (3) LLP — strike off (Form 24) if no business for 1 year+ and nil assets/liabilities, or voluntary winding up, (4) Pvt Ltd — strike off (STK-2) or voluntary liquidation under IBC, (5) All entities: file final GST return (GSTR-10), surrender GSTIN, file final Income Tax return, settle all employee dues. Strike off fee: Rs 5000 for LLP, Rs 5000 for company.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "MCA",
+      "doc_type": "compliance",
+      "source_url": "https://www.mca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Travel Agency / Tour Operator business: (1) Entity registration (Pvt Ltd/LLP for larger operations, Sole Prop for small agencies), (2) GST at 5% on tour operator services (no ITC) or 18% (with ITC), (3) IATA accreditation for booking international air tickets, (4) State Tourism Department registration for approved tour operator status, (5) Shop & Establishment Act registration, (6) For adventure tourism — state-specific adventure tourism policy compliance and insurance, (7) RBI authorized dealer tie-up for forex services.",
+    "metadata": {
+      "business_type": "services",
+      "state": "national",
+      "authority": "Tourism Ministry",
+      "doc_type": "registration",
+      "source_url": "https://tourism.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Fintech / Digital Lending compliance: (1) RBI's Digital Lending Guidelines (September 2022) — mandatory for all digital lenders, (2) NBFC registration with RBI if lending own funds (net owned fund requirement: Rs 2 crore), (3) If acting as Lending Service Provider (LSP) — partnership with regulated entity (bank/NBFC), (4) KYC/AML compliance mandatory, (5) All loan disbursements and repayments must be between borrower and regulated entity bank accounts (no pass-through by LSP), (6) Payment Aggregator license from RBI if handling payments.",
+    "metadata": {
+      "business_type": "fintech",
+      "state": "national",
+      "authority": "RBI",
+      "doc_type": "compliance",
+      "source_url": "https://rbi.org.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Key government portals for business registration in India: (1) MCA — mca.gov.in (company/LLP incorporation), (2) GST — gst.gov.in (GST registration and returns), (3) Income Tax — incometax.gov.in (PAN, TAN, ITR), (4) FSSAI — foscos.fssai.gov.in (food license), (5) Udyam — udyamregistration.gov.in (MSME registration), (6) Startup India — startupindia.gov.in (DPIIT recognition), (7) DGFT — dgft.gov.in (import/export code), (8) IP India — ipindia.gov.in (trademark/patent), (9) GeM — gem.gov.in (government procurement), (10) EPFO — epfindia.gov.in (employee PF), (11) ESIC — esic.gov.in (employee insurance).",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "Government of India",
+      "doc_type": "registration",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Common mistakes when starting a business in India: (1) Not separating personal and business finances — always open a separate current account, (2) Ignoring GST registration when selling online — mandatory regardless of turnover for e-commerce, (3) Not registering trademark early — leads to brand disputes later, (4) Choosing wrong business structure — expensive to change later, (5) Ignoring compliance deadlines — MCA penalties accumulate daily, (6) Not maintaining proper books — leads to tax scrutiny, (7) Not getting written agreements with co-founders — leads to disputes, (8) Mixing up GST composition and regular scheme — wrong choice locks you in for the year.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "General",
+      "doc_type": "compliance",
+      "source_url": "https://www.india.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Startup funding stages in India: (1) Bootstrapping — self-funded, (2) Friends & Family — informal funding, (3) Angel Investment — SEBI-registered angel investors/networks, typical Rs 25 lakh - Rs 2 crore, (4) Seed Round — from angel funds, micro VCs, government seed funds, typical Rs 50 lakh - Rs 5 crore, (5) Series A — VC funds, typical Rs 5 crore - Rs 50 crore, (6) Series B onwards — growth stage, larger VC/PE funds, (7) IPO — list on NSE/BSE (main board requires Rs 10 crore net tangible assets, Rs 15 crore pre-tax profit for 3/5 years). For Pvt Ltd only — sole proprietorships and LLPs cannot raise equity funding.",
+    "metadata": {
+      "business_type": "startup",
+      "state": "national",
+      "authority": "SEBI / DPIIT",
+      "doc_type": "funding",
+      "source_url": "https://www.sebi.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Women Entrepreneur schemes in India: (1) Mudra Yojana — priority to women borrowers under Shishu category, (2) Stand-Up India — dedicated loans for women (Rs 10 lakh to Rs 1 crore), (3) Mahila Udyam Nidhi — SBI scheme offering loans up to Rs 10 lakh at reduced interest, (4) Annapurna Scheme — loans up to Rs 50,000 for women starting food catering, (5) Stree Shakti Package — SBI, 0.5% interest rate concession for loans above Rs 2 lakh, (6) TREAD (Trade Related Entrepreneurship Assistance and Development) — up to 30% of project cost as government grant.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "MSME Ministry / Banks",
+      "doc_type": "funding",
+      "source_url": "https://msme.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "SC/ST Entrepreneur schemes: (1) Stand-Up India — loans Rs 10 lakh to Rs 1 crore per bank branch, (2) National Scheduled Castes Finance and Development Corporation (NSFDC) — loans up to Rs 30 lakh at 6% interest, (3) Venture Capital Fund for Scheduled Castes — equity funding up to Rs 15 crore, (4) PMEGP (Prime Minister's Employment Generation Programme) — subsidy of 25-35% of project cost, (5) State-specific SC/ST Corporation schemes — vary by state, typically offer subsidized loans and skill development.",
+    "metadata": {
+      "business_type": "general",
+      "state": "national",
+      "authority": "Social Justice Ministry",
+      "doc_type": "funding",
+      "source_url": "https://socialjustice.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "EV (Electric Vehicle) business opportunities and compliance: (1) FAME II Scheme — subsidies for EV manufacturing and charging infrastructure, (2) PLI Scheme for Advanced Chemistry Cell (ACC) Battery Storage, (3) No road tax and registration fees for EVs in many states (Telangana, Delhi, Maharashtra), (4) For EV charging stations — MNRE/BEE guidelines, no license needed under Electricity Act (de-licensed activity), (5) GST at 5% on EVs (vs 28%+cess on ICE vehicles), (6) For EV manufacturing — state-specific EV policies with capital subsidy, power tariff incentives.",
+    "metadata": {
+      "business_type": "manufacturing",
+      "state": "national",
+      "authority": "MNRE / MHI",
+      "doc_type": "registration",
+      "source_url": "https://fame2.heavyindustries.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  },
+  {
+    "text": "Drone / UAV business in India: (1) Register company/LLP, (2) Obtain Type Certificate from DGCA for manufacturing drones, (3) All drones must be registered on the Digital Sky Platform (digitalsky.dgca.gov.in), (4) Remote Pilot Certificate required for operating drones, (5) UIN (Unique Identification Number) for each drone, (6) Insurance mandatory for all drones, (7) Drone Rules, 2021 — simplified three categories: Nano (<250g, no license), Micro (250g-2kg), Small/Medium/Large (need approvals), (8) PLI scheme for drone manufacturing — 20% incentive on value addition.",
+    "metadata": {
+      "business_type": "manufacturing",
+      "state": "national",
+      "authority": "DGCA",
+      "doc_type": "registration",
+      "source_url": "https://digitalsky.dgca.gov.in/",
+      "last_updated": "2024-06-01"
+    }
+  }
+]

@@ -1,0 +1,46 @@
+[
+  {
+    "text": "Any person desiring to commence or carry on any food business shall make an application for grant of a license to the Designated Officer in Form B appended to Schedule 2 of these Regulations. This includes food trucks and mobile food vendors.",
+    "metadata": {
+      "business_type": "food_truck",
+      "state": "Telangana",
+      "authority": "FSSAI",
+      "doc_type": "license",
+      "source_url": "https://fssai.gov.in/",
+      "last_updated": "2023-01-01"
+    }
+  },
+  {
+    "text": "For operating a food truck in municipal limits, a No Objection Certificate (NOC) from the Greater Hyderabad Municipal Corporation (GHMC) traffic police and health department is mandatory.",
+    "metadata": {
+      "business_type": "food_truck",
+      "state": "Telangana",
+      "authority": "GHMC",
+      "doc_type": "compliance",
+      "source_url": "https://ghmc.gov.in/",
+      "last_updated": "2023-05-15"
+    }
+  },
+  {
+    "text": "Food trucks fall under the 'mobile premises' category of FSSAI. The registration fee is Rs 100 per annum, and the license fee depends on the turnover, typically Rs 2000 per annum for small vendors.",
+    "metadata": {
+      "business_type": "food_truck",
+      "state": "Telangana",
+      "authority": "FSSAI",
+      "doc_type": "fee",
+      "source_url": "https://fssai.gov.in/",
+      "last_updated": "2022-11-20"
+    }
+  },
+  {
+    "text": "Fire safety clearance is required if the food truck uses commercial gas cylinders (LPG) for cooking. This certificate can be obtained from the Telangana State Disaster Response and Fire Services Department.",
+    "metadata": {
+      "business_type": "food_truck",
+      "state": "Telangana",
+      "authority": "Fire Services",
+      "doc_type": "safety",
+      "source_url": "https://fire.telangana.gov.in/",
+      "last_updated": "2024-02-10"
+    }
+  }
+]
