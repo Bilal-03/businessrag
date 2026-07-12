@@ -370,9 +370,9 @@ def fetch_api(endpoint, method="GET", json_data=None):
     """Helper to call the backend API."""
     try:
         if method == "GET":
-            resp = requests.get(f"{API_BASE}{endpoint}", timeout=30)
+            resp = requests.get(f"{API_BASE}{endpoint}", timeout=60)
         else:
-            resp = requests.post(f"{API_BASE}{endpoint}", json=json_data, timeout=60)
+            resp = requests.post(f"{API_BASE}{endpoint}", json=json_data, timeout=180)
         resp.raise_for_status()
         return resp.json()
     except Exception as e:
@@ -577,7 +577,7 @@ if prompt:
             payload = {"query": prompt}
             
             try:
-                response = requests.post(f"{API_BASE}/api/chat", json=payload, timeout=60)
+                response = requests.post(f"{API_BASE}/api/chat", json=payload, timeout=180)
                 response.raise_for_status()
                 data = response.json()
                 
