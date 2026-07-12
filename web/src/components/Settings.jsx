@@ -19,7 +19,10 @@ const Settings = ({ onClearHistory, onApiUrlChange, currentApiUrl }) => {
   const [apiUrl, setApiUrl] = useState(currentApiUrl || 'https://businessrag.onrender.com');
   const [saved, setSaved] = useState(false);
   const [selectedAccent, setSelectedAccent] = useState(0);
-  const [notifications, setNotifications] = useState(true);
+  const [notifications, setNotifications] = useState(false);
+  const [notifPermission, setNotifPermission] = useState(
+    typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
+  );
   const [confirmClear, setConfirmClear] = useState(false);
   const [activeSection, setActiveSection] = useState('profile');
 
@@ -31,7 +34,7 @@ const Settings = ({ onClearHistory, onApiUrlChange, currentApiUrl }) => {
     const savedApiUrl = localStorage.getItem('bizguide_api_url');
     if (savedApiUrl) setApiUrl(savedApiUrl);
     const savedNotifs = localStorage.getItem('bizguide_notifications');
-    if (savedNotifs !== null) setNotifications(savedNotifs === 'true');
+    if (savedNotifs !== null) setNotifications(savedNotifs === 'true' && Notification.permission === 'granted');
   }, []);
 
   const handleSaveProfile = () => {
@@ -145,17 +148,45 @@ const Settings = ({ onClearHistory, onApiUrlChange, currentApiUrl }) => {
                 </div>
                 <div className="settings-toggle-row">
                   <div>
-                    <div className="toggle-label"><Bell size={16} /> Browser Notifications</div>
-                    <div className="toggle-desc">Get notified when AI processing completes</div>
+                    <div className="toggle-label"><Bell size={16} /> Browser Notifications
+                      {notifPermission === 'granted' && <span className="notif-status granted">Granted</span>}
+                      {notifPermission === 'denied'  && <span className="notif-status denied">Blocked in browser</span>}
+                    </div>
+                    <div className="toggle-desc">
+                      {notifPermission === 'denied'
+                        ? 'Notifications are blocked. Enable them in your browser site settings.'
+                        : 'Get notified when AI responses are ready while you\'re in another tab.'}
+                    </div>
                   </div>
                   <button
-                    className={`toggle-switch ${notifications ? 'on' : 'off'}`}
-                    onClick={() => {
-                      setNotifications(!notifications);
-                      localStorage.setItem('bizguide_notifications', (!notifications).toString());
+                    className={`toggle-switch ${notifications && notifPermission === 'granted' ? 'on' : 'off'}`}
+                    disabled={notifPermission === 'denied'}
+                    onClick={async () => {
+                      if (!notifications) {
+                        // Turning ON — request real browser permission
+                        if (typeof Notification === 'undefined') return;
+                        const permission = await Notification.requestPermission();
+                        setNotifPermission(permission);
+                        if (permission === 'granted') {
+                          setNotifications(true);
+                          localStorage.setItem('bizguide_notifications', 'true');
+                          // Fire a test notification so they can see it works
+                          new Notification('BizGuide AI', {
+                            body: 'Notifications are enabled! You\'ll be notified when AI responds.',
+                            icon: '/logo.png',
+                          });
+                        } else {
+                          setNotifications(false);
+                          localStorage.setItem('bizguide_notifications', 'false');
+                        }
+                      } else {
+                        // Turning OFF
+                        setNotifications(false);
+                        localStorage.setItem('bizguide_notifications', 'false');
+                      }
                     }}
                   >
-                    <motion.div className="toggle-thumb" animate={{ x: notifications ? 20 : 0 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} />
+                    <motion.div className="toggle-thumb" animate={{ x: notifications && notifPermission === 'granted' ? 20 : 0 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} />
                   </button>
                 </div>
               </motion.div>
@@ -176,6 +207,29 @@ const Settings = ({ onClearHistory, onApiUrlChange, currentApiUrl }) => {
                 </div>
                 <div className="danger-zone">
                   <div className="danger-title"><Shield size={16} /> Danger Zone</div>
+                  <div className="danger-row" style={{ marginBottom: '14px' }}>
+                    <div>
+                      <div className="danger-item-label">Clear My Uploaded Documents</div>
+                      <div className="danger-item-desc">Remove all PDFs you uploaded this session from the AI knowledge base.</div>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      className="btn-danger"
+                      onClick={async () => {
+                        const sid = localStorage.getItem('bizguide_session_id');
+                        if (!sid) return;
+                        try {
+                          await fetch(`${apiUrl}/api/documents/clear?namespace=${encodeURIComponent(sid)}`, { method: 'DELETE' });
+                          localStorage.removeItem('bizguide_uploads');
+                          alert('Your uploaded documents have been cleared.');
+                        } catch (e) {
+                          alert('Failed to clear documents. Please try again.');
+                        }
+                      }}
+                    >
+                      <Trash2 size={16} /> Clear My Docs
+                    </motion.button>
+                  </div>
                   <div className="danger-row">
                     <div>
                       <div className="danger-item-label">Clear Conversation History</div>

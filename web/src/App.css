@@ -1037,6 +1037,7 @@
 }
 .toggle-switch.on { background: var(--accent-primary); }
 .toggle-switch.off { background: rgba(148,163,184,0.2); }
+.toggle-switch:disabled { opacity: 0.4; cursor: not-allowed; }
 .toggle-thumb {
   position: absolute;
   top: 4px;
@@ -1046,6 +1047,20 @@
   border-radius: 50%;
   background: white;
 }
+/* Notification permission status badges */
+.notif-status {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+  text-transform: none;
+}
+.notif-status.granted { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+.notif-status.denied  { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
 
 /* Danger zone */
 .danger-zone {

@@ -26,6 +26,26 @@ function generateTitle(firstMessage) {
   return words.length < firstMessage.trim().length ? words + '…' : words;
 }
 
+/** Generate or retrieve a stable session ID for Pinecone namespace isolation */
+function getSessionId() {
+  let sid = localStorage.getItem('bizguide_session_id');
+  if (!sid) {
+    sid = 'sess_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('bizguide_session_id', sid);
+  }
+  return sid;
+}
+
+/** Fire a real browser notification if permission granted and page is not focused */
+function fireNotification(title, body) {
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible' && document.hasFocus()) return;
+  try {
+    new Notification(title, { body, icon: '/logo.png', badge: '/logo.png' });
+  } catch (_) {}
+}
+
 function App() {
   const [currentView, setCurrentView]     = useState('home');
   const [messages, setMessages]           = useState([]);
@@ -36,6 +56,7 @@ function App() {
   const [activeConvId, setActiveConvId]   = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [apiUrl, setApiUrl]               = useState(DEFAULT_API_URL);
+  const sessionId = useRef(getSessionId());
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const currentConvIdRef = useRef(null);
@@ -122,13 +143,16 @@ function App() {
       const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
+        // Pass session namespace so Pinecone only retrieves THIS user's uploaded docs
+        body: JSON.stringify({ query, namespace: sessionId.current }),
       });
       const data = await response.json();
       const aiMsg = { role: 'ai', content: data.answer };
       const finalMessages = [...updatedMessages, aiMsg];
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);
+      // Fire browser notification if page is hidden
+      fireNotification('BizGuide AI', 'Your answer is ready!');
     } catch (error) {
       const errMsg = { role: 'ai', content: '⚠️ Error connecting to the agent. Please check your connection and try again.' };
       const finalMessages = [...updatedMessages, errMsg];
@@ -153,17 +177,17 @@ function App() {
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${apiUrl}/api/documents/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      // Upload to session-specific Pinecone namespace — only visible to this user
+      const uploadUrl = `${apiUrl}/api/documents/upload?namespace=${encodeURIComponent(sessionId.current)}`;
+      const response = await fetch(uploadUrl, { method: 'POST', body: formData });
       const data = await response.json();
       const resultMsg = response.ok
-        ? { role: 'ai', content: `✅ **Upload Successful!** ${data.message}\n\nYou can now ask me questions based on this document.` }
+        ? { role: 'ai', content: `✅ **Upload Successful!** ${data.message}\n\nYou can now ask me questions based on this document. Your documents are private to your session only.` }
         : { role: 'ai', content: `❌ **Upload Failed:** ${data.detail}` };
       const finalMessages = [...updatedMessages, resultMsg];
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);
+      fireNotification('BizGuide AI', `${file.name} uploaded and indexed successfully!`);
     } catch (error) {
       const errMsg = { role: 'ai', content: '⚠️ Network error during upload. Please try again.' };
       const finalMessages = [...updatedMessages, errMsg];
