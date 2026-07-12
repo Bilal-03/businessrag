@@ -1,4 +1,0 @@
-# This file is intentionally minimal.
-# The actual Streamlit Cloud requirements are in frontend/requirements.txt
-# The full backend requirements (FastAPI/ChromaDB) are no longer used in deployment.
-streamlit==1.31.1
