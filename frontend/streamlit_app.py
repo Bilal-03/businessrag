@@ -359,6 +359,42 @@ st.markdown("""
     .quick-action-icon {
         margin-right: 0.4rem;
     }
+
+    /* ── All st.button elements ────────────────────────────────── */
+    .stButton > button {
+        background: rgba(30, 41, 59, 0.7) !important;
+        border: 1px solid rgba(99, 102, 241, 0.2) !important;
+        color: #cbd5e1 !important;
+        border-radius: 8px !important;
+        font-size: 0.78rem !important;
+        font-family: 'Inter', sans-serif !important;
+        white-space: normal !important;
+        height: auto !important;
+        min-height: 2.2rem !important;
+        line-height: 1.3 !important;
+        padding: 0.35rem 0.7rem !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton > button:hover {
+        background: rgba(99, 102, 241, 0.2) !important;
+        border-color: rgba(99, 102, 241, 0.45) !important;
+        color: #e2e8f0 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15) !important;
+    }
+    .stButton > button:active,
+    .stButton > button:focus:not(:focus-visible) {
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3) !important;
+        outline: none !important;
+        transform: translateY(0);
+    }
+    /* Sidebar buttons — left-aligned */
+    [data-testid="stSidebar"] .stButton > button {
+        background: rgba(15, 23, 42, 0.6) !important;
+        border-color: rgba(99, 102, 241, 0.15) !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -528,11 +564,11 @@ for message in st.session_state.messages:
         # Show follow-up questions
         if message["role"] == "assistant" and message.get("follow_ups"):
             st.markdown('<div class="followup-label">📌 Related questions:</div>', unsafe_allow_html=True)
-            fu_cols = st.columns(len(message["follow_ups"]))
+            fu_cols = st.columns(min(len(message["follow_ups"]), 3))
             for j, fq in enumerate(message["follow_ups"]):
-                with fu_cols[j]:
-                    if st.button(f"→ {fq[:50]}{'...' if len(fq) > 50 else ''}", 
-                               key=f"fu_{message.get('idx', 0)}_{j}", use_container_width=True):
+                with fu_cols[j % 3]:
+                    if st.button(fq, key=f"fu_{message.get('idx', 0)}_{j}",
+                                 use_container_width=True):
                         st.session_state.selected_query = fq
 
 # ─── Handle selected query (from buttons) ─────────────────────────────────────
@@ -563,26 +599,37 @@ if prompt:
                 follow_ups = result.get("follow_up_questions", [])
                 detected_biz = result.get("detected_business_type", "general")
                 
-                # Show detected intent badge
+                # ── Deduplicate sources
+                unique_sources = []
+                seen_keys = set()
+                for s in sources:
+                    k = s.get('authority', '') + s.get('source_url', '')
+                    if k not in seen_keys:
+                        seen_keys.add(k)
+                        unique_sources.append(s)
+
+                # ── SAVE TO SESSION FIRST (before any buttons are rendered)
+                msg_idx = len(st.session_state.messages)
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": answer,
+                    "sources": unique_sources,
+                    "follow_ups": follow_ups,
+                    "idx": msg_idx,
+                })
+
+                # ── Show intent badge
                 if detected_biz and detected_biz != "general":
                     st.markdown(
                         f'<span class="intent-badge">🏢 {detected_biz.replace("_", " ").title()}</span>',
                         unsafe_allow_html=True
                     )
-                
-                # Display answer
+
+                # ── Display answer
                 message_placeholder.markdown(answer)
-                
-                # Show sources
-                if sources:
-                    unique_sources = []
-                    seen = set()
-                    for s in sources:
-                        key = s.get('authority', '') + s.get('source_url', '')
-                        if key not in seen:
-                            seen.add(key)
-                            unique_sources.append(s)
-                    
+
+                # ── Sources
+                if unique_sources:
                     with st.expander("📚 Sources Consulted", expanded=False):
                         for src in unique_sources:
                             authority = src.get('authority', 'Unknown')
@@ -597,32 +644,23 @@ if prompt:
                                 <a class="source-link" href="{url}" target="_blank">🔗 {url}</a>
                             </div>
                             """, unsafe_allow_html=True)
-                
-                # Disclaimer
+
+                # ── Disclaimer
                 st.markdown("""
-                > ⚠️ *Disclaimer: This information is AI-generated from official sources and is for guidance only. 
+                > ⚠️ *Disclaimer: This information is AI-generated from official sources and is for guidance only.
                 > Always verify with official government portals and consult a CA/CS/legal advisor.*
                 """)
-                
-                # Follow-up questions
+
+                # ── Follow-up buttons (session already saved above — single click works)
                 if follow_ups:
-                    st.markdown('<div class="followup-label">📌 You might also want to know:</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="followup-label">📌 You might also want to know:</div>',
+                                unsafe_allow_html=True)
                     fu_cols = st.columns(min(len(follow_ups), 3))
-                    msg_idx = len(st.session_state.messages)
                     for j, fq in enumerate(follow_ups):
                         with fu_cols[j % 3]:
-                            if st.button(f"→ {fq}", key=f"fu_new_{msg_idx}_{j}", use_container_width=True):
+                            if st.button(fq, key=f"fu_new_{msg_idx}_{j}",
+                                         use_container_width=True):
                                 st.session_state.selected_query = fq
-                                st.rerun()
-                
-                # Save to session
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": answer,
-                    "sources": unique_sources if sources else [],
-                    "follow_ups": follow_ups,
-                    "idx": len(st.session_state.messages)
-                })
                 
             except Exception as e:
                 error_msg = f"⚠️ **Error:** {str(e)}"

@@ -123,13 +123,81 @@ def detect_business_type(query: str) -> str:
 
 
 FOLLOW_UP_MAP = {
-    "pvt_ltd": ["What is the annual compliance calendar for a Pvt Ltd?", "How much does it cost to incorporate a Pvt Ltd?", "What are the penalties for non-compliance?"],
-    "llp": ["What is the difference between LLP and Pvt Ltd?", "What are the annual filing requirements for an LLP?", "Can an LLP raise funding?"],
-    "startup": ["What tax exemptions do DPIIT-recognized startups get?", "What funding schemes are available for startups?", "How to apply for Startup India Seed Fund?"],
-    "food_business": ["What are the different FSSAI license categories?", "What additional licenses does a restaurant need?", "How to start a cloud kitchen business?"],
-    "ecommerce": ["Is GST mandatory for selling on Amazon/Flipkart?", "What are the consumer protection rules for e-commerce?", "How to start a D2C brand?"],
-    "freelancer": ["How does presumptive taxation work for freelancers?", "Do freelancers need GST registration?", "How to receive international payments?"],
-    "general": ["How to choose the right business structure?", "What are the MSME registration benefits?", "What funding schemes are available for new businesses?"],
+    "sole_proprietorship": [
+        "What tax returns does a sole proprietor need to file?",
+        "How to convert sole proprietorship to Pvt Ltd?",
+        "What are the GST rules for sole proprietors?",
+    ],
+    "pvt_ltd": [
+        "What is the annual compliance calendar for a Pvt Ltd?",
+        "How much does it cost to incorporate a Pvt Ltd?",
+        "What are the penalties for non-compliance?",
+    ],
+    "llp": [
+        "What is the difference between LLP and Pvt Ltd?",
+        "What are the annual filing requirements for an LLP?",
+        "Can an LLP raise funding from investors?",
+    ],
+    "startup": [
+        "What tax exemptions do DPIIT-recognized startups get?",
+        "What funding schemes are available for startups?",
+        "How to apply for Startup India Seed Fund?",
+    ],
+    "msme": [
+        "What are the benefits of MSME/Udyam registration?",
+        "How to get collateral-free loans under MSME schemes?",
+        "What government schemes are available for MSMEs?",
+    ],
+    "food_business": [
+        "What are the different FSSAI license categories?",
+        "What additional licenses does a restaurant need?",
+        "How to start a cloud kitchen business?",
+    ],
+    "ecommerce": [
+        "Is GST mandatory for selling on Amazon/Flipkart?",
+        "What are the consumer protection rules for e-commerce?",
+        "How to start a D2C brand in India?",
+    ],
+    "freelancer": [
+        "How does presumptive taxation work for freelancers?",
+        "Do freelancers need GST registration?",
+        "How to receive international payments as a freelancer?",
+    ],
+    "manufacturing": [
+        "What environmental clearances are needed for a factory?",
+        "How to get factory licence under Factories Act?",
+        "What pollution control board approvals are required?",
+    ],
+    "healthcare": [
+        "What licences are needed to open a clinic or hospital?",
+        "How to get drug licence for a pharmacy?",
+        "What are the compliance requirements under Clinical Establishments Act?",
+    ],
+    "education": [
+        "How to get approval for a coaching institute?",
+        "What are the compliance requirements for EdTech companies?",
+        "How to register an NGO-run school?",
+    ],
+    "real_estate": [
+        "How to register a project under RERA?",
+        "What are the penalties for RERA non-compliance?",
+        "What approvals are needed before starting construction?",
+    ],
+    "it_software": [
+        "What are the tax benefits for IT/software companies?",
+        "How to register a software export-oriented unit (EOU)?",
+        "What is STPI registration and its benefits?",
+    ],
+    "gst": [
+        "What is the GST registration threshold limit?",
+        "How to file GSTR-1 and GSTR-3B returns?",
+        "What is the composition scheme under GST?",
+    ],
+    "general": [
+        "How to choose the right business structure?",
+        "What are the MSME registration benefits?",
+        "What funding schemes are available for new businesses?",
+    ],
 }
 
 def get_follow_ups(business_type: str) -> list[str]:
