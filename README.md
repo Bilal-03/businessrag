@@ -302,8 +302,13 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 <div align="center">
   <p>Built with ❤️ for Indian entrepreneurs navigating the complex world of business compliance.</p>
+  <br/>
+  <p>
+    <strong>Created by <a href="https://github.com/Bilal-03">Bilal</a></strong>
+  </p>
   <p>
     <a href="https://businessrag.vercel.app">🌐 Live Demo</a> ·
+    <a href="https://github.com/Bilal-03">👤 GitHub</a> ·
     <a href="https://github.com/Bilal-03/businessrag/issues">🐛 Report Bug</a> ·
     <a href="https://github.com/Bilal-03/businessrag/issues">💡 Request Feature</a>
   </p>
