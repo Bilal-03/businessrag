@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 
 # Determine the absolute path to the data directory based on the location of this file

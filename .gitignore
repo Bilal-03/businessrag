@@ -3,5 +3,5 @@ __pycache__/
 *.pyc
 .env
 .DS_Store
-data/chroma/
+# data/chroma_db is intentionally tracked so it deploys with the app
 .vscode/
