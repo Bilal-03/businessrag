@@ -673,10 +673,19 @@ if prompt:
                 > Always verify with official government portals and consult a CA/CS/legal advisor.*
                 """)
 
-                # NOTE: Follow-up buttons are rendered by the history loop above.
-                # They must NOT be duplicated here — buttons inside `if prompt:` disappear
-                # on the very next rerun (prompt=None), causing Streamlit to lose the click
-                # and requiring a second tap. The history loop renders them reliably every run.
+                # ── Follow-up buttons
+                if follow_ups:
+                    st.markdown('<div class="followup-label">📌 You might also want to know:</div>',
+                                unsafe_allow_html=True)
+                    fu_cols = st.columns(min(len(follow_ups), 3))
+                    for j, fq in enumerate(follow_ups):
+                        with fu_cols[j % 3]:
+                            # Key matches the history loop exactly. This guarantees visibility NOW,
+                            # and guarantees single-click works because Streamlit matches the key on rerun.
+                            if st.button(fq, key=f"fu_{msg_idx}_{j}",
+                                         use_container_width=True):
+                                st.session_state.selected_query = fq
+                                st.rerun()
                 
             except Exception as e:
                 error_msg = f"⚠️ **Error:** {str(e)}"
