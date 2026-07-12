@@ -1,13 +1,4 @@
-fastapi==0.109.2
-uvicorn==0.27.1
-pydantic==2.9.2
+# This file is intentionally minimal.
+# The actual Streamlit Cloud requirements are in frontend/requirements.txt
+# The full backend requirements (FastAPI/ChromaDB) are no longer used in deployment.
 streamlit==1.31.1
-chromadb==0.4.22
-sentence-transformers==2.7.0
-python-dotenv==1.0.1
-# Pinned langchain stack — prevents pip backtracking (all must be compatible)
-langchain==0.3.25
-langchain-core==0.3.65
-langchain-community==0.3.25
-langchain-groq==0.2.5
-langchain-huggingface==0.1.2
