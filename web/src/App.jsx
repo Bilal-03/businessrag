@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Paperclip } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import Sidebar from './components/Sidebar';
 import MyBusinesses from './components/MyBusinesses';
 import UploadDocuments from './components/UploadDocuments';
@@ -319,7 +320,7 @@ function App() {
                                 <span className="ai-dot" />
                                 BizGuide AI
                               </div>
-                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                             </>
                           ) : (
                             <span>{msg.content}</span>
