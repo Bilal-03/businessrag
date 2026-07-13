@@ -402,7 +402,7 @@ function App() {
             </motion.div>
           ) : currentView === 'upload' ? (
             <motion.div key="upload" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <UploadDocuments />
+              <UploadDocuments sessionId={sessionId.current} apiUrl={apiUrl} />
             </motion.div>
           ) : currentView === 'checklists' ? (
             <motion.div key="checklists" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>

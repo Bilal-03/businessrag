@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, FileText, CheckCircle2, XCircle, Clock, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
-const API_BASE = 'https://businessrag.onrender.com';
-
-const UploadDocuments = () => {
+const UploadDocuments = ({ sessionId, apiUrl }) => {
   const [uploadHistory, setUploadHistory] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -46,7 +44,7 @@ const UploadDocuments = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${API_BASE}/api/documents/upload`, {
+      const response = await fetch(`${apiUrl}/api/documents/upload?namespace=${encodeURIComponent(sessionId)}`, {
         method: 'POST',
         body: formData,
       });
