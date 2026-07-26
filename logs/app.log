@@ -1,3 +1,5 @@
 2026-07-13 19:57:35,853 - main - INFO - Initializing API services...
 2026-07-13 19:57:37,240 - src.vectordb.vector_store - INFO - Pinecone index 'bizguide-index-v2' already exists.
 2026-07-13 19:58:18,098 - src.llm.llm_client - INFO - Routed query to: Legal Agent
+2026-07-26 16:09:44,342 - src.utils.exceptions - WARNING - HTTP Error 403: Not authenticated
+2026-07-26 16:09:44,348 - src.utils.exceptions - WARNING - HTTP Error 403: Not authenticated

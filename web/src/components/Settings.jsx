@@ -14,9 +14,9 @@ const ACCENT_COLORS = [
   { name: 'Sky', primary: '#0ea5e9', secondary: '#6366f1' },
 ];
 
-const Settings = ({ onClearHistory, onApiUrlChange, currentApiUrl }) => {
+const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) => {
   const [profile, setProfile] = useState({ name: '', email: '', company: '' });
-  const [apiUrl, setApiUrl] = useState(currentApiUrl || 'https://businessrag.onrender.com');
+  const [apiUrl, setApiUrl] = useState(currentApiUrl || import.meta.env.VITE_API_URL || 'https://businessrag.onrender.com');
   const [saved, setSaved] = useState(false);
   const [selectedAccent, setSelectedAccent] = useState(0);
   const [notifications, setNotifications] = useState(false);
@@ -195,16 +195,18 @@ const Settings = ({ onClearHistory, onApiUrlChange, currentApiUrl }) => {
             {activeSection === 'api' && (
               <motion.div key="api" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
                 <div className="settings-section-title">API & Data</div>
-                <p className="settings-section-desc">Configure the backend API endpoint. Only change this if you're running your own server.</p>
-                <div className="form-group full" style={{ marginBottom: '24px' }}>
-                  <label>API Base URL</label>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <input className="form-input" placeholder="https://your-api.com" value={apiUrl} onChange={e => setApiUrl(e.target.value)} style={{ flex: 1 }} />
-                    <motion.button whileHover={{ scale: 1.03 }} className="btn-primary" style={{ flexShrink: 0 }} onClick={handleSaveApiUrl}>
-                      Save
-                    </motion.button>
+                <p className="settings-section-desc">Configure the backend API endpoint and manage data.</p>
+                {import.meta.env.DEV && (
+                  <div className="form-group full" style={{ marginBottom: '24px' }}>
+                    <label>API Base URL</label>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <input className="form-input" placeholder="https://your-api.com" value={apiUrl} onChange={e => setApiUrl(e.target.value)} style={{ flex: 1 }} />
+                      <motion.button whileHover={{ scale: 1.03 }} className="btn-primary" style={{ flexShrink: 0 }} onClick={handleSaveApiUrl}>
+                        Save
+                      </motion.button>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="danger-zone">
                   <div className="danger-title"><Shield size={16} /> Danger Zone</div>
                   <div className="danger-row" style={{ marginBottom: '14px' }}>
@@ -216,10 +218,14 @@ const Settings = ({ onClearHistory, onApiUrlChange, currentApiUrl }) => {
                       whileHover={{ scale: 1.03 }}
                       className="btn-danger"
                       onClick={async () => {
-                        const sid = localStorage.getItem('bizguide_session_id');
-                        if (!sid) return;
+                        if (!session) return;
                         try {
-                          await fetch(`${apiUrl}/api/documents/clear?namespace=${encodeURIComponent(sid)}`, { method: 'DELETE' });
+                          await fetch(`${apiUrl}/api/documents/clear`, { 
+                            method: 'DELETE',
+                            headers: {
+                              'Authorization': `Bearer ${session.access_token}`
+                            }
+                          });
                           localStorage.removeItem('bizguide_uploads');
                           alert('Your uploaded documents have been cleared.');
                         } catch (e) {

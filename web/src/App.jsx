@@ -8,9 +8,11 @@ import MyBusinesses from './components/MyBusinesses';
 import UploadDocuments from './components/UploadDocuments';
 import Checklists from './components/Checklists';
 import Settings from './components/Settings';
+import Auth from './components/Auth';
+import { supabase, getUserData, updateUserData } from './lib/supabase';
 import './App.css';
 
-const DEFAULT_API_URL = 'https://businessrag.onrender.com';
+const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'https://businessrag.onrender.com';
 
 const QUICK_ACTIONS = [
   { icon: '🏢', title: 'Company Registration', desc: 'Steps to incorporate a Pvt Ltd', query: 'What are the steps to register a Private Limited Company in India?' },
@@ -25,16 +27,6 @@ function generateTitle(firstMessage) {
   if (!firstMessage) return 'New Conversation';
   const words = firstMessage.trim().split(' ').slice(0, 6).join(' ');
   return words.length < firstMessage.trim().length ? words + '…' : words;
-}
-
-/** Generate or retrieve a stable session ID for Pinecone namespace isolation */
-function getSessionId() {
-  let sid = localStorage.getItem('bizguide_session_id');
-  if (!sid) {
-    sid = 'sess_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem('bizguide_session_id', sid);
-  }
-  return sid;
 }
 
 /** Fire a real browser notification if permission granted and page is not focused */
@@ -57,17 +49,58 @@ function App() {
   const [activeConvId, setActiveConvId]   = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [apiUrl, setApiUrl]               = useState(DEFAULT_API_URL);
-  const sessionId = useRef(getSessionId());
+  const [session, setSession]             = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const currentConvIdRef = useRef(null);
 
-  // Load conversations + settings from localStorage
+  // Supabase Auth Listener
   useEffect(() => {
-    const savedConvs = localStorage.getItem('bizguide_conversations');
-    if (savedConvs) setConversations(JSON.parse(savedConvs));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Load conversations + settings
+  useEffect(() => {
     const savedUrl = localStorage.getItem('bizguide_api_url');
     if (savedUrl) setApiUrl(savedUrl);
+    
+    if (session) {
+      // Sync from Supabase
+      getUserData(session.user.id).then(async (data) => {
+        if (data && data.conversations) {
+          setConversations(data.conversations);
+        } else {
+          // Migration from localStorage on first login
+          const localConvs = localStorage.getItem('bizguide_conversations');
+          const localBiz = localStorage.getItem('bizguide_businesses');
+          const localChecks = localStorage.getItem('bizguide_checklists');
+          
+          const newDoc = {
+            conversations: localConvs ? JSON.parse(localConvs) : [],
+            businesses: localBiz ? JSON.parse(localBiz) : [],
+            checklists: localChecks ? JSON.parse(localChecks) : {}
+          };
+          
+          await updateUserData(session.user.id, newDoc);
+          setConversations(newDoc.conversations);
+          
+          localStorage.removeItem('bizguide_conversations');
+          localStorage.removeItem('bizguide_businesses');
+          localStorage.removeItem('bizguide_checklists');
+        }
+      });
+    }
+
     const savedAccent = localStorage.getItem('bizguide_accent');
     if (savedAccent) {
       const ACCENT_COLORS = [
@@ -93,8 +126,8 @@ function App() {
 
   const saveConversations = useCallback((updated) => {
     setConversations(updated);
-    localStorage.setItem('bizguide_conversations', JSON.stringify(updated));
-  }, []);
+    if (session) updateUserData(session.user.id, { conversations: updated });
+  }, [session]);
 
   // Save current messages to the active conversation
   const persistCurrentConv = useCallback((msgs, convId) => {
@@ -117,10 +150,12 @@ function App() {
         };
         updated = [newConv, ...prev];
       }
-      localStorage.setItem('bizguide_conversations', JSON.stringify(updated));
+      if (session) {
+        updateUserData(session.user.id, { conversations: updated });
+      }
       return updated;
     });
-  }, []);
+  }, [session]);
 
   const handleSend = async (query) => {
     if (!query.trim() || isTyping || isUploading) return;
@@ -143,9 +178,11 @@ function App() {
     try {
       const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // Pass session namespace so Pinecone only retrieves THIS user's uploaded docs
-        body: JSON.stringify({ query, namespace: sessionId.current }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ query }),
       });
       const data = await response.json();
       const aiMsg = { role: 'ai', content: data.answer };
@@ -178,9 +215,15 @@ function App() {
     formData.append('file', file);
 
     try {
-      // Upload to session-specific Pinecone namespace — only visible to this user
-      const uploadUrl = `${apiUrl}/api/documents/upload?namespace=${encodeURIComponent(sessionId.current)}`;
-      const response = await fetch(uploadUrl, { method: 'POST', body: formData });
+      // Upload with Authorization token for user isolation
+      const uploadUrl = `${apiUrl}/api/documents/upload`;
+      const response = await fetch(uploadUrl, { 
+        method: 'POST', 
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: formData 
+      });
       const data = await response.json();
       const resultMsg = response.ok
         ? { role: 'ai', content: `✅ **Upload Successful!** ${data.message}\n\nYou can now ask me questions based on this document. Your documents are private to your session only.` }
@@ -245,6 +288,18 @@ function App() {
     setTimeout(() => handleSend(query), 100);
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  if (isAuthLoading) {
+    return <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', color: 'white' }}>Loading...</div>;
+  }
+
+  if (!session) {
+    return <Auth />;
+  }
+
   return (
     <div className="app-container">
       <Sidebar
@@ -257,6 +312,8 @@ function App() {
         onDeleteConversation={handleDeleteConversation}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+        session={session}
+        onSignOut={handleSignOut}
       />
 
       <main className="main-content">
@@ -398,19 +455,20 @@ function App() {
             </motion.div>
           ) : currentView === 'businesses' ? (
             <motion.div key="businesses" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <MyBusinesses onAskQuestion={handleAskQuestion} />
+              <MyBusinesses session={session} onAskQuestion={handleAskQuestion} />
             </motion.div>
           ) : currentView === 'upload' ? (
             <motion.div key="upload" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <UploadDocuments sessionId={sessionId.current} apiUrl={apiUrl} />
+              <UploadDocuments session={session} apiUrl={apiUrl} />
             </motion.div>
           ) : currentView === 'checklists' ? (
             <motion.div key="checklists" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <Checklists onAskQuestion={handleAskQuestion} />
+              <Checklists session={session} onAskQuestion={handleAskQuestion} />
             </motion.div>
           ) : currentView === 'settings' ? (
             <motion.div key="settings" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               <Settings
+                session={session}
                 onClearHistory={handleClearAllHistory}
                 onApiUrlChange={setApiUrl}
                 currentApiUrl={apiUrl}

@@ -31,10 +31,10 @@ def route_query(query: str) -> str:
         logger.error(f"Routing error: {str(e)}")
         return "General Agent"
 
-def agent_generate(query: str, agent_type: str, namespace: Optional[str] = None) -> str:
+def agent_generate(query: str, agent_type: str, user_id: Optional[str] = None) -> str:
     """Generates a response using the appropriate agent and context."""
-    # 1. Retrieve relevant documents — scoped to this session's namespace only
-    context_text = retrieve_context(query, namespace=namespace)
+    # 1. Retrieve relevant documents — scoped to this user via metadata filter
+    context_text = retrieve_context(query, user_id=user_id)
     
     # 2. Build the prompt
     final_prompt = build_agent_prompt(agent_type, context_text)

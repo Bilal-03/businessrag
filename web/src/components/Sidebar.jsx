@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Folder, UploadCloud, FileText, Settings, Plus, MessageSquare, ChevronRight, Trash2, Menu, X } from 'lucide-react';
+import { Home, Folder, UploadCloud, FileText, Settings, Plus, MessageSquare, ChevronRight, Trash2, Menu, X, LogOut } from 'lucide-react';
 import Logo from './Logo';
 
 const NAV_ITEMS = [
@@ -20,6 +20,8 @@ const Sidebar = ({
   onDeleteConversation,
   collapsed,
   onToggleCollapse,
+  session,
+  onSignOut,
 }) => {
   const recentConvos = (conversations || []).slice(0, 8);
 
@@ -101,7 +103,7 @@ const Sidebar = ({
               </div>
             )}
 
-            {/* Settings at bottom */}
+            {/* Settings + Sign Out at bottom */}
             <div className="sidebar-bottom">
               <motion.button
                 whileHover={{ x: 2 }}
@@ -115,6 +117,18 @@ const Sidebar = ({
                   <motion.div layoutId="active-indicator" className="nav-active-indicator" />
                 )}
               </motion.button>
+              {session && (
+                <motion.button
+                  whileHover={{ x: 2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="nav-item sign-out-item"
+                  onClick={onSignOut}
+                  title={`Sign out ${session.user?.email || ''}`}
+                >
+                  <LogOut size={19} />
+                  <span>Sign Out</span>
+                </motion.button>
+              )}
             </div>
           </motion.aside>
         )}

@@ -25,21 +25,20 @@ def init_pinecone_index():
     else:
         logger.info(f"Pinecone index '{index_name}' already exists.")
 
-def get_vector_store(namespace: Optional[str] = None) -> PineconeVectorStore:
-    """Return a namespace-scoped vector store."""
+def get_vector_store() -> PineconeVectorStore:
+    """Return the vector store."""
     embeddings = get_embeddings()
     kwargs = {
         "index_name": settings.pinecone_index_name,
         "embedding": embeddings
     }
-    if namespace:
-        kwargs["namespace"] = namespace
     return PineconeVectorStore(**kwargs)
 
-def clear_namespace(namespace: str):
-    """Delete all vectors in a specific session namespace."""
+def clear_namespace(user_id: str):
+    """Delete all vectors for a specific user."""
     index = pc.Index(settings.pinecone_index_name)
-    index.delete(delete_all=True, namespace=namespace)
+    # Delete vectors that match this user_id in their metadata
+    index.delete(filter={"session_id": {"$eq": user_id}})
 
 def clear_all():
     """Delete all vectors in the index."""

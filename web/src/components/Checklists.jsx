@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, ChevronRight, RotateCcw, ExternalLink } from 'lucide-react';
+import { getUserData, updateUserData } from '../lib/supabase';
 
 const CHECKLISTS = [
   {
@@ -99,20 +100,23 @@ const CHECKLISTS = [
   },
 ];
 
-const Checklists = ({ onAskQuestion }) => {
+const Checklists = ({ session, onAskQuestion }) => {
   const [checkedItems, setCheckedItems] = useState({});
   const [expandedId, setExpandedId] = useState(CHECKLISTS[0].id);
 
   useEffect(() => {
-    const saved = localStorage.getItem('bizguide_checklists');
-    if (saved) setCheckedItems(JSON.parse(saved));
-  }, []);
+    if (session) {
+      getUserData(session.user.id).then(data => {
+        if (data && data.checklists) setCheckedItems(data.checklists);
+      });
+    }
+  }, [session]);
 
   const toggleItem = (checklistId, itemId) => {
     const key = `${checklistId}_${itemId}`;
     const updated = { ...checkedItems, [key]: !checkedItems[key] };
     setCheckedItems(updated);
-    localStorage.setItem('bizguide_checklists', JSON.stringify(updated));
+    if (session) updateUserData(session.user.id, { checklists: updated });
   };
 
   const getProgress = (checklist) => {
@@ -124,7 +128,7 @@ const Checklists = ({ onAskQuestion }) => {
     const updated = { ...checkedItems };
     checklist.items.forEach(item => { delete updated[`${checklist.id}_${item.id}`]; });
     setCheckedItems(updated);
-    localStorage.setItem('bizguide_checklists', JSON.stringify(updated));
+    if (session) updateUserData(session.user.id, { checklists: updated });
   };
 
   return (

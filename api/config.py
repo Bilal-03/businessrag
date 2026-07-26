@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     pinecone_api_key: str
     pinecone_index_name: str = "bizguide-index"
     admin_secret: Optional[str] = None
+    supabase_url: str
+    supabase_jwt_secret: str
+    frontend_url: str = "http://localhost:5173"
     environment: str = "development"
     log_level: str = "info"
     

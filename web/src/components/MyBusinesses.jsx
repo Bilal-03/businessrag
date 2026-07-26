@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Building2, Briefcase, Store, Trash2, Edit2, ChevronRight, X, Check } from 'lucide-react';
+import { getUserData, updateUserData } from '../lib/supabase';
 
 const BUSINESS_TYPES = ['Private Limited (Pvt Ltd)', 'Limited Liability Partnership (LLP)', 'One Person Company (OPC)', 'Sole Proprietorship', 'Partnership Firm', 'Public Limited'];
 const INDUSTRIES = ['Food & Beverage', 'Technology/IT', 'Healthcare', 'Education', 'Manufacturing', 'Retail & E-Commerce', 'Consulting/Services', 'Real Estate', 'Finance', 'Other'];
@@ -22,7 +23,7 @@ const QUICK_ACTIONS = [
 
 const defaultForm = { name: '', type: BUSINESS_TYPES[0], industry: INDUSTRIES[0], status: STATUS_OPTIONS[0], description: '' };
 
-const MyBusinesses = ({ onAskQuestion }) => {
+const MyBusinesses = ({ session, onAskQuestion }) => {
   const [businesses, setBusinesses] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -30,13 +31,16 @@ const MyBusinesses = ({ onAskQuestion }) => {
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('bizguide_businesses');
-    if (saved) setBusinesses(JSON.parse(saved));
-  }, []);
+    if (session) {
+      getUserData(session.user.id).then(data => {
+        if (data && data.businesses) setBusinesses(data.businesses);
+      });
+    }
+  }, [session]);
 
   const save = (updated) => {
     setBusinesses(updated);
-    localStorage.setItem('bizguide_businesses', JSON.stringify(updated));
+    if (session) updateUserData(session.user.id, { businesses: updated });
   };
 
   const handleSubmit = () => {
