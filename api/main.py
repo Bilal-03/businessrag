@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from src.routes import chat, documents, health
 from src.utils.exceptions import global_exception_handler, http_exception_handler
@@ -41,6 +42,22 @@ def create_app() -> FastAPI:
     # Exception handlers
     app.add_exception_handler(Exception, global_exception_handler)
     app.add_exception_handler(HTTPException, http_exception_handler)
+
+    # Request logging / observability middleware
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        start = time.perf_counter()
+        response = await call_next(request)
+        latency_ms = round((time.perf_counter() - start) * 1000, 1)
+        logger.info(
+            "%s %s → %s  (%.1fms)",
+            request.method,
+            request.url.path,
+            response.status_code,
+            latency_ms,
+        )
+        response.headers["X-Process-Time-Ms"] = str(latency_ms)
+        return response
 
     # Include routers
     app.include_router(health.router)

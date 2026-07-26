@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, ChevronRight, RotateCcw, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, ChevronRight, RotateCcw, ExternalLink, Building2, BarChart3, UtensilsCrossed, Rocket, Store } from 'lucide-react';
 import { getUserData, updateUserData } from '../lib/supabase';
 
 const CHECKLISTS = [
@@ -8,7 +8,7 @@ const CHECKLISTS = [
     id: 'pvt-ltd',
     title: 'Private Limited Company Registration',
     description: 'Complete step-by-step guide to incorporate a Pvt Ltd company in India with MCA.',
-    icon: '🏢',
+    icon: <Building2 size={24} />,
     accentColor: '#6366f1',
     items: [
       { id: 'pl1', text: 'Obtain Digital Signature Certificate (DSC) for all directors', link: 'https://www.mca.gov.in' },
@@ -27,7 +27,7 @@ const CHECKLISTS = [
     id: 'gst',
     title: 'GST Registration',
     description: 'Get your GSTIN for your business. Mandatory if turnover exceeds the threshold.',
-    icon: '📊',
+    icon: <BarChart3 size={24} />,
     accentColor: '#10b981',
     items: [
       { id: 'gst1', text: 'Gather business documents: PAN, Aadhaar, bank statement, address proof' },
@@ -46,7 +46,7 @@ const CHECKLISTS = [
     id: 'fssai',
     title: 'FSSAI Food License',
     description: 'Mandatory for all food businesses including restaurants, home bakers, and cloud kitchens.',
-    icon: '🍽️',
+    icon: <UtensilsCrossed size={24} />,
     accentColor: '#f59e0b',
     items: [
       { id: 'fssai1', text: 'Determine license type: Basic (turnover < ₹12L), State (₹12L–20Cr), Central (>₹20Cr)' },
@@ -65,7 +65,7 @@ const CHECKLISTS = [
     id: 'startup-india',
     title: 'Startup India Registration',
     description: 'DPIIT recognition for tax benefits, funding access, and government scheme eligibility.',
-    icon: '🚀',
+    icon: <Rocket size={24} />,
     accentColor: '#8b5cf6',
     items: [
       { id: 'si1', text: 'Ensure entity is Pvt Ltd, LLP, or Partnership (not older than 10 years)' },
@@ -84,7 +84,7 @@ const CHECKLISTS = [
     id: 'shop-estab',
     title: 'Shop & Establishment Act',
     description: 'Mandatory registration for all commercial establishments under state law.',
-    icon: '🏪',
+    icon: <Store size={24} />,
     accentColor: '#ec4899',
     items: [
       { id: 'se1', text: 'Identify applicable state law (each state has its own S&E Act)' },

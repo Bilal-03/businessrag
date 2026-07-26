@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Globe, Trash2, Info, Check, ChevronRight, Palette, Shield, Bell } from 'lucide-react';
+import { User, Globe, Trash2, Info, Check, ChevronRight, Palette, Shield, Bell, Bot, Search, FileText, MapPin } from 'lucide-react';
 import Logo from './Logo';
 
 const APP_VERSION = '1.0.0';
@@ -266,10 +266,10 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                 </div>
                 <div className="about-features">
                   {[
-                    { icon: '🤖', title: 'Multi-Agent AI', desc: 'Powered by specialized Legal, Tax, and General agents using Llama 3.3' },
-                    { icon: '🔍', title: 'RAG-Powered', desc: 'Retrieval-augmented generation with Pinecone vector search and Gemini embeddings' },
-                    { icon: '📑', title: 'Document Intelligence', desc: 'Upload your business PDFs to get answers grounded in your actual documents' },
-                    { icon: '🇮🇳', title: 'India-Focused', desc: 'Specialized in Indian business laws, GST, MCA regulations, and compliance' },
+                    { icon: <Bot size={24} />, title: 'Multi-Agent AI', desc: 'Powered by specialized Legal, Tax, and General agents using Llama 3.3' },
+                    { icon: <Search size={24} />, title: 'RAG-Powered', desc: 'Retrieval-augmented generation with Pinecone vector search and Gemini embeddings' },
+                    { icon: <FileText size={24} />, title: 'Document Intelligence', desc: 'Upload your business PDFs to get answers grounded in your actual documents' },
+                    { icon: <MapPin size={24} />, title: 'India-Focused', desc: 'Specialized in Indian business laws, GST, MCA regulations, and compliance' },
                   ].map(f => (
                     <div key={f.title} className="about-feature-item">
                       <span className="about-feature-icon">{f.icon}</span>

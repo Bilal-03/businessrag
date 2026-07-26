@@ -1,11 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Building2, Briefcase, Store, Trash2, Edit2, ChevronRight, X, Check } from 'lucide-react';
+import { Plus, Building2, Briefcase, Store, Trash2, Edit2, ChevronRight, X, Check, ChevronDown } from 'lucide-react';
 import { getUserData, updateUserData } from '../lib/supabase';
 
 const BUSINESS_TYPES = ['Private Limited (Pvt Ltd)', 'Limited Liability Partnership (LLP)', 'One Person Company (OPC)', 'Sole Proprietorship', 'Partnership Firm', 'Public Limited'];
 const INDUSTRIES = ['Food & Beverage', 'Technology/IT', 'Healthcare', 'Education', 'Manufacturing', 'Retail & E-Commerce', 'Consulting/Services', 'Real Estate', 'Finance', 'Other'];
 const STATUS_OPTIONS = ['Planning', 'Registered', 'Operating', 'On Hold'];
+
+/* ── Custom styled dropdown ── */
+const CustomSelect = ({ value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="custom-select" ref={ref}>
+      <button
+        type="button"
+        className="custom-select-trigger form-input"
+        onClick={() => setOpen(o => !o)}
+      >
+        <span className="custom-select-value">{value || placeholder || 'Select…'}</span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="custom-select-chevron">
+          <ChevronDown size={16} />
+        </motion.span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.ul
+            className="custom-select-menu"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+          >
+            {options.map(opt => (
+              <li
+                key={opt}
+                className={`custom-select-option ${opt === value ? 'selected' : ''}`}
+                onClick={() => { onChange(opt); setOpen(false); }}
+              >
+                {opt}
+                {opt === value && <Check size={14} className="custom-select-check" />}
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const STATUS_COLORS = {
   'Planning':   { bg: 'rgba(234, 179, 8, 0.15)',  text: '#fbbf24', border: 'rgba(234,179,8,0.3)' },
@@ -89,7 +138,6 @@ const MyBusinesses = ({ session, onAskQuestion }) => {
         </motion.button>
       </div>
 
-      {/* Add/Edit Form Modal */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -117,21 +165,15 @@ const MyBusinesses = ({ session, onAskQuestion }) => {
                 </div>
                 <div className="form-group">
                   <label>Business Type</label>
-                  <select className="form-input" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
-                    {BUSINESS_TYPES.map(t => <option key={t}>{t}</option>)}
-                  </select>
+                  <CustomSelect value={form.type} onChange={v => setForm({ ...form, type: v })} options={BUSINESS_TYPES} />
                 </div>
                 <div className="form-group">
                   <label>Industry</label>
-                  <select className="form-input" value={form.industry} onChange={e => setForm({ ...form, industry: e.target.value })}>
-                    {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
-                  </select>
+                  <CustomSelect value={form.industry} onChange={v => setForm({ ...form, industry: v })} options={INDUSTRIES} />
                 </div>
                 <div className="form-group">
                   <label>Status</label>
-                  <select className="form-input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                    {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
-                  </select>
+                  <CustomSelect value={form.status} onChange={v => setForm({ ...form, status: v })} options={STATUS_OPTIONS} />
                 </div>
                 <div className="form-group full">
                   <label>Description (optional)</label>

@@ -175,7 +175,7 @@ const UploadDocuments = ({ session, apiUrl }) => {
         <div className="info-icon">💡</div>
         <div>
           <div className="info-title">How it works</div>
-          <div className="info-text">Uploaded PDFs are split into chunks and stored in our vector database. BizGuide will then use this context to answer your questions accurately based on your actual business documents.</div>
+          <div className="info-text">We read your PDF and use it to answer your specific questions. Your documents stay private and secure — only you can access them.</div>
         </div>
       </div>
 

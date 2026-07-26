@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Paperclip } from 'lucide-react';
+import { Send, Paperclip, Building2, UtensilsCrossed, Rocket, BarChart3, Wallet, Scale } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Sidebar from './components/Sidebar';
@@ -15,12 +15,12 @@ import './App.css';
 const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'https://businessrag.onrender.com';
 
 const QUICK_ACTIONS = [
-  { icon: '🏢', title: 'Company Registration', desc: 'Steps to incorporate a Pvt Ltd', query: 'What are the steps to register a Private Limited Company in India?' },
-  { icon: '🍽️', title: 'FSSAI License',        desc: 'Get your food business permits',  query: 'How do I apply for FSSAI food license in India?' },
-  { icon: '🚀', title: 'Startup India',         desc: 'Tax exemptions and funding',      query: 'What are the benefits of Startup India DPIIT recognition?' },
-  { icon: '📊', title: 'GST Registration',      desc: 'Register for GST online',         query: 'How do I register for GST for my business in India?' },
-  { icon: '💰', title: 'Income Tax Filing',     desc: 'ITR for businesses',              query: 'What are the income tax filing requirements for a Private Limited Company?' },
-  { icon: '⚖️', title: 'LLP Formation',        desc: 'Set up an LLP',                  query: 'How do I form a Limited Liability Partnership (LLP) in India?' },
+  { icon: <Building2 size={24} />, title: 'Company Registration', desc: 'Steps to incorporate a Pvt Ltd', query: 'What are the steps to register a Private Limited Company in India?' },
+  { icon: <UtensilsCrossed size={24} />, title: 'FSSAI License',        desc: 'Get your food business permits',  query: 'How do I apply for FSSAI food license in India?' },
+  { icon: <Rocket size={24} />, title: 'Startup India',         desc: 'Tax exemptions and funding',      query: 'What are the benefits of Startup India DPIIT recognition?' },
+  { icon: <BarChart3 size={24} />, title: 'GST Registration',      desc: 'Register for GST online',         query: 'How do I register for GST for my business in India?' },
+  { icon: <Wallet size={24} />, title: 'Income Tax Filing',     desc: 'ITR for businesses',              query: 'What are the income tax filing requirements for a Private Limited Company?' },
+  { icon: <Scale size={24} />, title: 'LLP Formation',        desc: 'Set up an LLP',                  query: 'How do I form a Limited Liability Partnership (LLP) in India?' },
 ];
 
 function generateTitle(firstMessage) {
