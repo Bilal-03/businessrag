@@ -77,8 +77,8 @@ function App() {
     if (session) {
       // Sync from Supabase
       getUserData(session.user.id).then(async (data) => {
-        if (data && data.conversations) {
-          setConversations(data.conversations);
+        if (data) {
+          setConversations(data.conversations || []);
         } else {
           // Migration from localStorage on first login
           const localConvs = localStorage.getItem('bizguide_conversations');
@@ -117,7 +117,7 @@ function App() {
         document.documentElement.style.setProperty('--accent-secondary', ACCENT_COLORS[idx].secondary);
       }
     }
-  }, []);
+  }, [session]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
