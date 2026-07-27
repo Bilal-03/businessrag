@@ -185,14 +185,19 @@ function App() {
         body: JSON.stringify({ query }),
       });
       const data = await response.json();
-      const aiMsg = { role: 'ai', content: data.answer };
+      
+      if (!response.ok) {
+        throw new Error(data.detail || 'API Error');
+      }
+      
+      const aiMsg = { role: 'ai', content: data.answer || 'No response received' };
       const finalMessages = [...updatedMessages, aiMsg];
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);
       // Fire browser notification if page is hidden
       fireNotification('BizGuide AI', 'Your answer is ready!');
     } catch (error) {
-      const errMsg = { role: 'ai', content: '⚠️ Error connecting to the agent. Please check your connection and try again.' };
+      const errMsg = { role: 'ai', content: `⚠️ Error connecting to the agent: ${error.message}` };
       const finalMessages = [...updatedMessages, errMsg];
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);

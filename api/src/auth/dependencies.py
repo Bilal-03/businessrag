@@ -35,7 +35,32 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             detail="Token has expired"
         )
     except jwt.InvalidTokenError as e:
-        logger.error(f"Invalid token error: {str(e)}")
+        logger.error(f"Invalid token error: {type(e).__name__} - {str(e)}")
+        # Try base64 decoding the secret if signature verification failed
+        try:
+            import base64
+            decoded_secret = base64.b64decode(settings.supabase_jwt_secret)
+            payload = jwt.decode(
+                token,
+                decoded_secret,
+                algorithms=["HS256"],
+                options={"verify_aud": False}
+            )
+            user_id = payload.get("sub")
+            if not user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token: missing subject (user id)"
+                )
+            return user_id
+        except Exception as fallback_e:
+            logger.error(f"Fallback verification failed: {type(fallback_e).__name__} - {str(fallback_e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials"
+            )
+    except Exception as e:
+        logger.error(f"Unexpected token error: {type(e).__name__} - {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
