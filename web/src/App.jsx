@@ -387,6 +387,9 @@ function App() {
                                 BizGuide AI
                               </div>
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                              <p className="answer-disclaimer">
+                                BizGuide AI can make mistakes. Verify important legal and tax information with a professional.
+                              </p>
                             </>
                           ) : (
                             <span>{msg.content}</span>
@@ -459,7 +462,6 @@ function App() {
                     <Send size={20} />
                   </motion.button>
                 </div>
-                <div className="input-hint">BizGuide AI can make mistakes. Verify important legal and tax information with a professional.</div>
               </div>
             </motion.div>
           ) : currentView === 'businesses' ? (

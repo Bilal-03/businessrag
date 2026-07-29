@@ -36,13 +36,8 @@ const Sidebar = ({
 
   return (
     <>
-      {/* Mobile/collapse overlay */}
-      <AnimatePresence>
-        {!collapsed && (
-          <motion.aside
-            initial={false}
-            className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}
-          >
+      {!collapsed ? (
+          <aside className="sidebar">
             {/* Logo */}
             <div className="sidebar-logo">
               <Logo size={36} showText={!collapsed} textSize={20} />
@@ -142,12 +137,13 @@ const Sidebar = ({
                 </motion.button>
               )}
             </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+          </aside>
+      ) : (
+        <>
+          <button className="mobile-menu-button" onClick={onToggleCollapse} title="Open navigation" aria-label="Open navigation">
+            <Menu size={24} />
+          </button>
 
-      {/* Collapsed sidebar — just icon strip */}
-      {collapsed && (
         <div className="sidebar-icon-strip">
           <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Expand sidebar">
             <Menu size={20} />
@@ -178,6 +174,7 @@ const Sidebar = ({
             <Settings size={20} />
           </button>
         </div>
+        </>
       )}
     </>
   );

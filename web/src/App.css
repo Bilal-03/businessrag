@@ -45,6 +45,8 @@
   backdrop-filter: blur(20px);
 }
 
+.mobile-menu-button { display: none; }
+
 .sidebar-logo {
   display: flex;
   align-items: center;
@@ -407,6 +409,14 @@
 .message-ai a:hover { text-decoration: underline; }
 .message-ai strong { color: #a5b4fc; }
 .message-ai code { background: rgba(99,102,241,0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+.answer-disclaimer {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
 
 .typing-indicator { display: flex; align-items: center; gap: 6px; }
 .typing-dot {
@@ -1304,13 +1314,31 @@
     z-index: 40;
   }
 
-  .sidebar-icon-strip > div[style] { display: none; }
+  .sidebar-icon-strip > div[style],
+  .sidebar-icon-strip .sidebar-collapse-btn { display: none; }
   .mobile-sidebar-logo { display: none; }
-  .sidebar-icon-strip .sidebar-collapse-btn,
   .sidebar-icon-strip .icon-strip-btn {
     width: 42px;
     height: 42px;
     padding: 8px;
+  }
+  .mobile-menu-button {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top));
+    left: 12px;
+    z-index: 45;
+    display: flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: rgba(10, 14, 23, 0.78);
+    color: var(--text-primary);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 
   /* Keep the composer in a predictable ChatGPT-style position while the
@@ -1335,7 +1363,6 @@
   }
   .chat-input-wrapper { max-width: 720px; }
   .chat-input { padding: 14px 54px; font-size: 16px; }
-  .input-hint { line-height: 1.4; margin-top: 8px; }
   .message-bubble { padding: 14px 16px; font-size: 14px; }
   .message-user { max-width: 88%; }
   .typing-indicator { align-items: flex-start; flex-wrap: wrap; }
@@ -1345,9 +1372,24 @@
   .hero-badge { margin-bottom: 14px; }
   .hero-title { font-size: clamp(30px, 10vw, 42px); letter-spacing: -1px; }
   .hero-subtitle { font-size: 14px; margin-bottom: 22px; }
-  .quick-actions { grid-template-columns: 1fr; gap: 10px; }
-  .action-card { padding: 14px; gap: 5px; }
-  .action-icon { padding: 8px; }
+  .quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .action-card {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    column-gap: 9px;
+    row-gap: 3px;
+    padding: 11px;
+    border-radius: 12px;
+  }
+  .action-icon {
+    grid-row: 1 / span 2;
+    padding: 7px;
+    border-radius: 9px;
+  }
+  .action-icon svg { width: 20px; height: 20px; }
+  .action-title { align-self: end; font-size: 13px; line-height: 1.25; }
+  .action-desc { font-size: 11px; line-height: 1.35; }
+  .answer-disclaimer { margin-top: 14px; font-size: 11px; }
 
   .panel-container { padding: 24px 16px; }
   .panel-header { margin-bottom: 24px; gap: 14px; }
@@ -1402,7 +1444,6 @@
 
 @media (max-width: 360px) {
   .sidebar-icon-strip { padding-left: 4px; padding-right: 4px; }
-  .sidebar-icon-strip .sidebar-collapse-btn,
   .sidebar-icon-strip .icon-strip-btn { width: 39px; height: 39px; }
   .hero-title { font-size: 29px; }
 }
