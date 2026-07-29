@@ -122,3 +122,15 @@
   color: #10b981;
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
+
+@media (max-width: 767px) {
+  .auth-container {
+    min-height: 100dvh;
+    height: auto;
+    padding: 20px 16px;
+    overflow-y: auto;
+  }
+  .auth-card { padding: 28px 20px; border-radius: 20px; }
+  .auth-header { margin-bottom: 24px; }
+  .auth-title { font-size: 22px; }
+}

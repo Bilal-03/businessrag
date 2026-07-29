@@ -47,7 +47,11 @@ function App() {
   const [isUploading, setIsUploading]     = useState(false);
   const [conversations, setConversations] = useState([]);
   const [activeConvId, setActiveConvId]   = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Keep the desktop sidebar open, while starting compact navigation on phones.
+  // This only affects presentation; navigation and application state stay the same.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+  );
   const [apiUrl, setApiUrl]               = useState(DEFAULT_API_URL);
   const [session, setSession]             = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);

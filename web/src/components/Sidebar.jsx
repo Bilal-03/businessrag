@@ -24,6 +24,15 @@ const Sidebar = ({
   onSignOut,
 }) => {
   const recentConvos = (conversations || []).slice(0, 8);
+  const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
+  const navigate = (view) => {
+    setCurrentView(view);
+    if (isMobile() && !collapsed) onToggleCollapse();
+  };
+  const startNewChat = () => {
+    onNewChat();
+    if (isMobile() && !collapsed) onToggleCollapse();
+  };
 
   return (
     <>
@@ -47,7 +56,7 @@ const Sidebar = ({
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.98 }}
               className="new-chat-btn"
-              onClick={onNewChat}
+              onClick={startNewChat}
             >
               <Plus size={18} />
               <span>New Consultation</span>
@@ -61,7 +70,7 @@ const Sidebar = ({
                   whileHover={{ x: 2 }}
                   whileTap={{ scale: 0.97 }}
                   className={`nav-item ${currentView === item.id ? 'active' : ''}`}
-                  onClick={() => setCurrentView(item.id)}
+                  onClick={() => navigate(item.id)}
                 >
                   <item.icon size={19} />
                   <span>{item.label}</span>
@@ -85,7 +94,10 @@ const Sidebar = ({
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
                         className={`conversation-item ${activeConversationId === conv.id ? 'active-conv' : ''}`}
-                        onClick={() => onSelectConversation(conv.id)}
+                        onClick={() => {
+                          onSelectConversation(conv.id);
+                          if (isMobile()) onToggleCollapse();
+                        }}
                       >
                         <MessageSquare size={14} className="conv-icon" />
                         <span className="conv-title">{conv.title || 'Untitled'}</span>
@@ -109,7 +121,7 @@ const Sidebar = ({
                 whileHover={{ x: 2 }}
                 whileTap={{ scale: 0.97 }}
                 className={`nav-item ${currentView === 'settings' ? 'active' : ''}`}
-                onClick={() => setCurrentView('settings')}
+                onClick={() => navigate('settings')}
               >
                 <Settings size={19} />
                 <span>Settings</span>
@@ -140,7 +152,7 @@ const Sidebar = ({
           <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Expand sidebar">
             <Menu size={20} />
           </button>
-          <Logo size={32} showText={false} />
+          <div className="mobile-sidebar-logo"><Logo size={32} showText={false} /></div>
           <div style={{ flex: 1 }} />
           {NAV_ITEMS.map(item => (
             <button

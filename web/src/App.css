@@ -1263,3 +1263,127 @@
   line-height: 1.6;
   opacity: 0.85;
 }
+
+/* =============================================
+   RESPONSIVE LAYOUT
+   ============================================= */
+@media (max-width: 767px) {
+  .app-container {
+    height: 100dvh;
+  }
+
+  .main-content {
+    min-width: 0;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  /* Open navigation becomes a drawer; compact navigation is a bottom bar. */
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(82vw, 320px);
+    min-width: 0;
+    padding: calc(16px + env(safe-area-inset-top)) 16px 16px;
+    box-shadow: 20px 0 48px rgba(0, 0, 0, 0.42);
+    z-index: 30;
+  }
+
+  .sidebar-icon-strip {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    min-width: 0;
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 2px;
+    border-right: none;
+    border-top: 1px solid var(--glass-border);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
+    z-index: 20;
+  }
+
+  .sidebar-icon-strip > div[style] { display: none; }
+  .mobile-sidebar-logo { display: none; }
+  .sidebar-icon-strip .sidebar-collapse-btn,
+  .sidebar-icon-strip .icon-strip-btn {
+    width: 42px;
+    height: 42px;
+    padding: 8px;
+  }
+
+  .chat-container { padding: 0 16px 12px; gap: 12px; }
+  .input-container { padding: 12px 16px 16px; }
+  .chat-input { padding: 14px 54px; font-size: 16px; }
+  .input-hint { line-height: 1.4; margin-top: 8px; }
+  .message-bubble { padding: 14px 16px; font-size: 14px; }
+  .message-user { max-width: 88%; }
+  .typing-indicator { align-items: flex-start; flex-wrap: wrap; }
+  .typing-text { flex: 1; min-width: 180px; }
+
+  .hero-section { padding: 24px 4px 16px; }
+  .hero-badge { margin-bottom: 14px; }
+  .hero-title { font-size: clamp(30px, 10vw, 42px); letter-spacing: -1px; }
+  .hero-subtitle { font-size: 14px; margin-bottom: 22px; }
+  .quick-actions { grid-template-columns: 1fr; gap: 10px; }
+  .action-card { padding: 14px; gap: 5px; }
+  .action-icon { padding: 8px; }
+
+  .panel-container { padding: 24px 16px; }
+  .panel-header { margin-bottom: 24px; gap: 14px; }
+  .panel-title { font-size: 24px; }
+  .panel-subtitle { font-size: 14px; }
+  .panel-header > .btn-primary { width: 100%; justify-content: center; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: auto; }
+
+  .checklists-layout,
+  .settings-layout { grid-template-columns: 1fr; gap: 18px; }
+  .checklist-nav,
+  .settings-nav {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .checklist-nav-item { min-width: 210px; }
+  .settings-nav-item { min-width: max-content; }
+  .settings-content { padding: 20px 16px; }
+  .checklist-detail-header { gap: 12px; }
+  .checklist-progress-bar-container { padding: 14px 16px; }
+  .checklist-item { padding: 13px; gap: 12px; }
+
+  .modal-overlay { padding: 16px; align-items: flex-end; }
+  .modal-card { padding: 22px 18px; border-radius: 18px; max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-actions > button { width: 100%; justify-content: center; }
+
+  .biz-card-header { padding: 14px; gap: 10px; }
+  .biz-avatar { width: 40px; height: 40px; }
+  .status-badge { padding: 3px 7px; font-size: 10px; }
+  .biz-expanded { padding: 0 14px 16px; }
+  .biz-card-actions { justify-content: space-between; }
+
+  .drop-zone { min-height: 210px; }
+  .drop-zone-content { padding: 24px 16px; }
+  .drop-zone-title { font-size: 16px; }
+  .progress-bar-container { width: min(280px, 100%); }
+  .info-box { padding: 14px; gap: 10px; }
+  .upload-history-item { padding: 12px; gap: 10px; }
+
+  .settings-toggle-row,
+  .danger-row,
+  .about-card { align-items: flex-start; }
+  .settings-toggle-row .toggle-switch { margin-left: auto; }
+  .danger-row .btn-danger { width: 100%; justify-content: center; }
+  .about-card { flex-direction: column; padding: 18px; gap: 14px; }
+  .credits-card { padding: 20px 16px; }
+}
+
+@media (max-width: 360px) {
+  .sidebar-icon-strip { padding-left: 4px; padding-right: 4px; }
+  .sidebar-icon-strip .sidebar-collapse-btn,
+  .sidebar-icon-strip .icon-strip-btn { width: 39px; height: 39px; }
+  .hero-title { font-size: 29px; }
+}
