@@ -158,7 +158,7 @@ const Sidebar = ({
             <button
               key={item.id}
               className={`icon-strip-btn ${currentView === item.id ? 'active' : ''}`}
-              onClick={() => { setCurrentView(item.id); onToggleCollapse(); }}
+              onClick={() => setCurrentView(item.id)}
               title={item.label}
             >
               <item.icon size={20} />
@@ -166,7 +166,7 @@ const Sidebar = ({
           ))}
           <button
             className={`icon-strip-btn ${currentView === 'settings' ? 'active' : ''}`}
-            onClick={() => { setCurrentView('settings'); onToggleCollapse(); }}
+            onClick={() => setCurrentView('settings')}
             title="Settings"
           >
             <Settings size={20} />

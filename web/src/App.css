@@ -1274,7 +1274,7 @@
 
   .main-content {
     min-width: 0;
-    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+    padding-bottom: 0;
   }
 
   /* Open navigation becomes a drawer; compact navigation is a bottom bar. */
@@ -1301,7 +1301,7 @@
     border-right: none;
     border-top: 1px solid var(--glass-border);
     box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
-    z-index: 20;
+    z-index: 40;
   }
 
   .sidebar-icon-strip > div[style] { display: none; }
@@ -1313,8 +1313,27 @@
     padding: 8px;
   }
 
-  .chat-container { padding: 0 16px 12px; gap: 12px; }
-  .input-container { padding: 12px 16px 16px; }
+  /* Keep the composer in a predictable ChatGPT-style position while the
+     welcome screen and messages scroll independently behind it. */
+  .home-view {
+    min-height: 0;
+    height: 100%;
+    position: relative;
+  }
+  .chat-container {
+    padding: 0 16px calc(156px + env(safe-area-inset-bottom));
+    gap: 12px;
+  }
+  .input-container {
+    position: absolute;
+    right: 0;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    left: 0;
+    z-index: 15;
+    padding: 12px 16px 14px;
+    background: linear-gradient(to top, var(--bg-primary) 82%, rgba(10, 14, 23, 0));
+  }
+  .chat-input-wrapper { max-width: 720px; }
   .chat-input { padding: 14px 54px; font-size: 16px; }
   .input-hint { line-height: 1.4; margin-top: 8px; }
   .message-bubble { padding: 14px 16px; font-size: 14px; }
