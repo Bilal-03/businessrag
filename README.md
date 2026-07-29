@@ -227,7 +227,6 @@ businessrag/
 │   ├── index.html
 │   └── package.json
 ├── .env.example             # Environment variable template
-├── Dockerfile               # Container configuration
 └── README.md
 ```
 
@@ -260,12 +259,6 @@ The FastAPI backend is deployed on **Render** (free tier).
 **API URL:** `https://businessrag.onrender.com`
 
 > ⚠️ **Note on Render Free Tier:** The backend may take 30–60 seconds to respond on the first request after a period of inactivity (cold start). Subsequent requests are fast.
-
-### Docker
-```bash
-docker build -t bizguide-api .
-docker run -p 8000:8000 --env-file .env bizguide-api
-```
 
 ---
 
