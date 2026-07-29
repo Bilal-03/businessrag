@@ -6,3 +6,5 @@ __pycache__/
 # data/chroma_db is intentionally tracked so it deploys with the app
 .vscode/
 logs/
+/audit-evidence/
+/BizGuide-AI-*-Audit*.md
