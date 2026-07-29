@@ -13,7 +13,7 @@ client = groq.Groq(api_key=settings.groq_api_key)
 MODEL_NAME = "llama-3.3-70b-versatile"
 
 def route_query(query: str) -> str:
-    """Basic routing logic to simulate multi-agent orchestration."""
+    """Classify a query into the current response-guidance categories."""
     try:
         res = client.chat.completions.create(
             model=MODEL_NAME,

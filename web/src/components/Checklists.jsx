@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, ChevronRight, RotateCcw, ExternalLink, Building2, BarChart3, UtensilsCrossed, Rocket, Store } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronRight, RotateCcw, ExternalLink, Building2, BarChart3, UtensilsCrossed, Rocket, Store } from 'lucide-react';
 import { getUserData, updateUserData } from '../lib/supabase';
 
 const CHECKLISTS = [

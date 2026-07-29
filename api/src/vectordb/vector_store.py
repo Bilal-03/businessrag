@@ -1,6 +1,6 @@
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
-from typing import Optional
+from functools import lru_cache
 from config import get_settings
 from src.embeddings.embedder import get_embeddings
 from src.utils.logger import get_logger
@@ -8,11 +8,14 @@ from src.utils.logger import get_logger
 settings = get_settings()
 logger = get_logger(__name__)
 
-# Initialize Pinecone client once
-pc = Pinecone(api_key=settings.pinecone_api_key)
+@lru_cache()
+def get_pinecone_client() -> Pinecone:
+    """Initialize the external client only when a vector operation needs it."""
+    return Pinecone(api_key=settings.pinecone_api_key)
 
 def init_pinecone_index():
     """Ensure the Pinecone index exists."""
+    pc = get_pinecone_client()
     index_name = settings.pinecone_index_name
     if index_name not in pc.list_indexes().names():
         logger.info(f"Creating Pinecone index: {index_name}")
@@ -36,11 +39,6 @@ def get_vector_store() -> PineconeVectorStore:
 
 def clear_namespace(user_id: str):
     """Delete all vectors for a specific user."""
-    index = pc.Index(settings.pinecone_index_name)
+    index = get_pinecone_client().Index(settings.pinecone_index_name)
     # Delete vectors that match this user_id in their metadata
     index.delete(filter={"session_id": {"$eq": user_id}})
-
-def clear_all():
-    """Delete all vectors in the index."""
-    index = pc.Index(settings.pinecone_index_name)
-    index.delete(delete_all=True)

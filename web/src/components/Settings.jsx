@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Globe, Trash2, Info, Check, ChevronRight, Palette, Shield, Bell, Bot, Search, FileText, MapPin } from 'lucide-react';
+import { User, Globe, Trash2, Info, Check, Palette, Shield, Bell, Bot, Search, FileText, MapPin } from 'lucide-react';
 import Logo from './Logo';
 
 const APP_VERSION = '1.0.0';
@@ -25,6 +25,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
   );
   const [confirmClear, setConfirmClear] = useState(false);
   const [activeSection, setActiveSection] = useState('profile');
+  const [dataStatus, setDataStatus] = useState('');
 
   useEffect(() => {
     const savedProfile = localStorage.getItem('bizguide_profile');
@@ -212,7 +213,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                   <div className="danger-row" style={{ marginBottom: '14px' }}>
                     <div>
                       <div className="danger-item-label">Clear My Uploaded Documents</div>
-                      <div className="danger-item-desc">Remove all PDFs you uploaded this session from the AI knowledge base.</div>
+                      <div className="danger-item-desc">Remove all PDFs currently indexed for your account. This action cannot be undone.</div>
                     </div>
                     <motion.button
                       whileHover={{ scale: 1.03 }}
@@ -220,16 +221,19 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                       onClick={async () => {
                         if (!session) return;
                         try {
-                          await fetch(`${apiUrl}/api/documents/clear`, { 
+                          const response = await fetch(`${apiUrl}/api/documents/clear`, {
                             method: 'DELETE',
                             headers: {
                               'Authorization': `Bearer ${session.access_token}`
                             }
                           });
-                          localStorage.removeItem('bizguide_uploads');
-                          alert('Your uploaded documents have been cleared.');
+                          let data = {};
+                          try { data = await response.json(); } catch {}
+                          if (!response.ok) throw new Error(data.detail || 'We could not clear uploaded documents.');
+                          localStorage.removeItem(`bizguide_uploads:${session.user.id}`);
+                          setDataStatus('Your uploaded documents have been cleared.');
                         } catch (e) {
-                          alert('Failed to clear documents. Please try again.');
+                          setDataStatus(e.message || 'Failed to clear documents. Please try again.');
                         }
                       }}
                     >
@@ -249,6 +253,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                       <Trash2 size={16} /> {confirmClear ? 'Click again to confirm' : 'Clear History'}
                     </motion.button>
                   </div>
+                  {dataStatus && <div className="upload-status-message" role="status">{dataStatus}</div>}
                 </div>
               </motion.div>
             )}
@@ -260,13 +265,13 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                   <Logo size={56} showText={false} />
                   <div className="about-info">
                     <div className="about-name">BizGuide AI</div>
-                    <div className="about-tagline">Your Personal Agent for Business Compliance in India</div>
+                    <div className="about-tagline">Business-compliance information for India</div>
                     <div className="about-version">Version {APP_VERSION}</div>
                   </div>
                 </div>
                 <div className="about-features">
                   {[
-                    { icon: <Bot size={24} />, title: 'Multi-Agent AI', desc: 'Powered by specialized Legal, Tax, and General agents using Llama 3.3' },
+                    { icon: <Bot size={24} />, title: 'AI-assisted guidance', desc: 'Uses a routing step and Llama 3.3 to tailor business, legal, and tax information' },
                     { icon: <Search size={24} />, title: 'RAG-Powered', desc: 'Retrieval-augmented generation with Pinecone vector search and Gemini embeddings' },
                     { icon: <FileText size={24} />, title: 'Document Intelligence', desc: 'Upload your business PDFs to get answers grounded in your actual documents' },
                     { icon: <MapPin size={24} />, title: 'India-Focused', desc: 'Specialized in Indian business laws, GST, MCA regulations, and compliance' },

@@ -1,44 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, FileText, CheckCircle2, XCircle, Clock, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { UploadCloud, CheckCircle2, XCircle, Clock, Trash2 } from 'lucide-react';
 
 const UploadDocuments = ({ session, apiUrl }) => {
   const [uploadHistory, setUploadHistory] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [currentFileName, setCurrentFileName] = useState('');
+  const [uploadStatus, setUploadStatus] = useState('');
   const fileInputRef = useRef(null);
+  const historyStorageKey = session?.user?.id ? `bizguide_uploads:${session.user.id}` : null;
 
   useEffect(() => {
-    const saved = localStorage.getItem('bizguide_uploads');
-    if (saved) setUploadHistory(JSON.parse(saved));
-  }, []);
+    if (!historyStorageKey) return;
+    const saved = localStorage.getItem(historyStorageKey);
+    if (!saved) {
+      setUploadHistory([]);
+      return;
+    }
+    try {
+      setUploadHistory(JSON.parse(saved));
+    } catch {
+      setUploadHistory([]);
+      localStorage.removeItem(historyStorageKey);
+    }
+  }, [historyStorageKey]);
 
   const saveHistory = (updated) => {
     setUploadHistory(updated);
-    localStorage.setItem('bizguide_uploads', JSON.stringify(updated));
-  };
-
-  const simulateProgress = () => {
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 90) { clearInterval(interval); return 90; }
-        return prev + Math.random() * 15;
-      });
-    }, 300);
-    return interval;
+    if (historyStorageKey) localStorage.setItem(historyStorageKey, JSON.stringify(updated));
   };
 
   const handleUpload = async (file) => {
-    if (!file || !file.name.endsWith('.pdf')) {
-      alert('Only PDF files are supported.');
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      setUploadStatus('Please choose a PDF file.');
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadStatus('This PDF is larger than the 50MB upload limit.');
       return;
     }
     setUploading(true);
     setCurrentFileName(file.name);
-    const progressInterval = simulateProgress();
+    setUploadStatus('Uploading and processing your PDF. This may take a moment.');
 
     const formData = new FormData();
     formData.append('file', file);
@@ -51,9 +55,8 @@ const UploadDocuments = ({ session, apiUrl }) => {
         },
         body: formData,
       });
-      const data = await response.json();
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      let data = {};
+      try { data = await response.json(); } catch {}
 
       const newEntry = {
         id: Date.now().toString(),
@@ -64,14 +67,8 @@ const UploadDocuments = ({ session, apiUrl }) => {
         message: response.ok ? data.message : (data.detail || 'Upload failed'),
       };
       saveHistory([newEntry, ...uploadHistory]);
-
-      setTimeout(() => {
-        setUploading(false);
-        setUploadProgress(0);
-        setCurrentFileName('');
-      }, 1000);
-    } catch (err) {
-      clearInterval(progressInterval);
+      setUploadStatus(response.ok ? 'Upload complete.' : (data.detail || 'Upload failed. Please try again.'));
+    } catch {
       const newEntry = {
         id: Date.now().toString(),
         name: file.name,
@@ -81,8 +78,9 @@ const UploadDocuments = ({ session, apiUrl }) => {
         message: 'Network error. Please check your connection.',
       };
       saveHistory([newEntry, ...uploadHistory]);
+      setUploadStatus('Network error. Please check your connection and try again.');
+    } finally {
       setUploading(false);
-      setUploadProgress(0);
       setCurrentFileName('');
     }
 
@@ -138,16 +136,9 @@ const UploadDocuments = ({ session, apiUrl }) => {
                 <UploadCloud size={48} />
               </motion.div>
               <div className="upload-filename">{currentFileName}</div>
-              <div className="progress-bar-container">
-                <motion.div
-                  className="progress-bar-fill"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${uploadProgress}%` }}
-                  transition={{ ease: 'easeOut' }}
-                />
-              </div>
+              <div className="progress-bar-container" aria-hidden="true"><div className="progress-bar-indeterminate" /></div>
               <div className="upload-progress-label">
-                {uploadProgress < 100 ? `Processing... ${Math.round(uploadProgress)}%` : '✅ Complete!'}
+                {uploadStatus}
               </div>
             </motion.div>
           ) : (
@@ -169,13 +160,14 @@ const UploadDocuments = ({ session, apiUrl }) => {
           )}
         </AnimatePresence>
       </motion.div>
+      {uploadStatus && !uploading && <div className="upload-status-message" role="status">{uploadStatus}</div>}
 
       {/* Info Box */}
       <div className="info-box">
         <div className="info-icon">💡</div>
         <div>
           <div className="info-title">How it works</div>
-          <div className="info-text">We read your PDF and use it to answer your specific questions. Your documents stay private and secure — only you can access them.</div>
+          <div className="info-text">We process your PDF to support answers in this account. Verify important legal and tax information against the original source or with a qualified professional.</div>
         </div>
       </div>
 
@@ -204,7 +196,7 @@ const UploadDocuments = ({ session, apiUrl }) => {
                   </div>
                   {item.message && <div className="upload-message">{item.message}</div>}
                 </div>
-                <button className="icon-btn" onClick={() => handleDeleteHistory(item.id)} title="Remove from history">
+                <button className="icon-btn" onClick={() => handleDeleteHistory(item.id)} title="Remove local record" aria-label={`Remove local record for ${item.name}`}>
                   <Trash2 size={16} />
                 </button>
               </motion.div>

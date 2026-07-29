@@ -1,6 +1,26 @@
 import logging
 import sys
-import os
+import json
+from datetime import datetime, timezone
+
+
+class JsonFormatter(logging.Formatter):
+    """Emit structured logs to stdout so the host platform owns retention."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        for key in ("request_id", "method", "path", "status_code", "latency_ms", "event"):
+            value = getattr(record, key, None)
+            if value is not None:
+                payload[key] = value
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload, default=str)
 
 def get_logger(name: str):
     logger = logging.getLogger(name)
@@ -8,22 +28,12 @@ def get_logger(name: str):
     if not logger.handlers:
         logger.setLevel(logging.INFO)
         
-        # Console Handler
         c_handler = logging.StreamHandler(sys.stdout)
         c_handler.setLevel(logging.INFO)
-        
-        # File Handler
-        log_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'logs')
-        os.makedirs(log_dir, exist_ok=True)
-        f_handler = logging.FileHandler(os.path.join(log_dir, 'app.log'))
-        f_handler.setLevel(logging.INFO)
-        
-        # Formatter
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = JsonFormatter()
         c_handler.setFormatter(formatter)
-        f_handler.setFormatter(formatter)
         
         logger.addHandler(c_handler)
-        logger.addHandler(f_handler)
+        logger.propagate = False
         
     return logger

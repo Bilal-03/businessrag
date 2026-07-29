@@ -321,8 +321,8 @@
   background: transparent;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -342,8 +342,8 @@
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -432,6 +432,20 @@
   font-size: 12px;
   line-height: 1.5;
 }
+.retry-message-button {
+  margin-top: 12px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid rgba(129, 140, 248, 0.6);
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #c7d2fe;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+.retry-message-button:hover { background: rgba(99, 102, 241, 0.22); }
+.retry-message-button:focus-visible { outline: 3px solid #c4b5fd; outline-offset: 2px; }
 
 .typing-indicator { display: flex; align-items: center; gap: 6px; }
 .typing-dot {
@@ -921,7 +935,23 @@
   background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
   border-radius: 3px;
 }
+.progress-bar-indeterminate {
+  width: 42%;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent-primary), var(--accent-secondary), transparent);
+  animation: upload-progress 1.3s ease-in-out infinite;
+}
+@keyframes upload-progress {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(280%); }
+}
 .upload-progress-label { font-size: 13px; color: var(--text-secondary); }
+.upload-status-message {
+  margin: -10px 0 18px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
 
 .info-box {
   display: flex;

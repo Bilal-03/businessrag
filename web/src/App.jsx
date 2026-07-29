@@ -13,6 +13,17 @@ import { supabase, getUserData, updateUserData } from './lib/supabase';
 import './App.css';
 
 const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'https://businessrag.onrender.com';
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+const SESSION_STORAGE_KEYS = [
+  'bizguide_conversations',
+  'bizguide_businesses',
+  'bizguide_checklists',
+  'bizguide_uploads',
+  'bizguide_profile',
+  'bizguide_notifications',
+  'bizguide_accent',
+  'bizguide_api_url',
+];
 
 const QUICK_ACTIONS = [
   { icon: <Building2 size={24} />, title: 'Company Registration', desc: 'Steps to incorporate a Pvt Ltd', query: 'What are the steps to register a Private Limited Company in India?' },
@@ -29,6 +40,20 @@ function generateTitle(firstMessage) {
   return words.length < firstMessage.trim().length ? words + '…' : words;
 }
 
+async function readApiResponse(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
+function getApiError(data, response, fallback) {
+  const requestId = data?.request_id || response?.headers?.get('X-Request-ID');
+  const detail = typeof data?.detail === 'string' ? data.detail : fallback;
+  return { detail, requestId };
+}
+
 /** Fire a real browser notification if permission granted and page is not focused */
 function fireNotification(title, body) {
   if (typeof Notification === 'undefined') return;
@@ -36,7 +61,7 @@ function fireNotification(title, body) {
   if (document.visibilityState === 'visible' && document.hasFocus()) return;
   try {
     new Notification(title, { body, icon: '/logo.png', badge: '/logo.png' });
-  } catch (_) {}
+  } catch {}
 }
 
 function App() {
@@ -58,52 +83,76 @@ function App() {
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const currentConvIdRef = useRef(null);
+  const sessionUserIdRef = useRef(null);
+
+  const resetClientState = useCallback(() => {
+    setMessages([]);
+    setConversations([]);
+    setInput('');
+    setActiveConvId(null);
+    currentConvIdRef.current = null;
+    setCurrentView('home');
+    setApiUrl(DEFAULT_API_URL);
+    SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
+  }, []);
+
+  const applySession = useCallback((nextSession) => {
+    const nextUserId = nextSession?.user?.id || null;
+    if (sessionUserIdRef.current && sessionUserIdRef.current !== nextUserId) {
+      resetClientState();
+    }
+    sessionUserIdRef.current = nextUserId;
+    setSession(nextSession);
+  }, [resetClientState]);
 
   // Supabase Auth Listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+      applySession(session);
       setIsAuthLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      applySession(session);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [applySession]);
 
   // Load conversations + settings
   useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+
     const savedUrl = localStorage.getItem('bizguide_api_url');
     if (savedUrl) setApiUrl(savedUrl);
     
-    if (session) {
-      // Sync from Supabase
-      getUserData(session.user.id).then(async (data) => {
-        if (data) {
-          setConversations(data.conversations || []);
-        } else {
-          // Migration from localStorage on first login
-          const localConvs = localStorage.getItem('bizguide_conversations');
-          const localBiz = localStorage.getItem('bizguide_businesses');
-          const localChecks = localStorage.getItem('bizguide_checklists');
-          
-          const newDoc = {
-            conversations: localConvs ? JSON.parse(localConvs) : [],
-            businesses: localBiz ? JSON.parse(localBiz) : [],
-            checklists: localChecks ? JSON.parse(localChecks) : {}
-          };
-          
-          await updateUserData(session.user.id, newDoc);
-          setConversations(newDoc.conversations);
-          
-          localStorage.removeItem('bizguide_conversations');
-          localStorage.removeItem('bizguide_businesses');
-          localStorage.removeItem('bizguide_checklists');
-        }
-      });
-    }
+    // Sync from Supabase
+    getUserData(session.user.id).then(async (data) => {
+      if (cancelled || sessionUserIdRef.current !== session.user.id) return;
+      if (data) {
+        setConversations(data.conversations || []);
+      } else {
+        // Migration from localStorage on first login only.
+        const localConvs = localStorage.getItem('bizguide_conversations');
+        const localBiz = localStorage.getItem('bizguide_businesses');
+        const localChecks = localStorage.getItem('bizguide_checklists');
+
+        const newDoc = {
+          conversations: localConvs ? JSON.parse(localConvs) : [],
+          businesses: localBiz ? JSON.parse(localBiz) : [],
+          checklists: localChecks ? JSON.parse(localChecks) : {}
+        };
+
+        await updateUserData(session.user.id, newDoc);
+        if (cancelled || sessionUserIdRef.current !== session.user.id) return;
+        setConversations(newDoc.conversations);
+
+        localStorage.removeItem('bizguide_conversations');
+        localStorage.removeItem('bizguide_businesses');
+        localStorage.removeItem('bizguide_checklists');
+      }
+    });
 
     const savedAccent = localStorage.getItem('bizguide_accent');
     if (savedAccent) {
@@ -121,6 +170,7 @@ function App() {
         document.documentElement.style.setProperty('--accent-secondary', ACCENT_COLORS[idx].secondary);
       }
     }
+    return () => { cancelled = true; };
   }, [session]);
 
   // Auto-scroll to bottom when messages change
@@ -188,10 +238,13 @@ function App() {
         },
         body: JSON.stringify({ query }),
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
       
       if (!response.ok) {
-        throw new Error(data.detail || 'API Error');
+        const { detail, requestId } = getApiError(data, response, 'We could not generate an answer.');
+        const error = new Error(detail);
+        error.requestId = requestId;
+        throw error;
       }
       
       const aiMsg = { role: 'ai', content: data.answer || 'No response received' };
@@ -201,7 +254,12 @@ function App() {
       // Fire browser notification if page is hidden
       fireNotification('BizGuide AI', 'Your answer is ready!');
     } catch (error) {
-      const errMsg = { role: 'ai', content: `⚠️ Error connecting to the agent: ${error.message}` };
+      const requestId = error.requestId ? `\n\nReference: \`${error.requestId}\`` : '';
+      const errMsg = {
+        role: 'ai',
+        content: `⚠️ ${error.message || 'We could not generate an answer. Please try again.'}${requestId}`,
+        retryQuery: query,
+      };
       const finalMessages = [...updatedMessages, errMsg];
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);
@@ -213,6 +271,15 @@ function App() {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setMessages(prev => [...prev, { role: 'ai', content: '⚠️ Please choose a PDF file.' }]);
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setMessages(prev => [...prev, { role: 'ai', content: '⚠️ This PDF is larger than the 50MB upload limit.' }]);
+      return;
+    }
 
     setCurrentView('home');
     setIsUploading(true);
@@ -233,15 +300,20 @@ function App() {
         },
         body: formData 
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
       const resultMsg = response.ok
-        ? { role: 'ai', content: `✅ **Upload Successful!** ${data.message}\n\nYou can now ask me questions based on this document. Your documents are private to your session only.` }
-        : { role: 'ai', content: `❌ **Upload Failed:** ${data.detail}` };
+        ? { role: 'ai', content: `✅ **Upload complete.** ${data.message}\n\nYou can now ask questions that use this document as context. Always verify important legal and tax decisions against the original source or a qualified professional.` }
+        : (() => {
+            const { detail, requestId } = getApiError(data, response, 'We could not process this PDF.');
+            return { role: 'ai', content: `❌ **Upload failed:** ${detail}${requestId ? `\n\nReference: \`${requestId}\`` : ''}` };
+          })();
       const finalMessages = [...updatedMessages, resultMsg];
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);
-      fireNotification('BizGuide AI', `${file.name} uploaded and indexed successfully!`);
-    } catch (error) {
+      if (response.ok) {
+        fireNotification('BizGuide AI', `${file.name} uploaded and indexed successfully!`);
+      }
+    } catch {
       const errMsg = { role: 'ai', content: '⚠️ Network error during upload. Please try again.' };
       const finalMessages = [...updatedMessages, errMsg];
       setMessages(finalMessages);
@@ -301,6 +373,7 @@ function App() {
   };
 
   const handleSignOut = async () => {
+    resetClientState();
     await supabase.auth.signOut();
   };
 
@@ -349,12 +422,12 @@ function App() {
                   >
                     <div className="hero-badge">BizGuide AI</div>
                     <h1 className="hero-title">
-                      Your <span className="gradient-text">Personal Agent</span><br />
+                      Your <span className="gradient-text">Business Guide</span><br />
                       for Business Compliance
                     </h1>
                     <p className="hero-subtitle">
-                      Ask anything about starting a business, getting licenses, or filing taxes in India.
-                      Our multi-agent AI system sources the latest government laws to give you accurate answers.
+                      Explore business-compliance information for India and ask questions about your uploaded documents.
+                      Verify important legal and tax decisions with a qualified professional and the original source.
                     </p>
                     <div className="quick-actions">
                       {QUICK_ACTIONS.map((qa) => (
@@ -390,6 +463,11 @@ function App() {
                                 BizGuide AI
                               </div>
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                              {msg.retryQuery && (
+                                <button className="retry-message-button" onClick={() => handleSend(msg.retryQuery)}>
+                                  Try again
+                                </button>
+                              )}
                               <p className="answer-disclaimer">
                                 BizGuide AI can make mistakes. Verify important legal and tax information with a professional.
                               </p>
@@ -412,7 +490,7 @@ function App() {
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }} className="typing-dot" />
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.4 }} className="typing-dot" />
                             <span className="typing-text">
-                              {isUploading ? 'Processing document and creating embeddings…' : 'Consulting Specialized Agents…'}
+                              {isUploading ? 'Processing document and creating embeddings…' : 'Preparing your response…'}
                             </span>
                           </div>
                         </motion.div>
@@ -431,6 +509,7 @@ function App() {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading || isTyping}
                     title="Upload PDF Document"
+                    aria-label="Upload PDF document"
                   >
                     <Paperclip size={20} />
                   </button>
@@ -469,6 +548,7 @@ function App() {
                     className="send-button"
                     onClick={() => handleSend(input)}
                     disabled={!input.trim() || isTyping || isUploading}
+                    aria-label="Send message"
                   >
                     <Send size={20} />
                   </motion.button>

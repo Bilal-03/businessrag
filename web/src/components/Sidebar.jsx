@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Folder, UploadCloud, FileText, Settings, Plus, MessageSquare, ChevronRight, Trash2, Menu, X, LogOut } from 'lucide-react';
+import { Home, Folder, UploadCloud, FileText, Settings, Plus, MessageSquare, Trash2, Menu, X, LogOut } from 'lucide-react';
 import Logo from './Logo';
 
 const NAV_ITEMS = [

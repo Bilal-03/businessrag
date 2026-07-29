@@ -1,7 +1,7 @@
 <div align="center">
   <img src="web/public/logo.png" alt="BizGuide AI Logo" width="96" height="96" style="border-radius: 22px;" />
   <h1>BizGuide AI</h1>
-  <p><strong>Your Personal Agent for Business Compliance in India</strong></p>
+  <p><strong>Business-compliance information for India</strong></p>
 
   <p>
     <a href="https://businessrag.vercel.app"><img src="https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel" alt="Live Demo" /></a>
@@ -21,12 +21,12 @@
 
 ## 🌟 What is BizGuide AI?
 
-BizGuide AI is a **multi-agent RAG (Retrieval-Augmented Generation) system** that acts as your personal guide for Indian business compliance. Whether you're registering a company, getting an FSSAI food license, filing GST, or exploring Startup India benefits — BizGuide gives you accurate, up-to-date answers grounded in Indian law.
+BizGuide AI is an early-stage RAG (Retrieval-Augmented Generation) application for exploring Indian business-compliance information. It can route questions by topic and retrieve context from uploaded PDFs. It does not replace a qualified legal or tax professional, and important decisions should be verified against original authoritative sources.
 
 Unlike generic AI, BizGuide:
-- **Routes your query** to a specialized agent (Legal, Tax, or General)
+- **Routes your query** through a lightweight Legal, Tax, or General topic classifier
 - **Retrieves context** from your uploaded business documents using vector search
-- **Answers with markdown formatting**, citing relevant laws and regulations
+- **Answers with markdown formatting** and shows a clear professional-verification disclaimer
 
 ---
 
@@ -34,7 +34,7 @@ Unlike generic AI, BizGuide:
 
 | Feature | Description |
 |---|---|
-| 🤖 **Multi-Agent AI** | Queries are routed to Legal Agent, Tax Agent, or General Agent for specialized responses |
+| 🤖 **Topic routing** | Queries are routed to Legal, Tax, or General response guidance |
 | 🔍 **RAG Architecture** | Pinecone vector DB + Gemini Embeddings for document-grounded answers |
 | 📎 **Document Upload** | Upload your business PDFs; AI answers questions based on your actual documents |
 | 🏢 **My Businesses** | Manage your business profiles with quick-ask shortcuts |
@@ -65,14 +65,14 @@ User Query
        │              │
        ▼              ▼
 ┌─────────────┐  ┌────────────────────┐
-│ Routing     │  │ Pinecone Vector DB  │
-│ Agent       │  │ (Gemini Embeddings) │
+│ Topic       │  │ Pinecone Vector DB  │
+│ Classifier  │  │ (Gemini Embeddings) │
 │ (Llama 3.3) │  │ k=4 similarity      │
 └──────┬──────┘  └────────────────────┘
        │
        ▼
 ┌──────────────────────┐
-│ Specialized Agent    │
+│ Response Guidance    │
 │ ┌──────────────────┐ │
 │ │  Legal Agent     │ │  → Indian Company Law, FSSAI, MCA
 │ │  Tax Agent       │ │  → GST, Income Tax, Startup India
