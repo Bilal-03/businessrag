@@ -158,7 +158,10 @@ const Sidebar = ({
             <button
               key={item.id}
               className={`icon-strip-btn ${currentView === item.id ? 'active' : ''}`}
-              onClick={() => setCurrentView(item.id)}
+              onClick={() => {
+                setCurrentView(item.id);
+                if (!isMobile()) onToggleCollapse();
+              }}
               title={item.label}
             >
               <item.icon size={20} />
@@ -166,7 +169,10 @@ const Sidebar = ({
           ))}
           <button
             className={`icon-strip-btn ${currentView === 'settings' ? 'active' : ''}`}
-            onClick={() => setCurrentView('settings')}
+            onClick={() => {
+              setCurrentView('settings');
+              if (!isMobile()) onToggleCollapse();
+            }}
             title="Settings"
           >
             <Settings size={20} />
