@@ -89,10 +89,7 @@ const Sidebar = ({
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
                         className={`conversation-item ${activeConversationId === conv.id ? 'active-conv' : ''}`}
-                        onClick={() => {
-                          onSelectConversation(conv.id);
-                          if (isMobile()) onToggleCollapse();
-                        }}
+                        onClick={() => onSelectConversation(conv.id)}
                       >
                         <MessageSquare size={14} className="conv-icon" />
                         <span className="conv-title">{conv.title || 'Untitled'}</span>

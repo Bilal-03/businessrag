@@ -271,6 +271,9 @@ function App() {
       currentConvIdRef.current = convId;
       setActiveConvId(convId);
       setCurrentView('home');
+      if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+        setSidebarCollapsed(true);
+      }
     }
   };
 
