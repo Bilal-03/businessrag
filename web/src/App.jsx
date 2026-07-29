@@ -455,6 +455,14 @@ function App() {
                     disabled={isUploading || isTyping}
                     autoFocus
                   />
+                  {!input && !isUploading && !isTyping && (
+                    <div className="input-marquee" aria-hidden="true">
+                      <span>
+                        Ask about business structures, GST, licenses, and more&nbsp;&nbsp;•&nbsp;&nbsp;
+                        Ask about business structures, GST, licenses, and more&nbsp;&nbsp;•&nbsp;&nbsp;
+                      </span>
+                    </div>
+                  )}
                   <motion.button
                     whileHover={input.trim() && !isTyping && !isUploading ? { scale: 1.1 } : {}}
                     whileTap={input.trim() && !isTyping && !isUploading ? { scale: 0.9 } : {}}
