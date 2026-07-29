@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Folder, UploadCloud, FileText, Settings, Plus, MessageSquare, ChevronRight, Trash2, Menu, X, LogOut } from 'lucide-react';
 import Logo from './Logo';
@@ -24,6 +24,7 @@ const Sidebar = ({
   onSignOut,
 }) => {
   const recentConvos = (conversations || []).slice(0, 8);
+  const conversationActivationRef = useRef(false);
   const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
   const navigate = (view) => {
     setCurrentView(view);
@@ -32,6 +33,12 @@ const Sidebar = ({
   const startNewChat = () => {
     onNewChat();
     if (isMobile() && !collapsed) onToggleCollapse();
+  };
+  const selectConversation = (convId) => {
+    if (conversationActivationRef.current) return;
+    conversationActivationRef.current = true;
+    onSelectConversation(convId);
+    window.setTimeout(() => { conversationActivationRef.current = false; }, 0);
   };
 
   return (
@@ -90,7 +97,14 @@ const Sidebar = ({
                         exit={{ opacity: 0, x: -10 }}
                         className={`conversation-item ${activeConversationId === conv.id ? 'active-conv' : ''}`}
                       >
-                        <button type="button" className="conversation-select-btn" onClick={() => onSelectConversation(conv.id)}>
+                        <button
+                          type="button"
+                          className="conversation-select-btn"
+                          onPointerUp={e => {
+                            if (e.button === 0) selectConversation(conv.id);
+                          }}
+                          onClick={() => selectConversation(conv.id)}
+                        >
                           <MessageSquare size={14} className="conv-icon" />
                           <span className="conv-title">{conv.title || 'Untitled'}</span>
                         </button>

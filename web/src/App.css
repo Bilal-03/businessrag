@@ -188,6 +188,7 @@
   cursor: pointer;
   font: inherit;
   text-align: left;
+  touch-action: manipulation;
 }
 .conv-icon { flex-shrink: 0; opacity: 0.6; }
 .conv-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
