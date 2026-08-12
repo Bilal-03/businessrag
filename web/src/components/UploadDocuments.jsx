@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle2, XCircle, Clock, Trash2, LoaderCircle } from 'lucide-react';
 import { documentHistoryEntry, pollDocumentStatus } from '../lib/documentJobs';
+import { captureEvent, captureException, sizeBucket } from '../lib/observability';
 
 const UploadDocuments = ({ session, apiUrl, businessId }) => {
   const [uploadHistory, setUploadHistory] = useState([]);
@@ -40,8 +41,10 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
         const message = result.document.error_message || 'Document processing failed. Please try again.';
         updateHistoryEntry(documentId, { status: 'error', message, stage: 'failed', progress: 0 });
         setUploadStatus(message);
+        captureEvent('document_processing_failed');
       } else {
         setUploadStatus('Document processing finished.');
+        captureEvent('document_processing_completed');
       }
     } catch (error) {
       if (error.name === 'AbortError') return;
@@ -87,14 +90,17 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
 
   const handleUpload = async (file) => {
     if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      captureEvent('upload_rejected', { reason: 'file_type' });
       setUploadStatus('Please choose a PDF file.');
       return;
     }
     if (file.size > 50 * 1024 * 1024) {
+      captureEvent('upload_rejected', { reason: 'file_size', size: sizeBucket(file.size) });
       setUploadStatus('This PDF is larger than the 50MB upload limit.');
       return;
     }
     setUploading(true);
+    captureEvent('upload_started', { size: sizeBucket(file.size), has_active_business: Boolean(businessId) });
     setCurrentFileName(file.name);
     setUploadStatus('Uploading and processing your PDF. This may take a moment.');
 
@@ -144,7 +150,11 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
       if (response.ok && data.document_id && data.status !== 'indexed') {
         void trackDocument(data.document_id, newEntry);
       }
-    } catch {
+      if (response.ok) captureEvent(data.status === 'indexed' ? 'upload_indexed' : 'upload_queued');
+      else captureEvent('upload_failed', { status: response.status });
+    } catch (error) {
+      captureException(error, { source: 'documents_upload' });
+      captureEvent('upload_failed', { reason: 'network' });
       const newEntry = {
         id: Date.now().toString(),
         name: file.name,

@@ -70,8 +70,14 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 - [x] **P2-02 hotfix — Upload CORS preflight**
   - Allowed the `X-Idempotency-Key` header used by async uploads so browser preflight requests no longer fail with `400 Bad Request` before the upload reaches the API.
 
+- [x] **P2-03a — Privacy-safe observability integration**
+  - Added Sentry browser error capture with PII disabled, zero tracing/replay sampling, request/error scrubbing, and coarse source tags.
+  - Added PostHog Product Analytics with explicit allow-listed workflow events, autocapture/pageview/replay disabled, and anonymous-only profiles until an explicit identity policy is approved.
+  - Added Vercel CSP allowlist entries and public environment documentation for the Sentry DSN and PostHog project key/ingestion host.
+  - Verification: frontend lint, production build, diff integrity, and all six deterministic Chromium smoke tests pass.
+
 - [ ] **P2-03 — Product intelligence, accessibility, and design-system upgrade**
-  - Add privacy-safe Sentry error/performance monitoring and PostHog activation, retention, upload, retrieval, and conversion events.
+  - Observability implementation is complete in P2-03a; remaining work is event dashboards, real-device WCAG 2.2 AA checks, and the design-system upgrade.
   - Run real-device WCAG 2.2 AA checks across iOS Safari, Android Chrome, tablet, keyboard-only, screen-reader, contrast, focus, and reduced-motion flows.
   - Replace the MVP visual layer with a documented token-based design system, premium responsive components, and measured performance budgets.
   - **External gate:** validate analytics events without leaking document contents or tokens, complete the device matrix, and approve the visual regression baseline.

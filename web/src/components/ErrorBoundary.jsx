@@ -1,4 +1,5 @@
 import React from 'react';
+import { captureException } from '../lib/observability';
 
 export default class ErrorBoundary extends React.Component {
   state = { hasError: false };
@@ -8,6 +9,7 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
+    captureException(error, { source: 'react_render' });
     // Keep production failures visible without sending prompts or document contents.
     if (import.meta.env.DEV) console.error('BizGuide render error', error, info);
   }

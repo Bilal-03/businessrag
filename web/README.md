@@ -18,6 +18,21 @@ every push and pull request targeting `main`.
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
+## Optional observability configuration
+
+The frontend enables Sentry error reporting and PostHog product analytics only
+when their public project variables are present at build time:
+
+- `VITE_SENTRY_DSN`
+- `VITE_POSTHOG_KEY`
+- `VITE_POSTHOG_HOST` (the ingestion host from the PostHog installation snippet)
+
+The integration deliberately disables tracing, Session Replay, pageview
+autocapture, and input capture. It emits only an allow-listed set of coarse
+workflow events and removes request data, user identity, prompts, responses,
+document names, and tokens before transmission. Never place Sentry auth tokens,
+PostHog personal API keys, or backend secrets in `VITE_*` variables.
+
 Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)

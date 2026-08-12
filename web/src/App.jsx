@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Paperclip, Building2, UtensilsCrossed, Rocket, BarChart3, Wallet, Scale } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import { supabase } from './lib/supabase';
+import { captureEvent, captureException, durationBucket, lengthBucket, sizeBucket } from './lib/observability';
 import {
   deleteAllConversations,
   deleteBusiness,
@@ -143,6 +144,10 @@ function App() {
   const messagesEndRef = useRef(null);
   const currentConvIdRef = useRef(null);
   const sessionUserIdRef = useRef(null);
+
+  useEffect(() => {
+    captureEvent('app_loaded');
+  }, []);
 
   const resetClientState = useCallback((previousUserId = sessionUserIdRef.current) => {
     setMessages([]);
@@ -321,6 +326,7 @@ function App() {
       if (profile) localStorage.setItem(profileKey, JSON.stringify(profile));
       else localStorage.removeItem(profileKey);
     }
+    if (businessId) captureEvent('business_selected');
   }, [session]);
 
   const handleBusinessesChange = useCallback((updated) => {
@@ -382,6 +388,13 @@ function App() {
   const handleSend = async (query) => {
     if (!query.trim() || isTyping || isUploading) return;
 
+    const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    captureEvent('chat_submitted', {
+      has_active_business: Boolean(activeBusinessId),
+      history_count: Math.min(messages.length, 12),
+      input_length: lengthBucket(query),
+    });
+
     // Switch to home/chat view when sending a message
     setCurrentView('home');
 
@@ -420,6 +433,7 @@ function App() {
         body: requestBody,
       });
       let data;
+      let usedStreaming = false;
 
       if (response.status === 404 || response.status === 405) {
         // Keep the public beta compatible with an older backend during rollout.
@@ -433,6 +447,7 @@ function App() {
         });
         data = await readApiResponse(response);
       } else if (response.ok) {
+        usedStreaming = true;
         data = await readChatStream(response, streamed => {
           setMessages([...updatedMessages, {
             role: 'ai',
@@ -463,9 +478,17 @@ function App() {
       const finalMessages = [...updatedMessages, aiMsg];
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);
+      captureEvent('chat_completed', {
+        grounding: aiMsg.grounding,
+        citation_count: aiMsg.citations.length,
+        streamed: usedStreaming,
+        duration: durationBucket((typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAt),
+      });
       // Fire browser notification if page is hidden
       fireNotification('BizGuide AI', 'Your answer is ready!');
     } catch (error) {
+      captureException(error, { source: 'chat_request' });
+      captureEvent('chat_failed', { has_request_id: Boolean(error.requestId) });
       const requestId = error.requestId ? `\n\nReference: \`${error.requestId}\`` : '';
       const errMsg = {
         role: 'ai',
@@ -485,16 +508,19 @@ function App() {
     if (!file) return;
 
     if (!file.name.toLowerCase().endsWith('.pdf')) {
+      captureEvent('upload_rejected', { reason: 'file_type' });
       setMessages(prev => [...prev, { role: 'ai', content: '⚠️ Please choose a PDF file.' }]);
       return;
     }
     if (file.size > MAX_UPLOAD_BYTES) {
+      captureEvent('upload_rejected', { reason: 'file_size', size: sizeBucket(file.size) });
       setMessages(prev => [...prev, { role: 'ai', content: '⚠️ This PDF is larger than the 50MB upload limit.' }]);
       return;
     }
 
     setCurrentView('home');
     setIsUploading(true);
+    captureEvent('upload_started', { size: sizeBucket(file.size), has_active_business: Boolean(activeBusinessId) });
     const uploadMsg = { role: 'user', content: `📎 Uploading **${file.name}**…` };
     const updatedMessages = [...messages, uploadMsg];
     setMessages(updatedMessages);
@@ -526,9 +552,13 @@ function App() {
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);
       if (response.ok) {
+        captureEvent(data.status === 'indexed' ? 'upload_indexed' : 'upload_queued');
         fireNotification('BizGuide AI', data.status === 'indexed' ? `${file.name} uploaded and indexed successfully!` : `${file.name} is queued for processing.`);
       }
-    } catch {
+      else captureEvent('upload_failed', { status: response.status });
+    } catch (error) {
+      captureException(error, { source: 'chat_upload' });
+      captureEvent('upload_failed', { reason: 'network' });
       const errMsg = { role: 'ai', content: '⚠️ Network error during upload. Please try again.' };
       const finalMessages = [...updatedMessages, errMsg];
       setMessages(finalMessages);

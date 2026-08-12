@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, ClipboardCheck, ExternalLink, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
+import { captureEvent, captureException } from '../lib/observability';
 
 const TASK_STATUSES = [
   { value: 'todo', label: 'To do' },
@@ -105,6 +106,7 @@ const WorkflowDashboard = ({
       });
       const task = await parseResponse(response);
       setTasks(current => [task, ...current]);
+      captureEvent('workflow_task_created');
       setNewTaskTitle('');
       setNewTaskDueDate('');
     } catch (requestError) {
@@ -124,7 +126,9 @@ const WorkflowDashboard = ({
       });
       const updatedTask = await parseResponse(response);
       setTasks(current => current.map(task => task.id === taskId ? updatedTask : task));
+      captureEvent('workflow_task_updated', { status: changes.status || 'other' });
     } catch (requestError) {
+      captureException(requestError, { source: 'workflow_task_update' });
       setError(requestError.message || 'The task could not be updated.');
     }
   };
@@ -143,7 +147,9 @@ const WorkflowDashboard = ({
       });
       await parseResponse(response);
       setTasks(current => current.filter(task => task.id !== taskId));
+      captureEvent('workflow_task_deleted');
     } catch (requestError) {
+      captureException(requestError, { source: 'workflow_task_delete' });
       setError(requestError.message || 'The task could not be deleted.');
     } finally {
       setPendingDeleteId(null);

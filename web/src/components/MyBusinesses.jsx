@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Building2, Trash2, Edit2, ChevronRight, X, Check, ChevronDown } from 'lucide-react';
+import { captureEvent } from '../lib/observability';
 
 const BUSINESS_TYPES = ['Private Limited (Pvt Ltd)', 'Limited Liability Partnership (LLP)', 'One Person Company (OPC)', 'Sole Proprietorship', 'Partnership Firm', 'Public Limited'];
 const INDUSTRIES = ['Food & Beverage', 'Technology/IT', 'Healthcare', 'Education', 'Manufacturing', 'Retail & E-Commerce', 'Consulting/Services', 'Real Estate', 'Finance', 'Other'];
@@ -112,6 +113,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
     if (!form.name.trim()) return;
     if (editingId) {
       save(businesses.map(b => b.id === editingId ? { ...b, ...form } : b));
+      captureEvent('business_updated');
       setEditingId(null);
     } else {
       const newBusiness = {
@@ -120,6 +122,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
         createdAt: new Date().toLocaleDateString('en-IN'),
       };
       save([...businesses, newBusiness]);
+      captureEvent('business_created');
       onSelectBusiness?.(newBusiness.id, newBusiness);
     }
     setForm(defaultForm);
@@ -139,6 +142,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
       return;
     }
     save(businesses.filter(b => b.id !== id));
+    captureEvent('business_deleted');
     if (expandedId === id) setExpandedId(null);
     if (activeBusinessId === id) onSelectBusiness?.(null, null);
     setPendingDeleteId(null);

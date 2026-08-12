@@ -13,9 +13,11 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
+    "@sentry/react": "^10.70.0",
     "@supabase/supabase-js": "^2.110.7",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.24.0",
+    "posthog-js": "^1.416.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
