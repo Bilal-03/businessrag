@@ -75,6 +75,7 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
   - Added PostHog Product Analytics with explicit allow-listed workflow events, autocapture/pageview/replay disabled, and anonymous-only profiles until an explicit identity policy is approved.
   - Added Vercel CSP allowlist entries, public environment documentation, regional ingest compatibility, and lazy SDK loading so monitoring does not inflate the initial bundle when disabled.
   - Verification: frontend lint, production build, diff integrity, and all six deterministic Chromium smoke tests pass (with the local server run outside the restricted sandbox).
+  - **External gate complete:** user confirmed PostHog live events and a production Sentry test issue in the `bizguide-web` project.
 
 - [ ] **P2-03 — Product intelligence, accessibility, and design-system upgrade**
   - Observability implementation is complete in P2-03a; remaining work is event dashboards, real-device WCAG 2.2 AA checks, and the design-system upgrade.
