@@ -57,11 +57,11 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
   - Tests use deterministic Supabase/API route fixtures and never require production credentials or mutate production data.
   - Added Chromium test configuration, local test commands, and a GitHub Actions workflow running lint, build, and browser tests on pushes and pull requests to `main`.
 
-- [ ] **P2-02 — Asynchronous document ingestion**
-  - Implemented behind `ASYNC_DOCUMENT_INGESTION_ENABLED` so the current deployment remains backward-compatible until the storage migration and server-only worker credentials are configured.
+- [x] **P2-02 — Asynchronous document ingestion**
+  - Implemented behind `ASYNC_DOCUMENT_INGESTION_ENABLED` with a backward-compatible synchronous path when disabled.
   - Added private Supabase Storage source objects, Redis-backed queueing with an in-process development fallback, crash recovery, leases, retries, deterministic Pinecone vector IDs, idempotent upload keys, job/document progress fields, and a status endpoint.
   - Added frontend progress polling, processing stages, safe failure messages, and source cleanup on document deletion.
-  - **External gate:** apply `supabase/migrations/0003_async_document_jobs.sql`, configure `SUPABASE_SERVICE_ROLE_KEY`, Redis, and the worker deployment, then canary async processing before marking this complete.
+  - **External gate complete:** user verified the Supabase migration, Render service-role/Redis configuration, live deployment, queued-to-indexed PDF canary, and deletion flow.
 
 - [x] **P2-02 hotfix — Redis worker polling timeout**
   - Fixed the Redis client socket timeout being shorter than the blocking `BRPOP` interval, which caused repeated `redis.exceptions.TimeoutError` worker failures on an idle queue.
@@ -70,9 +70,15 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 - [x] **P2-02 hotfix — Upload CORS preflight**
   - Allowed the `X-Idempotency-Key` header used by async uploads so browser preflight requests no longer fail with `400 Bad Request` before the upload reaches the API.
 
+- [ ] **P2-03 — Product intelligence, accessibility, and design-system upgrade**
+  - Add privacy-safe Sentry error/performance monitoring and PostHog activation, retention, upload, retrieval, and conversion events.
+  - Run real-device WCAG 2.2 AA checks across iOS Safari, Android Chrome, tablet, keyboard-only, screen-reader, contrast, focus, and reduced-motion flows.
+  - Replace the MVP visual layer with a documented token-based design system, premium responsive components, and measured performance budgets.
+  - **External gate:** validate analytics events without leaking document contents or tokens, complete the device matrix, and approve the visual regression baseline.
+
 ## Verification baseline
 
-- Backend: `./venv/bin/python -m pytest -q api/tests` — 24 passing.
+- Backend: `./venv/bin/python -m pytest -q api/tests` — 25 passing.
 - Frontend: `npm run lint` — passing.
 - Frontend: `npm run build` — passing with split chunks.
 - Browser: `npm run test:e2e` — 6 passing (Chromium; deterministic route fixtures).
@@ -92,4 +98,5 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 
 - [x] User confirmed the Supabase migrations, production environment variables, backend-first deployment, and authenticated canary checks described in `docs/PHASE_1_ROLLOUT.md`.
 - [ ] Populate and domain-review `supabase/seed/obligations.csv`; publish only reviewed rows. The current empty catalog is an intentional fail-closed state, not a complete compliance dataset.
-- [ ] Finish the P2-02 external migration/worker canary, then add full Sentry/PostHog analytics, visual rebrand, and real-device WCAG audit.
+- [x] Finish the P2-02 external migration/worker canary; user verified the live queued-to-indexed document flow.
+- [ ] Start P2-03 product analytics, real-device WCAG audit, and design-system upgrade.
