@@ -63,6 +63,10 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
   - Added frontend progress polling, processing stages, safe failure messages, and source cleanup on document deletion.
   - **External gate:** apply `supabase/migrations/0003_async_document_jobs.sql`, configure `SUPABASE_SERVICE_ROLE_KEY`, Redis, and the worker deployment, then canary async processing before marking this complete.
 
+- [x] **P2-02 hotfix — Redis worker polling timeout**
+  - Fixed the Redis client socket timeout being shorter than the blocking `BRPOP` interval, which caused repeated `redis.exceptions.TimeoutError` worker failures on an idle queue.
+  - Added recoverable timeout handling and connection health checks so transient Redis read timeouts do not kill document processing.
+
 ## Verification baseline
 
 - Backend: `./venv/bin/python -m pytest -q api/tests` — 24 passing.

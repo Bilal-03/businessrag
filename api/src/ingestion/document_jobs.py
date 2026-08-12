@@ -278,6 +278,7 @@ class DocumentJobQueue:
     def __init__(self, redis_url: str | None = None):
         self.redis_url = redis_url
         self._redis = None
+        self._redis_timeout_error = TimeoutError
         self._memory: asyncio.Queue[str] = asyncio.Queue()
         self._worker_task: asyncio.Task | None = None
         self._stop = asyncio.Event()
@@ -288,9 +289,21 @@ class DocumentJobQueue:
             return
         if self.redis_url:
             try:
-                import redis.asyncio as redis
+                import redis.asyncio as redis_asyncio
+                from redis import exceptions as redis_exceptions
 
-                self._redis = redis.from_url(self.redis_url, decode_responses=True, socket_timeout=1.0)
+                # BRPOP is intentionally a blocking read. The socket timeout
+                # must exceed the BRPOP poll interval or redis-py cancels the
+                # read before Redis can return an ordinary empty result.
+                poll_seconds = max(1.0, float(settings.document_worker_poll_seconds))
+                self._redis_timeout_error = getattr(redis_exceptions, "TimeoutError", TimeoutError)
+                self._redis = redis_asyncio.from_url(
+                    self.redis_url,
+                    decode_responses=True,
+                    socket_connect_timeout=10.0,
+                    socket_timeout=max(5.0, poll_seconds + 5.0),
+                    health_check_interval=30.0,
+                )
                 await self._redis.ping()
                 logger.info("document_queue_redis_ready", extra={"event": "document_queue_redis_ready"})
             except Exception:
@@ -357,8 +370,15 @@ class DocumentJobQueue:
 
     async def _next(self) -> str | None:
         if self._redis is not None:
-            result = await self._redis.brpop(QUEUE_KEY, timeout=max(1, int(settings.document_worker_poll_seconds)))
-            return result[1] if result else None
+            try:
+                result = await self._redis.brpop(QUEUE_KEY, timeout=max(1, int(settings.document_worker_poll_seconds)))
+                return result[1] if result else None
+            except (asyncio.TimeoutError, self._redis_timeout_error):
+                # A network-level timeout is recoverable. Keep the worker
+                # alive and let redis-py establish a fresh connection on the
+                # next poll instead of emitting an error every second.
+                logger.warning("document_queue_redis_poll_timeout", extra={"event": "document_queue_redis_poll_timeout"})
+                return None
         try:
             return await asyncio.wait_for(self._memory.get(), timeout=settings.document_worker_poll_seconds)
         except asyncio.TimeoutError:
