@@ -182,7 +182,7 @@ const WorkflowDashboard = ({
                 <option value="" disabled>Select a business</option>
                 {businesses.map(business => (
                   <option key={business.id} value={business.id}>
-                    {business.name}{business.state ? ` · ${business.state}` : ''}
+                    {[business.name, business.type, business.state].filter(Boolean).join(' · ')}
                   </option>
                 ))}
               </select>
