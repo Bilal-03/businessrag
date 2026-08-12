@@ -144,7 +144,7 @@ function App() {
   const currentConvIdRef = useRef(null);
   const sessionUserIdRef = useRef(null);
 
-  const resetClientState = useCallback(() => {
+  const resetClientState = useCallback((previousUserId = sessionUserIdRef.current) => {
     setMessages([]);
     setConversations([]);
     setBusinesses([]);
@@ -155,52 +155,75 @@ function App() {
     setApiUrl(DEFAULT_API_URL);
     setActiveBusinessId(null);
     setActiveBusinessProfile(null);
-    if (session?.user?.id) {
-      localStorage.removeItem(`bizguide_active_business:${session.user.id}`);
-      localStorage.removeItem(`bizguide_active_business_profile:${session.user.id}`);
-      SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(`${key}:${session.user.id}`));
+    if (previousUserId) {
+      localStorage.removeItem(`bizguide_active_business:${previousUserId}`);
+      localStorage.removeItem(`bizguide_active_business_profile:${previousUserId}`);
+      SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(`${key}:${previousUserId}`));
     }
     localStorage.removeItem('bizguide_active_business');
     SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
-  }, [session]);
+  }, []);
 
   const applySession = useCallback((nextSession) => {
     const nextUserId = nextSession?.user?.id || null;
-    if (sessionUserIdRef.current && sessionUserIdRef.current !== nextUserId) {
-      resetClientState();
+    const previousUserId = sessionUserIdRef.current;
+    if (previousUserId && previousUserId !== nextUserId) {
+      resetClientState(previousUserId);
     }
     sessionUserIdRef.current = nextUserId;
-    setSession(nextSession);
+    setSession(currentSession => {
+      // Supabase may return a fresh session object for the same token. Avoid
+      // turning that identity-only change into another auth bootstrap render.
+      if (
+        currentSession?.user?.id === nextSession?.user?.id &&
+        currentSession?.access_token === nextSession?.access_token &&
+        currentSession?.refresh_token === nextSession?.refresh_token &&
+        currentSession?.expires_at === nextSession?.expires_at
+      ) {
+        return currentSession;
+      }
+      return nextSession;
+    });
   }, [resetClientState]);
 
   // Supabase Auth Listener
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      applySession(session);
+    let active = true;
+    supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
+      if (!active) return;
+      applySession(nextSession);
+      setIsAuthLoading(false);
+    }).catch(() => {
+      if (!active) return;
+      applySession(null);
       setIsAuthLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      applySession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      applySession(nextSession);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, [applySession]);
 
   // Load normalized core data + settings. The legacy user_data row is used
   // only once by ensureCoreCutover(), never as a live write target.
   useEffect(() => {
-    if (!session) return;
+    const userId = session?.user?.id;
+    if (!userId) return;
     let cancelled = false;
 
-    const savedUrl = localStorage.getItem(`bizguide_api_url:${session.user.id}`);
+    const savedUrl = localStorage.getItem(`bizguide_api_url:${userId}`);
     if (savedUrl) setApiUrl(savedUrl);
     
     setPersistenceStatus('loading');
     setPersistenceMessage('');
-    ensureCoreCutover(session.user.id)
+    ensureCoreCutover(userId)
       .then(async result => {
-        if (cancelled || sessionUserIdRef.current !== session.user.id) return;
+        if (cancelled || sessionUserIdRef.current !== userId) return;
         if (!result.ready) {
           setPersistenceStatus('unavailable');
           setPersistenceMessage(result.error?.message || 'Apply the core Supabase migration before using saved workspace data.');
@@ -209,7 +232,7 @@ function App() {
           return;
         }
         const [nextConversations, nextBusinesses] = await Promise.all([listConversations(), listBusinesses()]);
-        if (cancelled || sessionUserIdRef.current !== session.user.id) return;
+        if (cancelled || sessionUserIdRef.current !== userId) return;
         setConversations(nextConversations);
         setBusinesses(nextBusinesses);
         setPersistenceStatus('ready');
@@ -223,7 +246,7 @@ function App() {
         setBusinesses([]);
       });
 
-    const savedAccent = localStorage.getItem(`bizguide_accent:${session.user.id}`);
+    const savedAccent = localStorage.getItem(`bizguide_accent:${userId}`);
     if (savedAccent) {
       const ACCENT_COLORS = [
         { primary: '#6366f1', secondary: '#8b5cf6' },
@@ -240,16 +263,17 @@ function App() {
       }
     }
     return () => { cancelled = true; };
-  }, [session]);
+  }, [session?.user?.id]);
 
   useEffect(() => {
-    if (!session?.user?.id) {
+    const userId = session?.user?.id;
+    if (!userId) {
       setActiveBusinessId(null);
       setActiveBusinessProfile(null);
       return;
     }
-    const userKey = `bizguide_active_business:${session.user.id}`;
-    const profileKey = `bizguide_active_business_profile:${session.user.id}`;
+    const userKey = `bizguide_active_business:${userId}`;
+    const profileKey = `bizguide_active_business_profile:${userId}`;
     const legacyKey = 'bizguide_active_business';
     const legacyValue = localStorage.getItem(legacyKey);
     const savedValue = localStorage.getItem(userKey) || legacyValue;
@@ -264,12 +288,23 @@ function App() {
     const storedBusiness = businesses.find(business => business.id === savedValue);
     setActiveBusinessId(savedValue || null);
     setActiveBusinessProfile(storedBusiness || savedProfile);
-  }, [businesses, session]);
+  }, [businesses, session?.user?.id]);
 
   // Auto-scroll to bottom when messages change
+  const scrollFrameRef = useRef(null);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (typeof window === 'undefined' || scrollFrameRef.current !== null) return;
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollFrameRef.current = null;
+      messagesEndRef.current?.scrollIntoView({ behavior: isTyping ? 'auto' : 'smooth', block: 'end' });
+    });
   }, [messages, isTyping]);
+
+  useEffect(() => () => {
+    if (typeof window !== 'undefined' && scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current);
+    }
+  }, []);
 
   const saveConversations = useCallback((updated) => {
     setConversations(updated);
@@ -289,11 +324,13 @@ function App() {
   }, [session]);
 
   const handleBusinessesChange = useCallback((updated) => {
+    const userId = session?.user?.id;
+    if (!userId) return;
     const previous = businesses;
     setBusinesses(updated);
     const nextIds = new Set(updated.map(business => business.id));
     Promise.all([
-      ...updated.map(business => saveBusiness(business, session.user.id)),
+      ...updated.map(business => saveBusiness(business, userId)),
       ...previous.filter(business => !nextIds.has(business.id)).map(business => deleteBusiness(business.id)),
     ]).then(async () => {
       const refreshed = await listBusinesses();
@@ -305,11 +342,12 @@ function App() {
       setPersistenceStatus('unavailable');
       setPersistenceMessage(error.message || 'The business profile could not be saved.');
     });
-  }, [activeBusinessId, businesses, handleSelectBusiness, session]);
+  }, [activeBusinessId, businesses, handleSelectBusiness, session?.user?.id]);
 
   // Save current messages to the active conversation
   const persistCurrentConv = useCallback((msgs, convId) => {
     if (!convId || msgs.length === 0) return;
+    const userId = session?.user?.id;
     setConversations(prev => {
       const existing = prev.find(c => c.id === convId);
       let updated;
@@ -330,8 +368,8 @@ function App() {
         updated = [newConv, ...prev];
       }
       const conversation = updated.find(item => item.id === convId);
-      if (session && conversation) {
-        saveConversation({ ...conversation, businessId: conversation.businessId || activeBusinessId }, session.user.id)
+      if (userId && conversation) {
+        saveConversation({ ...conversation, businessId: conversation.businessId || activeBusinessId }, userId)
           .catch(error => {
             setPersistenceStatus('unavailable');
             setPersistenceMessage(error.message || 'Conversation history could not be saved.');
@@ -339,7 +377,7 @@ function App() {
       }
       return updated;
     });
-  }, [activeBusinessId, session]);
+  }, [activeBusinessId, session?.user?.id]);
 
   const handleSend = async (query) => {
     if (!query.trim() || isTyping || isUploading) return;
