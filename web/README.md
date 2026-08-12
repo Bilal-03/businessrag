@@ -1,5 +1,21 @@
 # React + Vite
 
+## Browser smoke tests
+
+The critical authenticated workspace flows are covered with Playwright. The
+tests use deterministic Supabase and API route fixtures, so they never need
+production credentials or mutate production data.
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+Use `npm run test:e2e:debug` to step through a failing test or
+`npm run test:e2e:ui` for the Playwright UI runner. CI runs the same suite on
+every push and pull request targeting `main`.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:

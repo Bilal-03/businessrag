@@ -48,16 +48,21 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 - [x] **P1-08 — Responsive/product polish baseline**
   - Added mobile drawer backdrop, touch-sized controls, safe-area chat composer, modal focus trapping, document inventory states, and persistence status messaging.
   - **Deferred to Phase 2:** full visual rebrand and real-device WCAG audit.
-- [ ] **P1-09 — Verification and rollout**
-  - Add browser-level smoke tests for auth, chat fallback/streaming, upload, business context, deletion confirmation, and error recovery.
-  - Canary the new backend while the current public app remains online, then promote by measured success/error/latency thresholds.
-  - Local browser verification was blocked by the browser sandbox's localhost network boundary; production inspection confirmed the public URL is still the pre-cutover deployment.
+- [x] **P1-09 — Verification and rollout**
+  - User-confirmed production checks passed for Render health/readiness, Vercel-to-Render connectivity, Supabase migrations/RLS, authentication, chat streaming/fallback, uploads, business context switching, task CRUD/deletion confirmation, rate limiting, responsive layouts, and keyboard/reduced-motion behavior.
+  - The live deployment was canaried and promoted after the user verified the critical flows; the previous deployment remains available for rollback.
+
+- [x] **P2-01 — Browser smoke tests and CI guardrails**
+  - Added six Playwright smoke tests covering sign-in, source-aware chat streaming, AI error recovery, PDF validation/upload, business switching/task deletion, and mobile navigation.
+  - Tests use deterministic Supabase/API route fixtures and never require production credentials or mutate production data.
+  - Added Chromium test configuration, local test commands, and a GitHub Actions workflow running lint, build, and browser tests on pushes and pull requests to `main`.
 
 ## Verification baseline
 
 - Backend: `./venv/bin/python -m pytest -q api/tests` — 20 passing.
 - Frontend: `npm run lint` — passing.
 - Frontend: `npm run build` — passing with split chunks.
+- Browser: `npm run test:e2e` — 6 passing (Chromium; deterministic route fixtures).
 - Source catalog: `./venv/bin/python scripts/validate_source_catalog.py` — passing (0 rows; no obligations are published by default).
 - Integrity: `git diff --check` — passing.
 
@@ -70,9 +75,8 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
   - Fixed the status select width overriding the task layout, which collapsed task titles and due dates.
   - Added a visible `Confirm delete` state while retaining the two-step destructive-action safeguard.
 
-## External gates still required
+## Operational follow-ups
 
-- Apply `supabase/migrations/0001_core_workflow_schema.sql` and `0002_publish_gate_and_catalog_checks.sql` in staging, then production after backup/RLS verification.
-- Populate and domain-review `supabase/seed/obligations.csv`; publish only reviewed rows.
-- Set Render/Vercel environment variables and deploy backend before frontend.
-- Run authenticated canary/e2e tests on staging and promote the deployment only after the gates in `docs/PHASE_1_ROLLOUT.md` pass.
+- [x] User confirmed the Supabase migrations, production environment variables, backend-first deployment, and authenticated canary checks described in `docs/PHASE_1_ROLLOUT.md`.
+- [ ] Populate and domain-review `supabase/seed/obligations.csv`; publish only reviewed rows. The current empty catalog is an intentional fail-closed state, not a complete compliance dataset.
+- [ ] Add the Phase 2 asynchronous ingestion worker, full Sentry/PostHog analytics, visual rebrand, and real-device WCAG audit.
