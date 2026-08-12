@@ -4,6 +4,8 @@ import jwt
 from fastapi.testclient import TestClient
 from config import get_settings
 from main import app
+from src.routes import chat as chat_routes
+from src.retrieval.retriever import RetrievedSource
 from src.utils.rate_limit import InMemoryRateLimiter
 
 client = TestClient(app)
@@ -98,9 +100,53 @@ def test_legacy_admin_clear_all_route_is_not_exposed():
     assert response.status_code == 404
 
 
+def test_document_inventory_and_clear_are_authenticated():
+    assert client.get("/api/documents").status_code == 401
+    assert client.delete("/api/documents/clear").status_code == 401
+
+
+def test_metrics_endpoint_is_privacy_safe():
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert "query" not in payload
+    assert "Authorization" not in response.text
+
+
 def test_rate_limiter_returns_retry_after_when_limit_is_reached():
     limiter = InMemoryRateLimiter()
     assert limiter.check("chat", "test-user", limit=1) == (True, 0)
     allowed, retry_after = limiter.check("chat", "test-user", limit=1)
     assert allowed is False
     assert retry_after >= 1
+
+
+def test_chat_stream_emits_metadata_tokens_and_done_event(monkeypatch):
+    monkeypatch.setattr(chat_routes, "route_query", lambda query: "General Agent")
+    monkeypatch.setattr(chat_routes, "retrieve_sources", lambda *args, **kwargs: [
+        RetrievedSource(
+            content="The source says to verify the filing date against the official notice.",
+            document_id="doc-1",
+            file_name="notice.pdf",
+            page_number=2,
+            score=0.9,
+        )
+    ])
+
+    def fake_stream(*args, **kwargs):
+        yield "Grounded"
+        yield " answer"
+
+    monkeypatch.setattr(chat_routes, "stream_agent_with_sources", fake_stream)
+    response = client.post(
+        "/api/chat/stream",
+        headers=auth_headers(),
+        json={"query": "What does my notice say?"},
+    )
+
+    assert response.status_code == 200
+    assert "event: meta" in response.text
+    assert '"document_id": "doc-1"' in response.text
+    assert '"text": "Grounded"' in response.text
+    assert "event: done" in response.text

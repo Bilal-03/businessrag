@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Globe, Trash2, Info, Check, Palette, Shield, Bell, Bot, Search, FileText, MapPin } from 'lucide-react';
 import Logo from './Logo';
@@ -24,36 +24,40 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
     typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
   );
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmClearDocs, setConfirmClearDocs] = useState(false);
   const [activeSection, setActiveSection] = useState('profile');
   const [dataStatus, setDataStatus] = useState('');
+  const userKey = useCallback((name) => session?.user?.id ? `${name}:${session.user.id}` : name, [session?.user?.id]);
 
   useEffect(() => {
-    const savedProfile = localStorage.getItem('bizguide_profile');
+    const savedProfile = localStorage.getItem(userKey('bizguide_profile'));
     if (savedProfile) setProfile(JSON.parse(savedProfile));
-    const savedAccent = localStorage.getItem('bizguide_accent');
+    const savedAccent = localStorage.getItem(userKey('bizguide_accent'));
     if (savedAccent) setSelectedAccent(parseInt(savedAccent, 10));
-    const savedApiUrl = localStorage.getItem('bizguide_api_url');
+    const savedApiUrl = localStorage.getItem(userKey('bizguide_api_url'));
     if (savedApiUrl) setApiUrl(savedApiUrl);
-    const savedNotifs = localStorage.getItem('bizguide_notifications');
-    if (savedNotifs !== null) setNotifications(savedNotifs === 'true' && Notification.permission === 'granted');
-  }, []);
+    const savedNotifs = localStorage.getItem(userKey('bizguide_notifications'));
+    if (savedNotifs !== null) {
+      setNotifications(savedNotifs === 'true' && typeof Notification !== 'undefined' && Notification.permission === 'granted');
+    }
+  }, [session, userKey]);
 
   const handleSaveProfile = () => {
-    localStorage.setItem('bizguide_profile', JSON.stringify(profile));
+    localStorage.setItem(userKey('bizguide_profile'), JSON.stringify(profile));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleAccentChange = (idx) => {
     setSelectedAccent(idx);
-    localStorage.setItem('bizguide_accent', idx.toString());
+    localStorage.setItem(userKey('bizguide_accent'), idx.toString());
     const color = ACCENT_COLORS[idx];
     document.documentElement.style.setProperty('--accent-primary', color.primary);
     document.documentElement.style.setProperty('--accent-secondary', color.secondary);
   };
 
   const handleSaveApiUrl = () => {
-    localStorage.setItem('bizguide_api_url', apiUrl);
+    localStorage.setItem(userKey('bizguide_api_url'), apiUrl);
     if (onApiUrlChange) onApiUrlChange(apiUrl);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -62,11 +66,37 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
   const handleClearHistory = () => {
     if (confirmClear) {
       onClearHistory();
-      localStorage.removeItem('bizguide_conversations');
+      localStorage.removeItem(`bizguide_conversations:${session?.user?.id || ''}`);
       setConfirmClear(false);
     } else {
       setConfirmClear(true);
       setTimeout(() => setConfirmClear(false), 4000);
+    }
+  };
+
+  const handleClearDocuments = async () => {
+    if (!session) {
+      setDataStatus('Sign in to manage uploaded documents.');
+      return;
+    }
+    if (!confirmClearDocs) {
+      setConfirmClearDocs(true);
+      setTimeout(() => setConfirmClearDocs(false), 4000);
+      return;
+    }
+    setConfirmClearDocs(false);
+    try {
+      const response = await fetch(`${apiUrl}/api/documents/clear`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      let data = {};
+      try { data = await response.json(); } catch {}
+      if (!response.ok) throw new Error(data.detail || 'We could not clear uploaded documents.');
+      localStorage.removeItem(`bizguide_uploads:${session.user.id}`);
+      setDataStatus('Your uploaded documents have been cleared.');
+    } catch (e) {
+      setDataStatus(e.message || 'Failed to clear documents. Please try again.');
     }
   };
 
@@ -94,6 +124,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
               key={s.id}
               className={`settings-nav-item ${activeSection === s.id ? 'active' : ''}`}
               onClick={() => setActiveSection(s.id)}
+              aria-current={activeSection === s.id ? 'page' : undefined}
             >
               <s.icon size={18} /> {s.label}
             </button>
@@ -109,16 +140,16 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                 <p className="settings-section-desc">This information is stored locally in your browser and helps personalize your experience.</p>
                 <div className="settings-fields">
                   <div className="form-group full">
-                    <label>Your Name</label>
-                    <input className="form-input" placeholder="e.g. Rajesh Kumar" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} />
+                    <label htmlFor="profile-name">Your Name</label>
+                    <input id="profile-name" className="form-input" placeholder="e.g. Rajesh Kumar" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} />
                   </div>
                   <div className="form-group full">
-                    <label>Email Address</label>
-                    <input className="form-input" type="email" placeholder="you@example.com" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} />
+                    <label htmlFor="profile-email">Email Address</label>
+                    <input id="profile-email" className="form-input" type="email" placeholder="you@example.com" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} />
                   </div>
                   <div className="form-group full">
-                    <label>Company / Business Name</label>
-                    <input className="form-input" placeholder="Your company name" value={profile.company} onChange={e => setProfile({ ...profile, company: e.target.value })} />
+                    <label htmlFor="profile-company">Company / Business Name</label>
+                    <input id="profile-company" className="form-input" placeholder="Your company name" value={profile.company} onChange={e => setProfile({ ...profile, company: e.target.value })} />
                   </div>
                 </div>
                 <motion.button whileHover={{ scale: 1.03 }} className="btn-primary" onClick={handleSaveProfile}>
@@ -140,6 +171,8 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                       className={`accent-swatch ${selectedAccent === idx ? 'selected' : ''}`}
                       onClick={() => handleAccentChange(idx)}
                       title={color.name}
+                      aria-label={`${color.name} accent theme`}
+                      aria-pressed={selectedAccent === idx}
                     >
                       <div className="accent-circle" style={{ background: `linear-gradient(135deg, ${color.primary}, ${color.secondary})` }} />
                       <span className="accent-name">{color.name}</span>
@@ -162,6 +195,9 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                   <button
                     className={`toggle-switch ${notifications && notifPermission === 'granted' ? 'on' : 'off'}`}
                     disabled={notifPermission === 'denied'}
+                    role="switch"
+                    aria-checked={notifications && notifPermission === 'granted'}
+                    aria-label="Browser notifications"
                     onClick={async () => {
                       if (!notifications) {
                         // Turning ON — request real browser permission
@@ -170,7 +206,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                         setNotifPermission(permission);
                         if (permission === 'granted') {
                           setNotifications(true);
-                          localStorage.setItem('bizguide_notifications', 'true');
+                          localStorage.setItem(userKey('bizguide_notifications'), 'true');
                           // Fire a test notification so they can see it works
                           new Notification('BizGuide AI', {
                             body: 'Notifications are enabled! You\'ll be notified when AI responds.',
@@ -178,12 +214,12 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                           });
                         } else {
                           setNotifications(false);
-                          localStorage.setItem('bizguide_notifications', 'false');
+                          localStorage.setItem(userKey('bizguide_notifications'), 'false');
                         }
                       } else {
                         // Turning OFF
                         setNotifications(false);
-                        localStorage.setItem('bizguide_notifications', 'false');
+                        localStorage.setItem(userKey('bizguide_notifications'), 'false');
                       }
                     }}
                   >
@@ -199,9 +235,9 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                 <p className="settings-section-desc">Configure the backend API endpoint and manage data.</p>
                 {import.meta.env.DEV && (
                   <div className="form-group full" style={{ marginBottom: '24px' }}>
-                    <label>API Base URL</label>
+                    <label htmlFor="api-base-url">API Base URL</label>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                      <input className="form-input" placeholder="https://your-api.com" value={apiUrl} onChange={e => setApiUrl(e.target.value)} style={{ flex: 1 }} />
+                      <input id="api-base-url" className="form-input" placeholder="https://your-api.com" value={apiUrl} onChange={e => setApiUrl(e.target.value)} style={{ flex: 1 }} />
                       <motion.button whileHover={{ scale: 1.03 }} className="btn-primary" style={{ flexShrink: 0 }} onClick={handleSaveApiUrl}>
                         Save
                       </motion.button>
@@ -217,27 +253,11 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                     </div>
                     <motion.button
                       whileHover={{ scale: 1.03 }}
-                      className="btn-danger"
-                      onClick={async () => {
-                        if (!session) return;
-                        try {
-                          const response = await fetch(`${apiUrl}/api/documents/clear`, {
-                            method: 'DELETE',
-                            headers: {
-                              'Authorization': `Bearer ${session.access_token}`
-                            }
-                          });
-                          let data = {};
-                          try { data = await response.json(); } catch {}
-                          if (!response.ok) throw new Error(data.detail || 'We could not clear uploaded documents.');
-                          localStorage.removeItem(`bizguide_uploads:${session.user.id}`);
-                          setDataStatus('Your uploaded documents have been cleared.');
-                        } catch (e) {
-                          setDataStatus(e.message || 'Failed to clear documents. Please try again.');
-                        }
-                      }}
+                      className={`btn-danger ${confirmClearDocs ? 'confirming' : ''}`}
+                      onClick={handleClearDocuments}
+                      aria-label={confirmClearDocs ? 'Confirm clearing uploaded documents' : 'Clear uploaded documents'}
                     >
-                      <Trash2 size={16} /> Clear My Docs
+                      <Trash2 size={16} /> {confirmClearDocs ? 'Click again to confirm' : 'Clear My Docs'}
                     </motion.button>
                   </div>
                   <div className="danger-row">
@@ -249,6 +269,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                       whileHover={{ scale: 1.03 }}
                       className={`btn-danger ${confirmClear ? 'confirming' : ''}`}
                       onClick={handleClearHistory}
+                      aria-label={confirmClear ? 'Confirm clearing conversation history' : 'Clear conversation history'}
                     >
                       <Trash2 size={16} /> {confirmClear ? 'Click again to confirm' : 'Clear History'}
                     </motion.button>

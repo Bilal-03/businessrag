@@ -1,24 +1,35 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { lazy, Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Paperclip, Building2, UtensilsCrossed, Rocket, BarChart3, Wallet, Scale } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import Sidebar from './components/Sidebar';
-import MyBusinesses from './components/MyBusinesses';
-import UploadDocuments from './components/UploadDocuments';
-import Checklists from './components/Checklists';
-import Settings from './components/Settings';
-import Auth from './components/Auth';
-import { supabase, getUserData, updateUserData } from './lib/supabase';
+import { supabase } from './lib/supabase';
+import {
+  deleteAllConversations,
+  deleteBusiness,
+  deleteConversation,
+  ensureCoreCutover,
+  listBusinesses,
+  listConversations,
+  newUuid,
+  saveBusiness,
+  saveConversation,
+} from './lib/corePersistence';
 import './App.css';
+
+const MyBusinesses = lazy(() => import('./components/MyBusinesses.jsx'));
+const UploadDocuments = lazy(() => import('./components/UploadDocuments.jsx'));
+const WorkflowDashboard = lazy(() => import('./components/WorkflowDashboard.jsx'));
+const Settings = lazy(() => import('./components/Settings.jsx'));
+const Auth = lazy(() => import('./components/Auth.jsx'));
+const MarkdownMessage = lazy(() => import('./components/MarkdownMessage.jsx'));
+
+function PanelFallback() {
+  return <div className="panel-loading" role="status" aria-live="polite">Loading workspace…</div>;
+}
 
 const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'https://businessrag.onrender.com';
 const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 const SESSION_STORAGE_KEYS = [
-  'bizguide_conversations',
-  'bizguide_businesses',
-  'bizguide_checklists',
-  'bizguide_uploads',
   'bizguide_profile',
   'bizguide_notifications',
   'bizguide_accent',
@@ -46,6 +57,49 @@ async function readApiResponse(response) {
   } catch {
     return {};
   }
+}
+
+async function readChatStream(response, onUpdate) {
+  if (!response.body) throw new Error('Streaming is not available in this browser.');
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  const result = { answer: '', citations: [], grounding: 'general', agent_type: 'General Agent' };
+
+  const consumeEvent = (rawEvent) => {
+    const lines = rawEvent.split(/\r?\n/);
+    let eventName = 'message';
+    let data = '';
+    lines.forEach(line => {
+      if (line.startsWith('event:')) eventName = line.slice(6).trim();
+      if (line.startsWith('data:')) data += line.slice(5).trim();
+    });
+    if (!data) return;
+    let payload = {};
+    try { payload = JSON.parse(data); } catch { return; }
+    if (eventName === 'meta') {
+      Object.assign(result, payload);
+    } else if (eventName === 'token') {
+      result.answer += payload.text || '';
+      onUpdate({ ...result });
+    } else if (eventName === 'error') {
+      const error = new Error(payload.detail || 'We could not generate an answer.');
+      error.requestId = payload.request_id;
+      throw error;
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    const events = buffer.split(/\r?\n\r?\n/);
+    buffer = events.pop() || '';
+    events.forEach(consumeEvent);
+    if (done) break;
+  }
+  if (buffer.trim()) consumeEvent(buffer);
+  if (!result.answer.trim()) throw new Error('The response stream ended without an answer.');
+  return result;
 }
 
 function getApiError(data, response, fallback) {
@@ -79,6 +133,11 @@ function App() {
   );
   const [apiUrl, setApiUrl]               = useState(DEFAULT_API_URL);
   const [session, setSession]             = useState(null);
+  const [businesses, setBusinesses]       = useState([]);
+  const [activeBusinessId, setActiveBusinessId] = useState(null);
+  const [activeBusinessProfile, setActiveBusinessProfile] = useState(null);
+  const [persistenceStatus, setPersistenceStatus] = useState('loading');
+  const [persistenceMessage, setPersistenceMessage] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -88,13 +147,22 @@ function App() {
   const resetClientState = useCallback(() => {
     setMessages([]);
     setConversations([]);
+    setBusinesses([]);
     setInput('');
     setActiveConvId(null);
     currentConvIdRef.current = null;
     setCurrentView('home');
     setApiUrl(DEFAULT_API_URL);
+    setActiveBusinessId(null);
+    setActiveBusinessProfile(null);
+    if (session?.user?.id) {
+      localStorage.removeItem(`bizguide_active_business:${session.user.id}`);
+      localStorage.removeItem(`bizguide_active_business_profile:${session.user.id}`);
+      SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(`${key}:${session.user.id}`));
+    }
+    localStorage.removeItem('bizguide_active_business');
     SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
-  }, []);
+  }, [session]);
 
   const applySession = useCallback((nextSession) => {
     const nextUserId = nextSession?.user?.id || null;
@@ -119,42 +187,43 @@ function App() {
     return () => subscription.unsubscribe();
   }, [applySession]);
 
-  // Load conversations + settings
+  // Load normalized core data + settings. The legacy user_data row is used
+  // only once by ensureCoreCutover(), never as a live write target.
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
 
-    const savedUrl = localStorage.getItem('bizguide_api_url');
+    const savedUrl = localStorage.getItem(`bizguide_api_url:${session.user.id}`);
     if (savedUrl) setApiUrl(savedUrl);
     
-    // Sync from Supabase
-    getUserData(session.user.id).then(async (data) => {
-      if (cancelled || sessionUserIdRef.current !== session.user.id) return;
-      if (data) {
-        setConversations(data.conversations || []);
-      } else {
-        // Migration from localStorage on first login only.
-        const localConvs = localStorage.getItem('bizguide_conversations');
-        const localBiz = localStorage.getItem('bizguide_businesses');
-        const localChecks = localStorage.getItem('bizguide_checklists');
-
-        const newDoc = {
-          conversations: localConvs ? JSON.parse(localConvs) : [],
-          businesses: localBiz ? JSON.parse(localBiz) : [],
-          checklists: localChecks ? JSON.parse(localChecks) : {}
-        };
-
-        await updateUserData(session.user.id, newDoc);
+    setPersistenceStatus('loading');
+    setPersistenceMessage('');
+    ensureCoreCutover(session.user.id)
+      .then(async result => {
         if (cancelled || sessionUserIdRef.current !== session.user.id) return;
-        setConversations(newDoc.conversations);
+        if (!result.ready) {
+          setPersistenceStatus('unavailable');
+          setPersistenceMessage(result.error?.message || 'Apply the core Supabase migration before using saved workspace data.');
+          setConversations([]);
+          setBusinesses([]);
+          return;
+        }
+        const [nextConversations, nextBusinesses] = await Promise.all([listConversations(), listBusinesses()]);
+        if (cancelled || sessionUserIdRef.current !== session.user.id) return;
+        setConversations(nextConversations);
+        setBusinesses(nextBusinesses);
+        setPersistenceStatus('ready');
+        setPersistenceMessage(result.migrated ? 'Your workspace was moved to the secured core data model. Legacy checklist state was not imported.' : '');
+      })
+      .catch(error => {
+        if (cancelled) return;
+        setPersistenceStatus('unavailable');
+        setPersistenceMessage(error.message || 'Apply the core Supabase migration before using saved workspace data.');
+        setConversations([]);
+        setBusinesses([]);
+      });
 
-        localStorage.removeItem('bizguide_conversations');
-        localStorage.removeItem('bizguide_businesses');
-        localStorage.removeItem('bizguide_checklists');
-      }
-    });
-
-    const savedAccent = localStorage.getItem('bizguide_accent');
+    const savedAccent = localStorage.getItem(`bizguide_accent:${session.user.id}`);
     if (savedAccent) {
       const ACCENT_COLORS = [
         { primary: '#6366f1', secondary: '#8b5cf6' },
@@ -173,6 +242,30 @@ function App() {
     return () => { cancelled = true; };
   }, [session]);
 
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setActiveBusinessId(null);
+      setActiveBusinessProfile(null);
+      return;
+    }
+    const userKey = `bizguide_active_business:${session.user.id}`;
+    const profileKey = `bizguide_active_business_profile:${session.user.id}`;
+    const legacyKey = 'bizguide_active_business';
+    const legacyValue = localStorage.getItem(legacyKey);
+    const savedValue = localStorage.getItem(userKey) || legacyValue;
+    let savedProfile = null;
+    try {
+      savedProfile = JSON.parse(localStorage.getItem(profileKey) || 'null');
+    } catch {
+      savedProfile = null;
+    }
+    if (savedValue && !localStorage.getItem(userKey)) localStorage.setItem(userKey, savedValue);
+    localStorage.removeItem(legacyKey);
+    const storedBusiness = businesses.find(business => business.id === savedValue);
+    setActiveBusinessId(savedValue || null);
+    setActiveBusinessProfile(storedBusiness || savedProfile);
+  }, [businesses, session]);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -180,8 +273,39 @@ function App() {
 
   const saveConversations = useCallback((updated) => {
     setConversations(updated);
-    if (session) updateUserData(session.user.id, { conversations: updated });
+  }, []);
+
+  const handleSelectBusiness = useCallback((businessId, profile = null) => {
+    setActiveBusinessId(businessId || null);
+    setActiveBusinessProfile(profile || null);
+    if (session?.user?.id) {
+      const userKey = `bizguide_active_business:${session.user.id}`;
+      const profileKey = `bizguide_active_business_profile:${session.user.id}`;
+      if (businessId) localStorage.setItem(userKey, businessId);
+      else localStorage.removeItem(userKey);
+      if (profile) localStorage.setItem(profileKey, JSON.stringify(profile));
+      else localStorage.removeItem(profileKey);
+    }
   }, [session]);
+
+  const handleBusinessesChange = useCallback((updated) => {
+    const previous = businesses;
+    setBusinesses(updated);
+    const nextIds = new Set(updated.map(business => business.id));
+    Promise.all([
+      ...updated.map(business => saveBusiness(business, session.user.id)),
+      ...previous.filter(business => !nextIds.has(business.id)).map(business => deleteBusiness(business.id)),
+    ]).then(async () => {
+      const refreshed = await listBusinesses();
+      setBusinesses(refreshed);
+      const selected = refreshed.find(business => business.id === activeBusinessId);
+      if (selected) handleSelectBusiness(selected.id, selected);
+      setPersistenceStatus('ready');
+    }).catch(error => {
+      setPersistenceStatus('unavailable');
+      setPersistenceMessage(error.message || 'The business profile could not be saved.');
+    });
+  }, [activeBusinessId, businesses, handleSelectBusiness, session]);
 
   // Save current messages to the active conversation
   const persistCurrentConv = useCallback((msgs, convId) => {
@@ -201,15 +325,21 @@ function App() {
           title: generateTitle(msgs[0]?.content),
           messages: msgs,
           date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+          businessId: activeBusinessId,
         };
         updated = [newConv, ...prev];
       }
-      if (session) {
-        updateUserData(session.user.id, { conversations: updated });
+      const conversation = updated.find(item => item.id === convId);
+      if (session && conversation) {
+        saveConversation({ ...conversation, businessId: conversation.businessId || activeBusinessId }, session.user.id)
+          .catch(error => {
+            setPersistenceStatus('unavailable');
+            setPersistenceMessage(error.message || 'Conversation history could not be saved.');
+          });
       }
       return updated;
     });
-  }, [session]);
+  }, [activeBusinessId, session]);
 
   const handleSend = async (query) => {
     if (!query.trim() || isTyping || isUploading) return;
@@ -225,20 +355,58 @@ function App() {
 
     // Create a conversation ID if none exists
     if (!currentConvIdRef.current) {
-      currentConvIdRef.current = Date.now().toString();
+      currentConvIdRef.current = newUuid();
       setActiveConvId(currentConvIdRef.current);
     }
 
     try {
-      const response = await fetch(`${apiUrl}/api/chat`, {
+      const history = messages
+        .slice(-12)
+        .map(message => ({
+          role: message.role === 'ai' ? 'assistant' : message.role,
+          content: String(message.content || '').slice(0, 6000),
+        }))
+        .filter(message => (message.role === 'user' || message.role === 'assistant') && message.content);
+      const requestBody = JSON.stringify({
+        query,
+        conversation_id: currentConvIdRef.current,
+        business_id: activeBusinessId,
+        history,
+      });
+      let response = await fetch(`${apiUrl}/api/chat/stream`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ query }),
+        body: requestBody,
       });
-      const data = await readApiResponse(response);
+      let data;
+
+      if (response.status === 404 || response.status === 405) {
+        // Keep the public beta compatible with an older backend during rollout.
+        response = await fetch(`${apiUrl}/api/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: requestBody,
+        });
+        data = await readApiResponse(response);
+      } else if (response.ok) {
+        data = await readChatStream(response, streamed => {
+          setMessages([...updatedMessages, {
+            role: 'ai',
+            content: streamed.answer,
+            citations: streamed.citations || [],
+            grounding: streamed.grounding || 'general',
+            agentType: streamed.agent_type || 'General Agent',
+          }]);
+        });
+      } else {
+        data = await readApiResponse(response);
+      }
       
       if (!response.ok) {
         const { detail, requestId } = getApiError(data, response, 'We could not generate an answer.');
@@ -247,7 +415,13 @@ function App() {
         throw error;
       }
       
-      const aiMsg = { role: 'ai', content: data.answer || 'No response received' };
+      const aiMsg = {
+        role: 'ai',
+        content: data.answer || 'No response received',
+        citations: Array.isArray(data.citations) ? data.citations : [],
+        grounding: data.grounding || 'general',
+        agentType: data.agent_type || 'General Agent',
+      };
       const finalMessages = [...updatedMessages, aiMsg];
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);
@@ -289,6 +463,7 @@ function App() {
 
     const formData = new FormData();
     formData.append('file', file);
+    if (activeBusinessId) formData.append('business_id', activeBusinessId);
 
     try {
       // Upload with Authorization token for user isolation
@@ -352,6 +527,10 @@ function App() {
   const handleDeleteConversation = (convId) => {
     const updated = conversations.filter(c => c.id !== convId);
     saveConversations(updated);
+    deleteConversation(convId).catch(error => {
+      setPersistenceStatus('unavailable');
+      setPersistenceMessage(error.message || 'Conversation history could not be deleted.');
+    });
     if (activeConvId === convId) {
       setMessages([]);
       currentConvIdRef.current = null;
@@ -361,6 +540,10 @@ function App() {
 
   const handleClearAllHistory = () => {
     saveConversations([]);
+    deleteAllConversations().catch(error => {
+      setPersistenceStatus('unavailable');
+      setPersistenceMessage(error.message || 'Conversation history could not be cleared.');
+    });
     setMessages([]);
     currentConvIdRef.current = null;
     setActiveConvId(null);
@@ -382,7 +565,7 @@ function App() {
   }
 
   if (!session) {
-    return <Auth />;
+    return <Suspense fallback={<PanelFallback />}><Auth /></Suspense>;
   }
 
   return (
@@ -402,6 +585,13 @@ function App() {
       />
 
       <main className="main-content">
+        {persistenceMessage && (
+          <div className={`persistence-banner ${persistenceStatus === 'unavailable' ? 'error' : 'notice'}`} role={persistenceStatus === 'unavailable' ? 'alert' : 'status'}>
+            <span>{persistenceMessage}</span>
+            {persistenceStatus === 'unavailable' && <button type="button" className="persistence-retry" onClick={() => window.location.reload()}>Reload after migration</button>}
+          </div>
+        )}
+        <Suspense fallback={<PanelFallback />}>
         <AnimatePresence mode="wait">
           {currentView === 'home' ? (
             <motion.div
@@ -420,28 +610,30 @@ function App() {
                     transition={{ duration: 0.6 }}
                     className="hero-section"
                   >
-                    <div className="hero-badge">BizGuide AI</div>
+                    <div className="hero-badge">Educational beta · India-focused compliance</div>
                     <h1 className="hero-title">
                       Your <span className="gradient-text">Business Guide</span><br />
                       for Business Compliance
                     </h1>
                     <p className="hero-subtitle">
-                      Explore business-compliance information for India and ask questions about your uploaded documents.
-                      Verify important legal and tax decisions with a qualified professional and the original source.
+                      Explore AI-assisted planning information for Indian businesses and ask questions about your uploaded documents.
+                      Check important legal and tax decisions against the original source and a qualified professional.
                     </p>
                     <div className="quick-actions">
                       {QUICK_ACTIONS.map((qa) => (
-                        <motion.div
+                        <motion.button
                           key={qa.title}
+                          type="button"
                           whileHover={{ scale: 1.03, y: -4 }}
                           whileTap={{ scale: 0.98 }}
                           className="glass-panel action-card"
                           onClick={() => handleSend(qa.query)}
+                          aria-label={`${qa.title}: ${qa.desc}`}
                         >
                           <div className="action-icon">{qa.icon}</div>
                           <div className="action-title">{qa.title}</div>
                           <div className="action-desc">{qa.desc}</div>
-                        </motion.div>
+                        </motion.button>
                       ))}
                     </div>
                   </motion.div>
@@ -462,7 +654,30 @@ function App() {
                                 <span className="ai-dot" />
                                 BizGuide AI
                               </div>
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                              <Suspense fallback={<div className="markdown-fallback">{msg.content}</div>}>
+                                <MarkdownMessage content={msg.content} />
+                              </Suspense>
+                              {msg.citations?.length > 0 && (
+                                <div className="citation-list" aria-label="Document sources">
+                                  <div className="citation-heading">Sources from your documents</div>
+                                  <ol>
+                                    {msg.citations.map((citation, citationIndex) => (
+                                      <li key={`${citation.document_id}-${citation.page_number || citationIndex}`}>
+                                        <div className="citation-meta">
+                                          <span>{citation.file_name || 'Uploaded document'}</span>
+                                          {citation.page_number && <span> · page {citation.page_number}</span>}
+                                        </div>
+                                        <div className="citation-snippet">“{citation.snippet}”</div>
+                                      </li>
+                                    ))}
+                                  </ol>
+                                </div>
+                              )}
+                              {msg.grounding === 'insufficient' && (
+                                <p className="grounding-warning" role="status">
+                                  Retrieved document context is missing source metadata. Treat this answer as unverified and check the original file.
+                                </p>
+                              )}
                               {msg.retryQuery && (
                                 <button className="retry-message-button" onClick={() => handleSend(msg.retryQuery)}>
                                   Try again
@@ -485,7 +700,7 @@ function App() {
                           className="message-bubble message-ai"
                         >
                           <div className="ai-label"><span className="ai-dot pulsing" /> BizGuide AI</div>
-                          <div className="typing-indicator">
+                          <div className="typing-indicator" role="status" aria-live="polite">
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} className="typing-dot" />
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }} className="typing-dot" />
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.4 }} className="typing-dot" />
@@ -523,6 +738,7 @@ function App() {
                   <input
                     type="text"
                     className="chat-input"
+                    aria-label="Ask BizGuide a question"
                     placeholder="Ask about business structures, GST, licenses…"
                     value={input}
                     onChange={e => setInput(e.target.value)}
@@ -557,15 +773,28 @@ function App() {
             </motion.div>
           ) : currentView === 'businesses' ? (
             <motion.div key="businesses" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <MyBusinesses session={session} onAskQuestion={handleAskQuestion} />
+              <MyBusinesses
+                session={session}
+                businesses={businesses}
+                onBusinessesChange={handleBusinessesChange}
+                onAskQuestion={handleAskQuestion}
+                activeBusinessId={activeBusinessId}
+                onSelectBusiness={handleSelectBusiness}
+              />
             </motion.div>
           ) : currentView === 'upload' ? (
             <motion.div key="upload" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <UploadDocuments session={session} apiUrl={apiUrl} />
+              <UploadDocuments session={session} apiUrl={apiUrl} businessId={activeBusinessId} />
             </motion.div>
-          ) : currentView === 'checklists' ? (
-            <motion.div key="checklists" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <Checklists session={session} onAskQuestion={handleAskQuestion} />
+          ) : currentView === 'workflow' ? (
+            <motion.div key="workflow" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <WorkflowDashboard
+                session={session}
+                apiUrl={apiUrl}
+                activeBusinessId={activeBusinessId}
+                businessJurisdiction={activeBusinessProfile?.state || ''}
+                onGoToBusinesses={() => setCurrentView('businesses')}
+              />
             </motion.div>
           ) : currentView === 'settings' ? (
             <motion.div key="settings" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
@@ -578,6 +807,7 @@ function App() {
             </motion.div>
           ) : null}
         </AnimatePresence>
+        </Suspense>
       </main>
     </div>
   );

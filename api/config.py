@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     pinecone_index_name: str = "bizguide-index"
     supabase_url: str
     supabase_anon_key: str
-    supabase_jwt_secret: str
+    supabase_jwt_secret: Optional[str] = None
     supabase_jwt_audience: str = "authenticated"
     supabase_jwt_issuer: Optional[str] = None
     supabase_jwks_url: Optional[str] = None
@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     chat_rate_limit_per_minute: int = 30
     upload_rate_limit_per_minute: int = 10
     general_rate_limit_per_minute: int = 120
+    redis_url: Optional[str] = None
+    metrics_enabled: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

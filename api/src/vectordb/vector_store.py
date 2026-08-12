@@ -42,3 +42,9 @@ def clear_namespace(user_id: str):
     index = get_pinecone_client().Index(settings.pinecone_index_name)
     # Delete vectors that match this user_id in their metadata
     index.delete(filter={"session_id": {"$eq": user_id}})
+
+
+def clear_document(user_id: str, document_id: str):
+    """Delete vectors for one owner-scoped document."""
+    index = get_pinecone_client().Index(settings.pinecone_index_name)
+    index.delete(filter={"session_id": {"$eq": user_id}, "document_id": {"$eq": document_id}})

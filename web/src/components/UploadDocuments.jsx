@@ -2,33 +2,45 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle2, XCircle, Clock, Trash2 } from 'lucide-react';
 
-const UploadDocuments = ({ session, apiUrl }) => {
+const UploadDocuments = ({ session, apiUrl, businessId }) => {
   const [uploadHistory, setUploadHistory] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [currentFileName, setCurrentFileName] = useState('');
   const [uploadStatus, setUploadStatus] = useState('');
+  const [inventoryLoading, setInventoryLoading] = useState(true);
   const fileInputRef = useRef(null);
-  const historyStorageKey = session?.user?.id ? `bizguide_uploads:${session.user.id}` : null;
 
   useEffect(() => {
-    if (!historyStorageKey) return;
-    const saved = localStorage.getItem(historyStorageKey);
-    if (!saved) {
-      setUploadHistory([]);
-      return;
-    }
-    try {
-      setUploadHistory(JSON.parse(saved));
-    } catch {
-      setUploadHistory([]);
-      localStorage.removeItem(historyStorageKey);
-    }
-  }, [historyStorageKey]);
+    let cancelled = false;
+    if (!session?.access_token) return undefined;
+    setInventoryLoading(true);
+    const inventoryUrl = businessId
+      ? `${apiUrl}/api/documents?business_id=${encodeURIComponent(businessId)}`
+      : `${apiUrl}/api/documents`;
+    fetch(inventoryUrl, { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then(async response => {
+        let data = [];
+        try { data = await response.json(); } catch {}
+        if (!response.ok) throw new Error(data.detail || 'Document inventory is unavailable.');
+        if (!cancelled) setUploadHistory(Array.isArray(data) ? data.map(item => ({
+          id: item.id,
+          name: item.file_name,
+          size: item.byte_size ? `${(item.byte_size / 1024).toFixed(1)} KB` : 'Size unavailable',
+          date: item.created_at ? new Date(item.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Date unavailable',
+          status: item.status === 'indexed' ? 'success' : item.status === 'failed' ? 'error' : 'processing',
+          message: item.status === 'indexed' ? 'Indexed for document-grounded answers.' : item.status,
+        })) : []);
+      })
+      .catch(error => {
+        if (!cancelled) setUploadStatus(error.message || 'Document inventory is unavailable.');
+      })
+      .finally(() => { if (!cancelled) setInventoryLoading(false); });
+    return () => { cancelled = true; };
+  }, [apiUrl, businessId, session]);
 
   const saveHistory = (updated) => {
     setUploadHistory(updated);
-    if (historyStorageKey) localStorage.setItem(historyStorageKey, JSON.stringify(updated));
   };
 
   const handleUpload = async (file) => {
@@ -46,6 +58,7 @@ const UploadDocuments = ({ session, apiUrl }) => {
 
     const formData = new FormData();
     formData.append('file', file);
+    if (businessId) formData.append('business_id', businessId);
 
     try {
       const response = await fetch(`${apiUrl}/api/documents/upload`, {
@@ -59,11 +72,11 @@ const UploadDocuments = ({ session, apiUrl }) => {
       try { data = await response.json(); } catch {}
 
       const newEntry = {
-        id: Date.now().toString(),
+        id: data.document_id || Date.now().toString(),
         name: file.name,
         size: (file.size / 1024).toFixed(1) + ' KB',
         date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-        status: response.ok ? 'success' : 'error',
+        status: response.ok ? (data.status === 'processing' ? 'processing' : 'success') : 'error',
         message: response.ok ? data.message : (data.detail || 'Upload failed'),
       };
       saveHistory([newEntry, ...uploadHistory]);
@@ -94,8 +107,21 @@ const UploadDocuments = ({ session, apiUrl }) => {
     if (file) handleUpload(file);
   };
 
-  const handleDeleteHistory = (id) => {
-    saveHistory(uploadHistory.filter(u => u.id !== id));
+  const handleDeleteHistory = async (id) => {
+    if (!id) return;
+    try {
+      const response = await fetch(`${apiUrl}/api/documents/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      let data = {};
+      try { data = await response.json(); } catch {}
+      if (!response.ok) throw new Error(data.detail || 'The document could not be removed.');
+      saveHistory(uploadHistory.filter(u => u.id !== id));
+      setUploadStatus('Document removed from your workspace.');
+    } catch (error) {
+      setUploadStatus(error.message || 'The document could not be removed.');
+    }
   };
 
   return (
@@ -103,7 +129,7 @@ const UploadDocuments = ({ session, apiUrl }) => {
       <div className="panel-header">
         <div>
           <h2 className="panel-title">Upload Documents</h2>
-          <p className="panel-subtitle">Upload your business PDFs to make BizGuide answer questions based on your specific documents.</p>
+          <p className="panel-subtitle">Upload PDFs to ground answers in your source documents. {businessId ? 'Showing documents for the selected business.' : 'Select a business to keep documents scoped to one workspace.'}</p>
         </div>
       </div>
 
@@ -115,6 +141,16 @@ const UploadDocuments = ({ session, apiUrl }) => {
         onDragOver={e => e.preventDefault()}
         onDrop={handleDrop}
         onClick={() => !uploading && fileInputRef.current?.click()}
+        onKeyDown={e => {
+          if (!uploading && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
+        role="button"
+        tabIndex={uploading ? -1 : 0}
+        aria-label="Choose a PDF document to upload"
+        aria-busy={uploading}
         whileHover={!uploading ? { scale: 1.01, borderColor: 'rgba(99,102,241,0.6)' } : {}}
         animate={isDragging ? { scale: 1.02, borderColor: '#6366f1' } : {}}
       >
@@ -122,6 +158,7 @@ const UploadDocuments = ({ session, apiUrl }) => {
           ref={fileInputRef}
           type="file"
           accept=".pdf"
+          aria-label="PDF document"
           style={{ display: 'none' }}
           onChange={e => handleUpload(e.target.files[0])}
         />
@@ -137,7 +174,7 @@ const UploadDocuments = ({ session, apiUrl }) => {
               </motion.div>
               <div className="upload-filename">{currentFileName}</div>
               <div className="progress-bar-container" aria-hidden="true"><div className="progress-bar-indeterminate" /></div>
-              <div className="upload-progress-label">
+              <div className="upload-progress-label" role="status" aria-live="polite">
                 {uploadStatus}
               </div>
             </motion.div>
@@ -172,7 +209,8 @@ const UploadDocuments = ({ session, apiUrl }) => {
       </div>
 
       {/* Upload History */}
-      {uploadHistory.length > 0 && (
+      {inventoryLoading && <div className="upload-status-message" role="status">Loading your document inventory…</div>}
+      {!inventoryLoading && uploadHistory.length > 0 && (
         <div className="upload-history">
           <div className="section-label">Upload History</div>
           <AnimatePresence>

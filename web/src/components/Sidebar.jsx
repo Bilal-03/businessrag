@@ -1,13 +1,13 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Folder, UploadCloud, FileText, Settings, Plus, MessageSquare, Trash2, Menu, X, LogOut } from 'lucide-react';
+import { Home, Folder, UploadCloud, ClipboardCheck, Settings, Plus, MessageSquare, Trash2, Menu, X, LogOut } from 'lucide-react';
 import Logo from './Logo';
 
 const NAV_ITEMS = [
   { id: 'home',       label: 'Home',             icon: Home },
   { id: 'businesses', label: 'My Businesses',     icon: Folder },
   { id: 'upload',     label: 'Upload Documents',  icon: UploadCloud },
-  { id: 'checklists', label: 'Checklists',        icon: FileText },
+  { id: 'workflow',   label: 'Compliance Plan',   icon: ClipboardCheck },
 ];
 
 const Sidebar = ({
@@ -44,16 +44,18 @@ const Sidebar = ({
   return (
     <>
       {!collapsed ? (
+        <>
+          <button className="sidebar-backdrop" type="button" onClick={onToggleCollapse} aria-label="Close navigation" />
           <aside className="sidebar">
             {/* Logo */}
             <div className="sidebar-logo">
               <Logo size={36} showText={!collapsed} textSize={20} />
-              <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Collapse sidebar">
+              <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Collapse sidebar" aria-label="Collapse sidebar" aria-expanded="true">
                 <X size={18} />
               </button>
             </div>
 
-            {/* New Consultation Button */}
+            {/* New chat button */}
             <motion.button
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.98 }}
@@ -61,11 +63,11 @@ const Sidebar = ({
               onClick={startNewChat}
             >
               <Plus size={18} />
-              <span>New Consultation</span>
+              <span>New Chat</span>
             </motion.button>
 
             {/* Main Nav */}
-            <nav className="sidebar-nav">
+            <nav className="sidebar-nav" aria-label="Primary navigation">
               {NAV_ITEMS.map(item => (
                 <motion.button
                   key={item.id}
@@ -73,6 +75,7 @@ const Sidebar = ({
                   whileTap={{ scale: 0.97 }}
                   className={`nav-item ${currentView === item.id ? 'active' : ''}`}
                   onClick={() => navigate(item.id)}
+                  aria-current={currentView === item.id ? 'page' : undefined}
                 >
                   <item.icon size={19} />
                   <span>{item.label}</span>
@@ -100,6 +103,8 @@ const Sidebar = ({
                         <button
                           type="button"
                           className="conversation-select-btn"
+                          aria-label={`Open conversation ${conv.title || 'Untitled'}`}
+                          aria-current={activeConversationId === conv.id ? 'page' : undefined}
                           onPointerUp={e => {
                             if (e.button === 0) selectConversation(conv.id);
                           }}
@@ -113,6 +118,7 @@ const Sidebar = ({
                           className="conv-delete-btn"
                           onClick={e => { e.stopPropagation(); onDeleteConversation(conv.id); }}
                           title="Delete conversation"
+                          aria-label={`Delete conversation ${conv.title || 'Untitled'}`}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -130,6 +136,7 @@ const Sidebar = ({
                 whileTap={{ scale: 0.97 }}
                 className={`nav-item ${currentView === 'settings' ? 'active' : ''}`}
                 onClick={() => navigate('settings')}
+                aria-current={currentView === 'settings' ? 'page' : undefined}
               >
                 <Settings size={19} />
                 <span>Settings</span>
@@ -144,6 +151,7 @@ const Sidebar = ({
                   className="nav-item sign-out-item"
                   onClick={onSignOut}
                   title={`Sign out ${session.user?.email || ''}`}
+                  aria-label={`Sign out ${session.user?.email || ''}`}
                 >
                   <LogOut size={19} />
                   <span>Sign Out</span>
@@ -151,6 +159,7 @@ const Sidebar = ({
               )}
             </div>
           </aside>
+        </>
       ) : (
         <>
           <button className="mobile-menu-button" onClick={onToggleCollapse} title="Open navigation" aria-label="Open navigation">
@@ -158,7 +167,7 @@ const Sidebar = ({
           </button>
 
         <div className="sidebar-icon-strip">
-          <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Expand sidebar">
+          <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Expand sidebar" aria-label="Expand sidebar" aria-expanded="false">
             <Menu size={20} />
           </button>
           <div className="mobile-sidebar-logo"><Logo size={32} showText={false} /></div>
@@ -172,6 +181,8 @@ const Sidebar = ({
                 if (!isMobile()) onToggleCollapse();
               }}
               title={item.label}
+              aria-label={item.label}
+              aria-current={currentView === item.id ? 'page' : undefined}
             >
               <item.icon size={20} />
             </button>
@@ -183,6 +194,8 @@ const Sidebar = ({
               if (!isMobile()) onToggleCollapse();
             }}
             title="Settings"
+            aria-label="Settings"
+            aria-current={currentView === 'settings' ? 'page' : undefined}
           >
             <Settings size={20} />
           </button>

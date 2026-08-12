@@ -21,12 +21,12 @@
 
 ## 🌟 What is BizGuide AI?
 
-BizGuide AI is an early-stage RAG (Retrieval-Augmented Generation) application for exploring Indian business-compliance information. It can route questions by topic and retrieve context from uploaded PDFs. It does not replace a qualified legal or tax professional, and important decisions should be verified against original authoritative sources.
+BizGuide AI is an educational beta RAG (Retrieval-Augmented Generation) application for exploring Indian business-compliance information. It can classify questions by topic and retrieve context from uploaded PDFs. It is not a compliance system of record, does not guarantee completeness or legal accuracy, and must not replace a qualified legal or tax professional. Important decisions should be verified against original authoritative sources.
 
 Unlike generic AI, BizGuide:
-- **Routes your query** through a lightweight Legal, Tax, or General topic classifier
+- **Classifies your query** into lightweight Legal, Tax, or General response guidance
 - **Retrieves context** from your uploaded business documents using vector search
-- **Answers with markdown formatting** and shows a clear professional-verification disclaimer
+- **Answers with markdown formatting** and shows an educational-beta/professional-verification disclaimer
 
 ---
 
@@ -38,8 +38,9 @@ Unlike generic AI, BizGuide:
 | 🔍 **RAG Architecture** | Pinecone vector DB + Gemini Embeddings for document-grounded answers |
 | 📎 **Document Upload** | Upload your business PDFs; AI answers questions based on your actual documents |
 | 🏢 **My Businesses** | Manage your business profiles with quick-ask shortcuts |
-| ✅ **Compliance Checklists** | 5 interactive checklists (Pvt Ltd, GST, FSSAI, Startup India, S&E Act) with progress tracking |
-| 💬 **Conversation History** | All chats saved locally — click any past conversation to restore it |
+| 🚧 **Compliance Plan** | Source-backed obligations and planning tasks are implemented behind the staged schema; the previous hard-coded checklist surface remains hidden until migration/catalog validation |
+| 💬 **Conversation History** | Signed-in conversations and citations use normalized RLS-protected tables; legacy checklist state is intentionally not imported |
+| 🗃️ **Document Inventory** | Uploaded PDFs have owner-scoped server records with processing/indexed/deleted status |
 | ⚙️ **Settings** | Accent color themes, API URL config, profile management |
 | 🎨 **Premium Dark UI** | Glassmorphism design with smooth Framer Motion animations |
 
@@ -69,6 +70,12 @@ User Query
 │ Classifier  │  │ (Gemini Embeddings) │
 │ (Llama 3.3) │  │ k=4 similarity      │
 └──────┬──────┘  └────────────────────┘
+       │              │
+       ▼              ▼
+┌──────────────────┐  ┌────────────────────┐
+│ Supabase Postgres│  │ Redis (optional)   │
+│ RLS core tables  │  │ shared rate limits │
+└──────────────────┘  └────────────────────┘
        │
        ▼
 ┌──────────────────────┐
@@ -165,6 +172,13 @@ PINECONE_INDEX_NAME=bizguide-index
 
 # Embeddings (Google Gemini)
 GEMINI_API_KEY=...
+
+# Supabase + production controls (server only)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=...
+SUPABASE_JWT_SECRET=...
+SUPABASE_JWKS_URL=https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json
+REDIS_URL=redis://...
 ```
 
 See [`.env.example`](.env.example) for the full template.
@@ -177,7 +191,10 @@ See [`.env.example`](.env.example) for the full template.
 |---|---|---|
 | `POST` | `/api/chat` | Send a query, get AI response |
 | `POST` | `/api/documents/upload` | Upload a PDF for RAG indexing |
+| `GET` | `/api/documents` | List owner-scoped document inventory |
+| `DELETE` | `/api/documents/{document_id}` | Remove one document and its vectors |
 | `GET` | `/health` | Health check |
+| `GET` | `/metrics` | Privacy-safe request/error/latency counters |
 
 ### Chat Request
 ```json
@@ -218,7 +235,8 @@ businessrag/
 │   │   │   ├── Logo.jsx          # Logo component
 │   │   │   ├── MyBusinesses.jsx  # Business profile manager
 │   │   │   ├── UploadDocuments.jsx # Drag-drop PDF upload
-│   │   │   ├── Checklists.jsx    # Compliance checklists
+│   │   │   ├── Checklists.jsx    # Legacy checklist UI, hidden pending source-backed rebuild
+│   │   │   ├── WorkflowDashboard.jsx # Source-backed obligations and planning tasks
 │   │   │   └── Settings.jsx      # App settings
 │   │   ├── App.jsx          # Root — view routing, chat logic
 │   │   ├── App.css          # All component styles
@@ -232,9 +250,11 @@ businessrag/
 
 ---
 
-## 🧩 Compliance Checklists
+## 🚧 Compliance workflows
 
-BizGuide includes interactive, checkable compliance checklists for:
+The legacy hard-coded checklists are intentionally hidden from the product while source-backed obligations, effective dates, jurisdiction rules, and audit history are rebuilt. Do not rely on the old checklist content for a filing or compliance decision.
+
+The replacement workflow is planned to cover:
 
 1. **Private Limited Company Registration** — DSC, DIN, SPICe+ form, COI
 2. **GST Registration** — REG-01, Aadhaar auth, GSTIN
@@ -242,7 +262,7 @@ BizGuide includes interactive, checkable compliance checklists for:
 4. **Startup India (DPIIT)** — Recognition, 80-IAC tax exemption
 5. **Shop & Establishment Act** — State-wise registration
 
-All checklist progress is saved in your browser's localStorage.
+Progress will be persisted against a verified business profile and source version rather than browser-only local state.
 
 ---
 
@@ -259,6 +279,12 @@ The FastAPI backend is deployed on **Render** (free tier).
 **API URL:** `https://businessrag.onrender.com`
 
 > ⚠️ **Note on Render Free Tier:** The backend may take 30–60 seconds to respond on the first request after a period of inactivity (cold start). Subsequent requests are fast.
+
+### Security baseline
+
+The frontend deployment includes a restrictive Content Security Policy, HSTS, clickjacking and MIME-sniffing protections, a referrer policy, and a permissions policy through `web/vercel.json`. Keep server keys (Groq, Gemini, Pinecone, and JWT secrets) in the backend environment only; `VITE_*` variables are public client configuration.
+
+The source-backed workflow schema is defined in `supabase/migrations/0001_core_workflow_schema.sql` and `0002_publish_gate_and_catalog_checks.sql`. It is intentionally additive: the current beta can remain online while the application is migrated from the legacy `user_data`/Pinecone-only persistence model. Follow [`docs/PHASE_1_ROLLOUT.md`](docs/PHASE_1_ROLLOUT.md) before production promotion.
 
 ---
 

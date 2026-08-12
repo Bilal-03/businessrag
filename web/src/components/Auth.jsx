@@ -75,6 +75,8 @@ export default function Auth() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 className="auth-alert error"
+                role="alert"
+                aria-live="assertive"
               >
                 <AlertCircle size={16} /> {error}
               </motion.div>
@@ -86,6 +88,8 @@ export default function Auth() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 className="auth-alert success"
+                role="status"
+                aria-live="polite"
               >
                 <CheckCircle2 size={16} /> {message}
               </motion.div>
@@ -94,11 +98,12 @@ export default function Auth() {
 
           {!isLogin && (
             <div className="form-group full">
-              <label>Full Name</label>
+              <label htmlFor="auth-name">Full Name</label>
               <div className="input-with-icon">
                 <User size={18} className="input-icon" />
-                <input 
+                <input
                   type="text" 
+                  id="auth-name"
                   className="form-input with-icon" 
                   placeholder="Rajesh Kumar"
                   value={name}
@@ -110,12 +115,13 @@ export default function Auth() {
           )}
 
           <div className="form-group full">
-            <label>Email Address</label>
+            <label htmlFor="auth-email">Email Address</label>
             <div className="input-with-icon">
               <Mail size={18} className="input-icon" />
-              <input 
-                type="email" 
-                className="form-input with-icon" 
+              <input
+                type="email"
+                id="auth-email"
+                className="form-input with-icon"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -125,12 +131,13 @@ export default function Auth() {
           </div>
 
           <div className="form-group full">
-            <label>Password</label>
+            <label htmlFor="auth-password">Password</label>
             <div className="input-with-icon">
               <Lock size={18} className="input-icon" />
-              <input 
-                type="password" 
-                className="form-input with-icon" 
+              <input
+                type="password"
+                id="auth-password"
+                className="form-input with-icon"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -145,6 +152,7 @@ export default function Auth() {
             className="btn-primary auth-submit"
             type="submit"
             disabled={loading}
+            aria-busy={loading}
           >
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
             {!loading && <ArrowRight size={18} />}

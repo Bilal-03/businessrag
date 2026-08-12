@@ -28,9 +28,12 @@ def get_current_user(
     try:
         header = jwt.get_unverified_header(token)
         algorithm = header.get("alg")
+        jwks_algorithms = {"RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "EdDSA"}
         if algorithm == "HS256":
+            if not settings.supabase_jwt_secret:
+                raise jwt.InvalidKeyError("SUPABASE_JWT_SECRET is not configured")
             signing_key = settings.supabase_jwt_secret
-        elif algorithm == "ES256":
+        elif algorithm in jwks_algorithms:
             signing_key = jwks_client.get_signing_key_from_jwt(token).key
         else:
             raise jwt.InvalidAlgorithmError("Unsupported token signing algorithm")
@@ -50,6 +53,9 @@ def get_current_user(
                 detail="Invalid authentication credentials.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        # Keep the validated user token available to RLS-backed service adapters.
+        # It is never logged or returned to the client.
+        request.state.access_token = token
         return user_id
     except jwt.ExpiredSignatureError:
         raise HTTPException(
