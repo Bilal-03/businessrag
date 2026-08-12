@@ -84,7 +84,12 @@ function resolvePostHogHost(value) {
 function createSanitizedError(error) {
   const sanitizedError = new Error('BizGuide client operation failed');
   sanitizedError.name = error?.name || 'Error';
-  if (typeof error?.stack === 'string') sanitizedError.stack = error.stack;
+  if (typeof error?.stack === 'string') {
+    const stackLines = error.stack.split('\n');
+    // Preserve source locations for debugging, but never preserve the original
+    // first line because it repeats the potentially sensitive error message.
+    sanitizedError.stack = [`${sanitizedError.name}: BizGuide client operation failed`, ...stackLines.slice(1)].join('\n');
+  }
   return sanitizedError;
 }
 
