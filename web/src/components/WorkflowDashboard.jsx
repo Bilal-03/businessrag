@@ -154,6 +154,20 @@ const WorkflowDashboard = ({
   const selectedBusinessId = businesses.some(business => business.id === activeBusinessId)
     ? activeBusinessId
     : '';
+  const businessOptionLabels = useMemo(() => {
+    const bases = businesses.map(business => [
+      business.id,
+      [business.name, business.type, business.state].filter(Boolean).join(' · ') || 'Unnamed business',
+    ]);
+    const totals = new Map();
+    bases.forEach(([, base]) => totals.set(base, (totals.get(base) || 0) + 1));
+    const occurrences = new Map();
+    return new Map(bases.map(([businessId, base]) => {
+      const occurrence = (occurrences.get(base) || 0) + 1;
+      occurrences.set(base, occurrence);
+      return [businessId, totals.get(base) > 1 ? `${base} · ${occurrence}` : base];
+    }));
+  }, [businesses]);
 
   const handleBusinessChange = (event) => {
     const nextBusiness = businesses.find(business => business.id === event.target.value);
@@ -182,7 +196,7 @@ const WorkflowDashboard = ({
                 <option value="" disabled>Select a business</option>
                 {businesses.map(business => (
                   <option key={business.id} value={business.id}>
-                    {[business.name, business.type, business.state].filter(Boolean).join(' · ')}
+                    {businessOptionLabels.get(business.id)}
                   </option>
                 ))}
               </select>
