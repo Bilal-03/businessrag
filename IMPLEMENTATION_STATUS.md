@@ -67,6 +67,9 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
   - Fixed the Redis client socket timeout being shorter than the blocking `BRPOP` interval, which caused repeated `redis.exceptions.TimeoutError` worker failures on an idle queue.
   - Added recoverable timeout handling and connection health checks so transient Redis read timeouts do not kill document processing.
 
+- [x] **P2-02 hotfix — Upload CORS preflight**
+  - Allowed the `X-Idempotency-Key` header used by async uploads so browser preflight requests no longer fail with `400 Bad Request` before the upload reaches the API.
+
 ## Verification baseline
 
 - Backend: `./venv/bin/python -m pytest -q api/tests` — 24 passing.

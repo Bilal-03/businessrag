@@ -54,6 +54,19 @@ def test_upload_requires_auth():
     assert response.status_code == 401, f"Expected 401, got {response.status_code}"
 
 
+def test_upload_preflight_allows_idempotency_header():
+    response = client.options(
+        "/api/documents/upload",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type,x-idempotency-key",
+        },
+    )
+    assert response.status_code == 200
+    assert "x-idempotency-key" in response.headers["access-control-allow-headers"].lower()
+
+
 def test_chat_rejects_token_with_wrong_audience():
     response = client.post(
         "/api/chat",
