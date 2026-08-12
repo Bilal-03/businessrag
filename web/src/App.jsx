@@ -25,7 +25,7 @@ const Auth = lazy(() => import('./components/Auth.jsx'));
 const MarkdownMessage = lazy(() => import('./components/MarkdownMessage.jsx'));
 
 function PanelFallback() {
-  return <div className="panel-loading" role="status" aria-live="polite">Loading workspace…</div>;
+  return <div className="panel-loading" role="status" aria-live="polite" aria-busy="true">Loading workspace…</div>;
 }
 
 const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'https://businessrag.onrender.com';
@@ -148,6 +148,10 @@ function App() {
   useEffect(() => {
     captureEvent('app_loaded');
   }, []);
+
+  useEffect(() => {
+    captureEvent('workspace_viewed', { view: currentView });
+  }, [currentView]);
 
   const resetClientState = useCallback((previousUserId = sessionUserIdRef.current) => {
     setMessages([]);
@@ -640,6 +644,7 @@ function App() {
 
   return (
     <div className="app-container">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <Sidebar
         currentView={currentView}
         setCurrentView={setCurrentView}
@@ -654,7 +659,7 @@ function App() {
         onSignOut={handleSignOut}
       />
 
-      <main className="main-content">
+      <main id="main-content" className="main-content" tabIndex="-1">
         {persistenceMessage && (
           <div className={`persistence-banner ${persistenceStatus === 'unavailable' ? 'error' : 'notice'}`} role={persistenceStatus === 'unavailable' ? 'alert' : 'status'}>
             <span>{persistenceMessage}</span>

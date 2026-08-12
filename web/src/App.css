@@ -736,6 +736,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+  min-height: 44px;
 }
 .btn-primary:hover { box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
 .btn-primary.full-width { width: 100%; justify-content: center; }
@@ -753,6 +754,7 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 44px;
 }
 .btn-ghost:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
 
@@ -802,6 +804,7 @@
   padding: 6px 10px;
   border-radius: 8px;
   transition: all 0.15s;
+  min-height: 44px;
 }
 .icon-btn-text:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
 .icon-btn-text.danger:hover { color: #f87171; }
@@ -852,6 +855,7 @@
   cursor: pointer;
   text-align: left;
   width: 100%;
+  min-height: 44px;
 }
 .custom-select-value {
   flex: 1;
@@ -883,6 +887,7 @@
   box-shadow: 0 16px 48px rgba(0,0,0,0.45);
 }
 .custom-select-option {
+  min-height: 44px;
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
@@ -968,7 +973,14 @@
   padding: 18px 20px;
   cursor: pointer;
   user-select: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
 }
+.biz-card-header:hover { background: rgba(255,255,255,0.035); }
 .biz-avatar {
   width: 44px;
   height: 44px;
@@ -1278,6 +1290,7 @@
   width: 100%;
   text-align: left;
   transition: all 0.15s;
+  min-height: 44px;
 }
 .settings-nav-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
 .settings-nav-item.active { color: white; background: rgba(99,102,241,0.15); font-weight: 600; }
@@ -1664,6 +1677,22 @@
   .danger-row .btn-danger { width: 100%; justify-content: center; }
   .about-card { flex-direction: column; padding: 18px; gap: 14px; }
   .credits-card { padding: 20px 16px; }
+}
+
+/* Tablet: preserve comfortable reading width while keeping controls in a
+   single predictable column. This breakpoint is intentionally separate from
+   the phone drawer so iPad-sized layouts do not inherit phone spacing. */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .sidebar { width: 224px; min-width: 224px; padding-inline: 12px; }
+  .panel-container { padding: 32px 28px; }
+  .chat-container { padding-inline: 24px; }
+  .input-container { padding-inline: 24px; }
+  .quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 720px; }
+  .workflow-container { max-width: 920px; }
+  .workflow-header-controls { width: 100%; justify-content: flex-start; margin-left: 0; }
+  .workflow-business-field { min-width: 0; flex: 1; }
+  .workflow-header-controls .workflow-business-select { width: 100%; }
+  .settings-layout { grid-template-columns: 180px minmax(0, 1fr); gap: 20px; }
 }
 
 @keyframes input-marquee-scroll {

@@ -12,6 +12,27 @@ const STATE_OPTIONS = ['Andhra Pradesh', 'Delhi', 'Gujarat', 'Karnataka', 'Keral
 const CustomSelect = ({ id, value, onChange, options, placeholder, ariaLabel }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const triggerRef = useRef(null);
+
+  const focusOption = (index) => {
+    const nextIndex = Math.max(0, Math.min(options.length - 1, index));
+    window.requestAnimationFrame(() => {
+      ref.current?.querySelector(`[data-option-index="${nextIndex}"]`)?.focus();
+    });
+  };
+
+  const openMenu = () => {
+    const selectedIndex = Math.max(0, options.indexOf(value));
+    setOpen(true);
+    window.requestAnimationFrame(() => {
+      ref.current?.querySelector(`[data-option-index="${selectedIndex}"]`)?.focus();
+    });
+  };
+
+  const closeMenu = (restoreFocus = true) => {
+    setOpen(false);
+    if (restoreFocus) window.requestAnimationFrame(() => triggerRef.current?.focus());
+  };
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -23,14 +44,17 @@ const CustomSelect = ({ id, value, onChange, options, placeholder, ariaLabel }) 
     <div className="custom-select" ref={ref}>
       <button
         type="button"
+        ref={triggerRef}
         id={id}
         className="custom-select-trigger form-input"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => (open ? closeMenu(false) : openMenu())}
         onKeyDown={e => {
-          if (e.key === 'Escape') setOpen(false);
-          if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+          if (e.key === 'Escape') closeMenu(false);
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            setOpen(true);
+            if (!open) openMenu();
+            else if (e.key === 'ArrowDown') focusOption(options.indexOf(value) + 1);
+            else if (e.key === 'ArrowUp') focusOption(options.indexOf(value) - 1);
           }
         }}
         aria-label={ariaLabel || placeholder || 'Select an option'}
@@ -55,16 +79,32 @@ const CustomSelect = ({ id, value, onChange, options, placeholder, ariaLabel }) 
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
           >
-            {options.map(opt => (
+            {options.map((opt, optionIndex) => (
               <li
                 key={opt}
                 className={`custom-select-option ${opt === value ? 'selected' : ''}`}
-                onClick={() => { onChange(opt); setOpen(false); }}
+                data-option-index={optionIndex}
+                onClick={() => { onChange(opt); closeMenu(); }}
                 onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    focusOption(optionIndex + 1);
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    focusOption(optionIndex - 1);
+                  } else if (e.key === 'Home') {
+                    e.preventDefault();
+                    focusOption(0);
+                  } else if (e.key === 'End') {
+                    e.preventDefault();
+                    focusOption(options.length - 1);
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeMenu();
+                  } else if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     onChange(opt);
-                    setOpen(false);
+                    closeMenu();
                   }
                 }}
                 role="option"
@@ -287,20 +327,14 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
                   transition={{ delay: idx * 0.05 }}
                   className={`business-card glass-panel ${activeBusinessId === b.id ? 'selected-business' : ''}`}
                 >
-                  <div
-                    className="biz-card-header"
-                    onClick={() => setExpandedId(isExpanded ? null : b.id)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setExpandedId(isExpanded ? null : b.id);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={isExpanded}
-                    aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${b.name}`}
-                  >
+              <button
+                type="button"
+                className="biz-card-header"
+                onClick={() => setExpandedId(isExpanded ? null : b.id)}
+                aria-expanded={isExpanded}
+                aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${b.name}`}
+                aria-controls={`business-details-${b.id}`}
+              >
                     <div className="biz-avatar">
                       <span>{b.name.charAt(0).toUpperCase()}</span>
                     </div>
@@ -314,7 +348,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
                         <ChevronRight size={18} />
                       </motion.span>
                     </div>
-                  </div>
+              </button>
 
                   <AnimatePresence>
                     {isExpanded && (
@@ -323,6 +357,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         style={{ overflow: 'hidden' }}
+                        id={`business-details-${b.id}`}
                       >
                         <div className="biz-expanded">
                           <button

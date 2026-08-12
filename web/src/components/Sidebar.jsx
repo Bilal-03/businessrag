@@ -46,7 +46,7 @@ const Sidebar = ({
       {!collapsed ? (
         <>
           <button className="sidebar-backdrop" type="button" onClick={onToggleCollapse} aria-label="Close navigation" />
-          <aside className="sidebar">
+          <aside className="sidebar" aria-label="Workspace navigation">
             {/* Logo */}
             <div className="sidebar-logo">
               <Logo size={36} showText={!collapsed} textSize={20} />

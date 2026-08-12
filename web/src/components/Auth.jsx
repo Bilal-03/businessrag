@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Mail, User, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { captureEvent } from '../lib/observability';
 import Logo from './Logo';
 import './Auth.css';
 
@@ -19,6 +20,7 @@ export default function Auth() {
     setLoading(true);
     setError(null);
     setMessage(null);
+    captureEvent('auth_submitted', { mode: isLogin ? 'sign_in' : 'sign_up' });
 
     try {
       if (isLogin) {
@@ -27,6 +29,7 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
+        captureEvent('auth_completed', { mode: 'sign_in' });
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -36,9 +39,11 @@ export default function Auth() {
           }
         });
         if (error) throw error;
+        captureEvent('auth_completed', { mode: 'sign_up' });
         setMessage('Check your email for the confirmation link!');
       }
     } catch (err) {
+      captureEvent('auth_failed', { mode: isLogin ? 'sign_in' : 'sign_up' });
       setError(err.message || 'An error occurred during authentication');
     } finally {
       setLoading(false);

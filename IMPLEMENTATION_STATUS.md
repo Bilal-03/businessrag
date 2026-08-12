@@ -1,6 +1,6 @@
 # BizGuide implementation status
 
-Last updated: 2026-08-12
+Last updated: 2026-08-13
 
 This is the working status list for the implementation plan. Update it whenever a slice is completed; do not mark a task complete until its verification checks pass.
 
@@ -78,7 +78,8 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
   - **External gate complete:** user confirmed PostHog live events and a production Sentry test issue in the `bizguide-web` project.
 
 - [ ] **P2-03 — Product intelligence, accessibility, and design-system upgrade**
-  - Observability implementation is complete in P2-03a; remaining work is event dashboards, real-device WCAG 2.2 AA checks, and the design-system upgrade.
+  - Observability implementation is complete in P2-03a; the first product/design-system slice is implemented: documented CSS tokens, stronger focus/forced-colors behavior, skip-link/main landmark, semantic business expanders, keyboard-operable custom selects, 44px touch targets, tablet-specific layout rules, and privacy-safe workspace/auth funnel events.
+  - Remaining work is event dashboards, real-device WCAG 2.2 AA checks, visual regression review, and the remaining premium component/rebrand work.
   - Run real-device WCAG 2.2 AA checks across iOS Safari, Android Chrome, tablet, keyboard-only, screen-reader, contrast, focus, and reduced-motion flows.
   - Replace the MVP visual layer with a documented token-based design system, premium responsive components, and measured performance budgets.
   - **External gate:** validate analytics events without leaking document contents or tokens, complete the device matrix, and approve the visual regression baseline.

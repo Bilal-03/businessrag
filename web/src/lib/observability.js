@@ -3,6 +3,10 @@
 // instead of forwarding arbitrary UI state to third parties.
 const ALLOWED_EVENTS = new Set([
   'app_loaded',
+  'workspace_viewed',
+  'auth_submitted',
+  'auth_completed',
+  'auth_failed',
   'chat_submitted',
   'chat_completed',
   'chat_failed',
