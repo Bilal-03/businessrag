@@ -73,8 +73,8 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 - [x] **P2-03a — Privacy-safe observability integration**
   - Added Sentry browser error capture with PII disabled, zero tracing/replay sampling, request/error scrubbing, and coarse source tags.
   - Added PostHog Product Analytics with explicit allow-listed workflow events, autocapture/pageview/replay disabled, and anonymous-only profiles until an explicit identity policy is approved.
-  - Added Vercel CSP allowlist entries and public environment documentation for the Sentry DSN and PostHog project key/ingestion host.
-  - Verification: frontend lint, production build, diff integrity, and all six deterministic Chromium smoke tests pass.
+  - Added Vercel CSP allowlist entries, public environment documentation, regional ingest compatibility, and lazy SDK loading so monitoring does not inflate the initial bundle when disabled.
+  - Verification: frontend lint, production build, diff integrity, and all six deterministic Chromium smoke tests pass (with the local server run outside the restricted sandbox).
 
 - [ ] **P2-03 — Product intelligence, accessibility, and design-system upgrade**
   - Observability implementation is complete in P2-03a; remaining work is event dashboards, real-device WCAG 2.2 AA checks, and the design-system upgrade.

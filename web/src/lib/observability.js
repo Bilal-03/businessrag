@@ -1,6 +1,3 @@
-import * as Sentry from '@sentry/react';
-import posthog from 'posthog-js';
-
 // Keep analytics intentionally small and explicit. This product handles uploaded
 // documents and chat prompts, so event names and properties are allow-listed
 // instead of forwarding arbitrary UI state to third parties.
@@ -30,6 +27,12 @@ const SENSITIVE_TEXT = /(bearer\s+)[a-z0-9._~+/=-]+/gi;
 
 let sentryInitialized = false;
 let posthogInitialized = false;
+let Sentry = null;
+let posthog = null;
+let sentryInitPromise = null;
+let posthogInitPromise = null;
+const pendingEvents = [];
+const pendingExceptions = [];
 
 function scrubText(value, maxLength = 240) {
   if (typeof value !== 'string') return value;
@@ -78,6 +81,31 @@ function resolvePostHogHost(value) {
   }
 }
 
+function createSanitizedError(error) {
+  const sanitizedError = new Error('BizGuide client operation failed');
+  sanitizedError.name = error?.name || 'Error';
+  if (typeof error?.stack === 'string') sanitizedError.stack = error.stack;
+  return sanitizedError;
+}
+
+function sendException(error, context) {
+  if (!sentryInitialized || !Sentry) return;
+  Sentry.withScope(scope => {
+    scope.setTag('error_name', error.name || 'Error');
+    Object.entries(safeProperties(context)).forEach(([key, value]) => scope.setTag(key, value));
+    Sentry.captureException(error);
+  });
+}
+
+function flushPendingObservability() {
+  if (posthogInitialized && posthog) {
+    pendingEvents.splice(0).forEach(({ name, properties }) => posthog.capture(name, properties));
+  }
+  if (sentryInitialized && Sentry) {
+    pendingExceptions.splice(0).forEach(({ error, context }) => sendException(error, context));
+  }
+}
+
 function safeProperties(properties = {}) {
   return Object.entries(properties).reduce((result, [key, value]) => {
     if (SENSITIVE_KEY.test(key)) return result;
@@ -115,53 +143,59 @@ export function durationBucket(durationMs) {
 
 export function initializeObservability() {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
-  if (dsn && !sentryInitialized) {
-    Sentry.init({
-      dsn,
-      environment: import.meta.env.MODE === 'production' ? 'production' : import.meta.env.MODE,
-      sendDefaultPii: false,
-      tracesSampleRate: 0,
-      replaysSessionSampleRate: 0,
-      replaysOnErrorSampleRate: 0,
-      enableLogs: false,
-      beforeSend: scrubEvent,
+  if (dsn && !sentryInitPromise) {
+    sentryInitPromise = import('@sentry/react').then(sdk => {
+      Sentry = sdk;
+      Sentry.init({
+        dsn,
+        environment: import.meta.env.MODE === 'production' ? 'production' : import.meta.env.MODE,
+        sendDefaultPii: false,
+        tracesSampleRate: 0,
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: 0,
+        enableLogs: false,
+        beforeSend: scrubEvent,
+      });
+      sentryInitialized = true;
+      flushPendingObservability();
+    }).catch(() => {
+      pendingExceptions.length = 0;
     });
-    sentryInitialized = true;
   }
 
   const key = import.meta.env.VITE_POSTHOG_KEY;
-  if (key && !posthogInitialized) {
-    posthog.init(key, {
-      api_host: resolvePostHogHost(import.meta.env.VITE_POSTHOG_HOST),
-      autocapture: false,
-      capture_pageview: false,
-      capture_pageleave: false,
-      disable_session_recording: true,
-      person_profiles: 'identified_only',
-      respect_dnt: true,
-      persistence: 'localStorage',
-      secure_cookie: true,
+  if (key && !posthogInitPromise) {
+    posthogInitPromise = import('posthog-js').then(sdk => {
+      posthog = sdk.default;
+      posthog.init(key, {
+        api_host: resolvePostHogHost(import.meta.env.VITE_POSTHOG_HOST),
+        autocapture: false,
+        capture_pageview: false,
+        capture_pageleave: false,
+        disable_session_recording: true,
+        person_profiles: 'identified_only',
+        respect_dnt: true,
+        persistence: 'localStorage',
+        secure_cookie: true,
+      });
+      posthogInitialized = true;
+      flushPendingObservability();
+    }).catch(() => {
+      pendingEvents.length = 0;
     });
-    posthogInitialized = true;
   }
 }
 
 export function captureEvent(name, properties = {}) {
   if (!ALLOWED_EVENTS.has(name)) return;
   const safe = safeProperties(properties);
-  if (posthogInitialized) posthog.capture(name, safe);
+  if (posthogInitialized && posthog) posthog.capture(name, safe);
+  else if (import.meta.env.VITE_POSTHOG_KEY && pendingEvents.length < 50) pendingEvents.push({ name, properties: safe });
 }
 
 export function captureException(error, context = {}) {
-  if (!sentryInitialized || !error) return;
-  Sentry.withScope(scope => {
-    scope.setTag('error_name', error.name || 'Error');
-    Object.entries(safeProperties(context)).forEach(([key, value]) => scope.setTag(key, value));
-    // Keep the original stack location for debugging, but replace the message
-    // because it can contain user input or a server echo.
-    const sanitizedError = new Error('BizGuide client operation failed');
-    sanitizedError.name = error.name || 'Error';
-    if (typeof error.stack === 'string') sanitizedError.stack = error.stack;
-    Sentry.captureException(sanitizedError);
-  });
+  if (!error || !import.meta.env.VITE_SENTRY_DSN) return;
+  const sanitizedError = createSanitizedError(error);
+  if (sentryInitialized && Sentry) sendException(sanitizedError, context);
+  else if (pendingExceptions.length < 10) pendingExceptions.push({ error: sanitizedError, context });
 }

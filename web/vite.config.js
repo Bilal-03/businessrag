@@ -13,6 +13,8 @@ export default defineConfig({
             { name: 'vendor-motion', test: /node_modules\/(?:framer-motion|motion)/ },
             { name: 'vendor-markdown', test: /node_modules\/(?:react-markdown|remark-gfm|unified|remark|rehype|micromark|mdast|hast|vfile)/ },
             { name: 'vendor-supabase', test: /node_modules\/@supabase/ },
+            { name: 'vendor-sentry', test: /node_modules\/@sentry/ },
+            { name: 'vendor-posthog', test: /node_modules\/(?:posthog-js|@posthog)/ },
             { name: 'vendor-react', test: /node_modules\/(?:react|react-dom|scheduler)/ },
             { name: 'vendor-icons', test: /node_modules\/lucide-react/ },
             { name: 'vendor', test: /node_modules/ },
