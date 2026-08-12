@@ -11,13 +11,14 @@ from fastapi.exceptions import HTTPException, RequestValidationError
 from src.utils.logger import get_logger
 from config import get_settings
 from src.utils.rate_limit import rate_limiter
+from src.ingestion.document_jobs import start_document_worker
 
 logger = get_logger(__name__)
 settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Keep startup dependency-free; external services initialize lazily per request."""
+    """Start the optional document worker without blocking API startup."""
     app.state.started_at = time.time()
     app.state.metrics = {
         "requests_total": 0,
@@ -25,8 +26,16 @@ async def lifespan(app: FastAPI):
         "latency_ms_total": 0.0,
         "status_counts": {},
     }
+    document_queue = None
+    if settings.async_document_ingestion_enabled:
+        document_queue = await start_document_worker()
+        app.state.document_queue = document_queue
     logger.info("api_started", extra={"event": "api_started"})
-    yield
+    try:
+        yield
+    finally:
+        if document_queue is not None:
+            await document_queue.stop()
     logger.info("api_stopped", extra={"event": "api_stopped"})
 
 def create_app() -> FastAPI:

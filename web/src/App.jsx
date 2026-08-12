@@ -506,16 +506,18 @@ function App() {
     try {
       // Upload with Authorization token for user isolation
       const uploadUrl = `${apiUrl}/api/documents/upload`;
+      const idempotencyKey = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const response = await fetch(uploadUrl, { 
         method: 'POST', 
         headers: {
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'X-Idempotency-Key': idempotencyKey,
         },
         body: formData 
       });
       const data = await readApiResponse(response);
       const resultMsg = response.ok
-        ? { role: 'ai', content: `✅ **Upload complete.** ${data.message}\n\nYou can now ask questions that use this document as context. Always verify important legal and tax decisions against the original source or a qualified professional.` }
+        ? { role: 'ai', content: `✅ **${data.status === 'indexed' ? 'Upload complete.' : 'Upload queued.'}** ${data.message}\n\n${data.status === 'indexed' ? 'You can now ask questions that use this document as context.' : 'Processing continues in the background. Open Upload Documents to monitor progress.'} Always verify important legal and tax decisions against the original source or a qualified professional.` }
         : (() => {
             const { detail, requestId } = getApiError(data, response, 'We could not process this PDF.');
             return { role: 'ai', content: `❌ **Upload failed:** ${detail}${requestId ? `\n\nReference: \`${requestId}\`` : ''}` };
@@ -524,7 +526,7 @@ function App() {
       setMessages(finalMessages);
       persistCurrentConv(finalMessages, currentConvIdRef.current);
       if (response.ok) {
-        fireNotification('BizGuide AI', `${file.name} uploaded and indexed successfully!`);
+        fireNotification('BizGuide AI', data.status === 'indexed' ? `${file.name} uploaded and indexed successfully!` : `${file.name} is queued for processing.`);
       }
     } catch {
       const errMsg = { role: 'ai', content: '⚠️ Network error during upload. Please try again.' };

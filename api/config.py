@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     pinecone_index_name: str = "bizguide-index"
     supabase_url: str
     supabase_anon_key: str
+    supabase_service_role_key: Optional[str] = None
     supabase_jwt_secret: Optional[str] = None
     supabase_jwt_audience: str = "authenticated"
     supabase_jwt_issuer: Optional[str] = None
@@ -28,6 +29,11 @@ class Settings(BaseSettings):
     general_rate_limit_per_minute: int = 120
     redis_url: Optional[str] = None
     metrics_enabled: bool = True
+    async_document_ingestion_enabled: bool = False
+    document_storage_bucket: str = "documents"
+    document_worker_poll_seconds: float = 2.0
+    document_job_max_attempts: int = 3
+    document_job_lease_seconds: int = 900
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

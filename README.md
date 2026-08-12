@@ -40,7 +40,7 @@ Unlike generic AI, BizGuide:
 | 🏢 **My Businesses** | Manage your business profiles with quick-ask shortcuts |
 | 🚧 **Compliance Plan** | Source-backed obligations and planning tasks are implemented behind the staged schema; the previous hard-coded checklist surface remains hidden until migration/catalog validation |
 | 💬 **Conversation History** | Signed-in conversations and citations use normalized RLS-protected tables; legacy checklist state is intentionally not imported |
-| 🗃️ **Document Inventory** | Uploaded PDFs have owner-scoped server records with processing/indexed/deleted status |
+| 🗃️ **Document Inventory** | Uploaded PDFs have owner-scoped server records with queued/processing/indexed/failed/deleted status and progress tracking |
 | ⚙️ **Settings** | Accent color themes, API URL config, profile management |
 | 🎨 **Premium Dark UI** | Glassmorphism design with smooth Framer Motion animations |
 
@@ -88,6 +88,14 @@ User Query
 │   (Llama 3.3 70B)    │
 └──────────────────────┘
 ```
+
+When `ASYNC_DOCUMENT_INGESTION_ENABLED=true`, PDF uploads are stored in a
+private Supabase Storage bucket and placed on a Redis-backed document queue.
+The worker parses, chunks, embeds, and indexes the source outside the upload
+request, updates progress in the owner-scoped inventory, and retries transient
+provider failures. A development-only in-process queue is used when Redis is
+not configured; production workers should use Redis and a server-only
+`SUPABASE_SERVICE_ROLE_KEY`.
 
 ---
 
@@ -176,9 +184,15 @@ GEMINI_API_KEY=...
 # Supabase + production controls (server only)
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=... # server-only; never expose as VITE_*
 SUPABASE_JWT_SECRET=...
 SUPABASE_JWKS_URL=https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json
 REDIS_URL=redis://...
+ASYNC_DOCUMENT_INGESTION_ENABLED=false
+DOCUMENT_STORAGE_BUCKET=documents
+DOCUMENT_WORKER_POLL_SECONDS=2
+DOCUMENT_JOB_MAX_ATTEMPTS=3
+DOCUMENT_JOB_LEASE_SECONDS=900
 ```
 
 See [`.env.example`](.env.example) for the full template.
@@ -192,6 +206,7 @@ See [`.env.example`](.env.example) for the full template.
 | `POST` | `/api/chat` | Send a query, get AI response |
 | `POST` | `/api/documents/upload` | Upload a PDF for RAG indexing |
 | `GET` | `/api/documents` | List owner-scoped document inventory |
+| `GET` | `/api/documents/{document_id}/status` | Read processing progress and retry state |
 | `DELETE` | `/api/documents/{document_id}` | Remove one document and its vectors |
 | `GET` | `/health` | Health check |
 | `GET` | `/metrics` | Privacy-safe request/error/latency counters |

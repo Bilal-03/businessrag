@@ -15,11 +15,26 @@ class SupabaseRestError(Exception):
 class SupabaseRestClient:
     """Minimal user-token REST adapter so Supabase RLS remains authoritative."""
 
-    def __init__(self, token: str):
+    def __init__(self, token: str | None = None, *, service_role: bool = False):
         settings = get_settings()
         self.base_url = f"{settings.supabase_url.rstrip('/')}/rest/v1"
-        self.anon_key = settings.supabase_anon_key
-        self.token = token
+        if service_role:
+            if not settings.supabase_service_role_key:
+                raise SupabaseRestError(503, "Server-side Supabase storage is not configured.")
+            self.anon_key = settings.supabase_service_role_key
+            self.token = settings.supabase_service_role_key
+        else:
+            self.anon_key = settings.supabase_anon_key
+            self.token = token or ""
+
+    @classmethod
+    def admin(cls) -> "SupabaseRestClient":
+        """Create a server-only client for background work.
+
+        The service-role key is read only from backend configuration and is
+        never accepted from a request or returned to the browser.
+        """
+        return cls(service_role=True)
 
     async def request(
         self,

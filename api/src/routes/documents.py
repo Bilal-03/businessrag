@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Form, HTTPException, UploadFile, File, Depends, Request, Query, status
+import hashlib
+from fastapi import APIRouter, Form, Header, HTTPException, UploadFile, File, Depends, Request, Query, status
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 from config import get_settings
-from src.contracts.documents import DocumentRead, DocumentUploadResponse
+from src.contracts.documents import DocumentRead, DocumentStatusResponse, DocumentUploadResponse
+from src.ingestion.document_jobs import get_document_job_queue
 from src.ingestion.loader import load_pdf
 from src.chunking.chunker import split_documents
 from src.vectordb.vector_store import clear_document, clear_namespace
@@ -12,6 +14,7 @@ from langchain_pinecone import PineconeVectorStore
 from src.embeddings.embedder import get_embeddings
 from src.auth.dependencies import get_current_user
 from src.integrations.supabase_rest import SupabaseRestClient, SupabaseRestError
+from src.integrations.supabase_storage import SupabaseStorageClient
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -42,6 +45,178 @@ def validate_upload_metadata(file: UploadFile) -> None:
 
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
+    request: Request,
+    file: UploadFile = File(...),
+    business_id: str | None = Form(default=None, max_length=120),
+    idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key", max_length=120),
+    user_id: str = Depends(get_current_user),
+):
+    if settings.async_document_ingestion_enabled:
+        return await _enqueue_document(request, file, business_id, idempotency_key, user_id)
+    return await _upload_document_sync(request, file, business_id, user_id)
+
+
+async def _enqueue_document(
+    request: Request,
+    file: UploadFile,
+    business_id: str | None,
+    idempotency_key: str | None,
+    user_id: str,
+):
+    """Store the source object and enqueue bounded background work."""
+    validate_upload_metadata(file)
+    if not settings.supabase_service_role_key:
+        raise HTTPException(status_code=503, detail="Async document processing is not configured yet.")
+    if business_id:
+        try:
+            UUID(business_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="The business identifier is invalid.") from exc
+    key = (idempotency_key or str(uuid4())).strip()
+    if len(key) < 8:
+        raise HTTPException(status_code=422, detail="The upload idempotency key is invalid.")
+
+    storage = _storage(request)
+    existing_jobs = await storage.request(
+        "GET",
+        "document_jobs",
+        params={
+            "select": "id,document_id,status,created_at",
+            "owner_id": f"eq.{user_id}",
+            "idempotency_key": f"eq.{key}",
+            "limit": 1,
+        },
+    )
+    if existing_jobs:
+        existing_job = existing_jobs[0]
+        existing_document = await _document_row(storage, str(existing_job["document_id"]))
+        if existing_document:
+            return {
+                "message": "This upload is already being processed.",
+                "document_id": existing_document["id"],
+                "file_name": existing_document["file_name"],
+                "chunks_indexed": 0,
+                "status": existing_document["status"],
+                "job_id": existing_job["id"],
+                "created_at": existing_document.get("created_at"),
+                "request_id": getattr(request.state, "request_id", None),
+            }
+
+    content = await file.read(settings.max_upload_size_bytes + 1)
+    if len(content) > settings.max_upload_size_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"PDF files must be {settings.max_upload_size_mb}MB or smaller.",
+        )
+    if content[:5] != b"%PDF-":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The uploaded file does not appear to be a valid PDF.")
+
+    safe_file_name = Path((file.filename or "document.pdf").strip()).name[:255] or "document.pdf"
+    document_id = str(uuid4())
+    job_id = str(uuid4())
+    uploaded_at = datetime.now(timezone.utc).isoformat()
+    storage_path = f"{user_id}/{document_id}.pdf"
+    digest = hashlib.sha256(content).hexdigest()
+
+    try:
+        await SupabaseStorageClient(token=getattr(request.state, "access_token", None)).upload(
+            storage_path,
+            content,
+            file.content_type or "application/pdf",
+        )
+        await storage.request(
+            "POST",
+            "documents",
+            payload={
+                "id": document_id,
+                "owner_id": user_id,
+                "business_id": business_id or None,
+                "file_name": safe_file_name,
+                "mime_type": file.content_type or "application/pdf",
+                "byte_size": len(content),
+                "sha256": digest,
+                "storage_path": storage_path,
+                "status": "uploaded",
+                "processing_progress": 0,
+                "processing_stage": "queued",
+            },
+        )
+        await storage.request(
+            "POST",
+            "document_jobs",
+            payload={
+                "id": job_id,
+                "owner_id": user_id,
+                "document_id": document_id,
+                "idempotency_key": key,
+                "status": "queued",
+                "max_attempts": settings.document_job_max_attempts,
+                "processing_progress": 0,
+                "processing_stage": "queued",
+            },
+        )
+        await get_document_job_queue().enqueue(job_id)
+    except SupabaseRestError as exc:
+        try:
+            await SupabaseStorageClient(token=getattr(request.state, "access_token", None)).delete(storage_path)
+        except Exception:
+            logger.error("document_source_cleanup_failed", exc_info=True, extra={"event": "document_source_cleanup_failed"})
+        if exc.status_code == 409:
+            existing_jobs = await storage.request(
+                "GET",
+                "document_jobs",
+                params={"select": "id,document_id,status", "owner_id": f"eq.{user_id}", "idempotency_key": f"eq.{key}", "limit": 1},
+            )
+            if existing_jobs:
+                existing_job = existing_jobs[0]
+                existing_document = await _document_row(storage, str(existing_job["document_id"]))
+                if existing_document:
+                    return {
+                        "message": "This upload is already being processed.",
+                        "document_id": existing_document["id"],
+                        "file_name": existing_document["file_name"],
+                        "chunks_indexed": 0,
+                        "status": existing_document["status"],
+                        "job_id": existing_job["id"],
+                        "created_at": existing_document.get("created_at"),
+                        "request_id": getattr(request.state, "request_id", None),
+                    }
+        logger.error("document_enqueue_failed", exc_info=True, extra={"event": "document_enqueue_failed"})
+        raise HTTPException(status_code=503, detail="The document could not be queued. Please try again.") from exc
+    except Exception as exc:
+        try:
+            await SupabaseStorageClient(token=getattr(request.state, "access_token", None)).delete(storage_path)
+        except Exception:
+            logger.error("document_source_cleanup_failed", exc_info=True, extra={"event": "document_source_cleanup_failed"})
+        logger.error("document_enqueue_failed", exc_info=True, extra={"event": "document_enqueue_failed"})
+        raise HTTPException(status_code=503, detail="The document could not be queued. Please try again.") from exc
+
+    return {
+        "message": f"{safe_file_name} was uploaded and queued for processing.",
+        "document_id": document_id,
+        "file_name": safe_file_name,
+        "chunks_indexed": 0,
+        "status": "queued",
+        "job_id": job_id,
+        "created_at": uploaded_at,
+        "request_id": getattr(request.state, "request_id", None),
+    }
+
+
+async def _document_row(storage: SupabaseRestClient, document_id: str) -> dict | None:
+    rows = await storage.request(
+        "GET",
+        "documents",
+        params={
+            "select": "id,file_name,status,created_at,processing_progress,processing_stage",
+            "id": f"eq.{document_id}",
+            "limit": 1,
+        },
+    )
+    return rows[0] if rows else None
+
+
+async def _upload_document_sync(
     request: Request,
     file: UploadFile = File(...),
     business_id: str | None = Form(default=None, max_length=120),
@@ -214,7 +389,7 @@ async def list_documents(
 ):
     try:
         params = {
-            "select": "id,business_id,file_name,mime_type,byte_size,status,created_at,indexed_at",
+            "select": "id,business_id,file_name,mime_type,byte_size,status,created_at,indexed_at,processing_progress,processing_stage,error_message",
             "status": "neq.deleted",
             "order": "created_at.desc",
             "limit": 100,
@@ -225,14 +400,79 @@ async def list_documents(
             except ValueError as exc:
                 raise HTTPException(status_code=422, detail="The business identifier is invalid.") from exc
             params["business_id"] = f"eq.{business_id}"
-        rows = await _storage(request).request(
-            "GET",
-            "documents",
-            params=params,
-        )
+        storage = _storage(request)
+        try:
+            rows = await storage.request("GET", "documents", params=params)
+        except SupabaseRestError as exc:
+            # Keep the synchronous deployment compatible while migration 0003
+            # is being rolled out. The async flag remains off until then.
+            if exc.status_code != 400:
+                raise
+            legacy_params = {**params, "select": "id,business_id,file_name,mime_type,byte_size,status,created_at,indexed_at"}
+            rows = await storage.request("GET", "documents", params=legacy_params)
         return rows
     except SupabaseRestError as exc:
         raise HTTPException(status_code=503, detail="Document inventory is temporarily unavailable.") from exc
+
+
+@router.get("/{document_id}/status", response_model=DocumentStatusResponse)
+async def document_status(
+    document_id: str,
+    request: Request,
+    _user_id: str = Depends(get_current_user),
+):
+    try:
+        UUID(document_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Document not found.") from exc
+    storage = _storage(request)
+    try:
+        try:
+            document_rows = await storage.request(
+                "GET",
+                "documents",
+                params={
+                    "select": "id,business_id,file_name,mime_type,byte_size,status,created_at,indexed_at,processing_progress,processing_stage,error_message",
+                    "id": f"eq.{document_id}",
+                    "limit": 1,
+                },
+            )
+        except SupabaseRestError as exc:
+            # A sync deployment can serve status reads before migration 0003.
+            if exc.status_code != 400:
+                raise
+            document_rows = await storage.request(
+                "GET",
+                "documents",
+                params={
+                    "select": "id,business_id,file_name,mime_type,byte_size,status,created_at,indexed_at",
+                    "id": f"eq.{document_id}",
+                    "limit": 1,
+                },
+            )
+            if document_rows:
+                document_rows[0].update({"processing_progress": 100 if document_rows[0].get("status") == "indexed" else 0, "processing_stage": "complete" if document_rows[0].get("status") == "indexed" else None, "error_message": None})
+        if not document_rows:
+            raise HTTPException(status_code=404, detail="Document not found.")
+        try:
+            job_rows = await storage.request(
+                "GET",
+                "document_jobs",
+                params={
+                    "select": "id,document_id,status,attempt_count,max_attempts,processing_progress,processing_stage,last_error,available_at,started_at,completed_at,created_at,updated_at",
+                    "document_id": f"eq.{document_id}",
+                    "order": "created_at.desc",
+                    "limit": 1,
+                },
+            )
+        except SupabaseRestError as exc:
+            if exc.status_code == 400:
+                job_rows = []
+            else:
+                raise
+        return {"document": document_rows[0], "job": job_rows[0] if job_rows else None}
+    except SupabaseRestError as exc:
+        raise HTTPException(status_code=503, detail="Document status is temporarily unavailable.") from exc
 
 
 @router.delete("/clear-all", include_in_schema=False)
@@ -246,8 +486,25 @@ async def clear_documents(request: Request, user_id: str = Depends(get_current_u
     """Delete all vectors for a specific user session."""
     try:
         clear_namespace(user_id)
+        storage = _storage(request)
+        document_rows = await storage.request(
+            "GET",
+            "documents",
+            params={"select": "id,storage_path", "owner_id": f"eq.{user_id}", "status": "neq.deleted", "limit": 100},
+        )
+        storage_client = SupabaseStorageClient(token=getattr(request.state, "access_token", None))
+        for document in document_rows:
+            if document.get("storage_path"):
+                await storage_client.delete(document["storage_path"])
+        if document_rows and settings.async_document_ingestion_enabled:
+            await storage.request(
+                "PATCH",
+                "document_jobs",
+                params={"owner_id": f"eq.{user_id}", "status": "in.(queued,processing)"},
+                payload={"status": "failed", "processing_stage": "deleted", "last_error": "The document was deleted."},
+            )
         try:
-            await _storage(request).request(
+            await storage.request(
                 "PATCH",
                 "documents",
                 params={"owner_id": f"eq.{user_id}", "status": "neq.deleted"},
@@ -285,12 +542,30 @@ async def delete_document(document_id: str, request: Request, user_id: str = Dep
         # Keep retired administrative paths unexposed; document IDs are UUIDs.
         raise HTTPException(status_code=404, detail="Document not found.")
     try:
+        storage = _storage(request)
+        document_rows = await storage.request(
+            "GET",
+            "documents",
+            params={"select": "id,storage_path,status", "id": f"eq.{document_id}", "limit": 1},
+        )
+        if not document_rows:
+            raise HTTPException(status_code=404, detail="Document not found.")
+        storage_path = document_rows[0].get("storage_path")
+        if storage_path:
+            await SupabaseStorageClient(token=getattr(request.state, "access_token", None)).delete(storage_path)
         clear_document(user_id, document_id)
-        await _storage(request).request(
+        if settings.async_document_ingestion_enabled:
+            await storage.request(
+                "PATCH",
+                "document_jobs",
+                params={"document_id": f"eq.{document_id}", "status": "in.(queued,processing)"},
+                payload={"status": "failed", "processing_stage": "deleted", "last_error": "The document was deleted."},
+            )
+        await storage.request(
             "PATCH",
             "documents",
-            params={"id": f"eq.{document_id}"},
-            payload={"status": "deleted"},
+            params={"id": f"eq.{document_id}", "owner_id": f"eq.{user_id}"},
+            payload={"status": "deleted", "processing_stage": "deleted", "processing_progress": 100},
         )
         return {"message": "Document removed.", "request_id": getattr(request.state, "request_id", None)}
     except SupabaseRestError as exc:

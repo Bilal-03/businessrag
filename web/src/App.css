@@ -1131,6 +1131,20 @@
 }
 .upload-success-label { color: #4ade80; font-weight: 600; }
 .upload-message { font-size: 11px; color: var(--text-secondary); margin-top: 4px; opacity: 0.8; }
+.document-progress {
+  height: 4px;
+  width: min(260px, 100%);
+  margin-top: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.1);
+}
+.document-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  transition: width 0.3s ease;
+}
 
 /* =============================================
    CHECKLISTS

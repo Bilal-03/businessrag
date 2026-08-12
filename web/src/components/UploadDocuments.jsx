@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, XCircle, Clock, Trash2 } from 'lucide-react';
+import { UploadCloud, CheckCircle2, XCircle, Clock, Trash2, LoaderCircle } from 'lucide-react';
+import { documentHistoryEntry, pollDocumentStatus } from '../lib/documentJobs';
 
 const UploadDocuments = ({ session, apiUrl, businessId }) => {
   const [uploadHistory, setUploadHistory] = useState([]);
@@ -10,9 +11,53 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
   const [uploadStatus, setUploadStatus] = useState('');
   const [inventoryLoading, setInventoryLoading] = useState(true);
   const fileInputRef = useRef(null);
+  const pollControllersRef = useRef(new Map());
+
+  const updateHistoryEntry = useCallback((id, nextEntry) => {
+    setUploadHistory(current => current.map(item => item.id === id ? { ...item, ...nextEntry } : item));
+  }, []);
+
+  const trackDocument = useCallback(async (documentId, fallbackEntry) => {
+    if (!documentId || pollControllersRef.current.has(documentId) || !session?.access_token) return;
+    const controller = new AbortController();
+    pollControllersRef.current.set(documentId, controller);
+    try {
+      const result = await pollDocumentStatus({
+        apiUrl,
+        accessToken: session.access_token,
+        documentId,
+        signal: controller.signal,
+        onStatus: ({ document, job }) => {
+          const entry = documentHistoryEntry(document, {
+            ...fallbackEntry,
+            progress: job?.processing_progress,
+            stage: job?.processing_stage,
+          });
+          updateHistoryEntry(documentId, entry);
+        },
+      });
+      if (result.document?.status === 'failed') {
+        const message = result.document.error_message || 'Document processing failed. Please try again.';
+        updateHistoryEntry(documentId, { status: 'error', message, stage: 'failed', progress: 0 });
+        setUploadStatus(message);
+      } else {
+        setUploadStatus('Document processing finished.');
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      updateHistoryEntry(documentId, {
+        status: 'error',
+        message: error.message || 'Document processing status is unavailable.',
+      });
+      setUploadStatus(error.message || 'Document processing status is unavailable.');
+    } finally {
+      pollControllersRef.current.delete(documentId);
+    }
+  }, [apiUrl, session?.access_token, updateHistoryEntry]);
 
   useEffect(() => {
     let cancelled = false;
+    const pollControllers = pollControllersRef.current;
     if (!session?.access_token) return undefined;
     setInventoryLoading(true);
     const inventoryUrl = businessId
@@ -23,25 +68,22 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
         let data = [];
         try { data = await response.json(); } catch {}
         if (!response.ok) throw new Error(data.detail || 'Document inventory is unavailable.');
-        if (!cancelled) setUploadHistory(Array.isArray(data) ? data.map(item => ({
-          id: item.id,
-          name: item.file_name,
-          size: item.byte_size ? `${(item.byte_size / 1024).toFixed(1)} KB` : 'Size unavailable',
-          date: item.created_at ? new Date(item.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Date unavailable',
-          status: item.status === 'indexed' ? 'success' : item.status === 'failed' ? 'error' : 'processing',
-          message: item.status === 'indexed' ? 'Indexed for document-grounded answers.' : item.status,
-        })) : []);
+        if (!cancelled) {
+          const entries = Array.isArray(data) ? data.map(item => documentHistoryEntry(item)) : [];
+          setUploadHistory(entries);
+          entries.filter(item => item.status === 'processing').forEach(item => trackDocument(item.id, item));
+        }
       })
       .catch(error => {
         if (!cancelled) setUploadStatus(error.message || 'Document inventory is unavailable.');
       })
       .finally(() => { if (!cancelled) setInventoryLoading(false); });
-    return () => { cancelled = true; };
-  }, [apiUrl, businessId, session]);
-
-  const saveHistory = (updated) => {
-    setUploadHistory(updated);
-  };
+    return () => {
+      cancelled = true;
+      pollControllers.forEach(controller => controller.abort());
+      pollControllers.clear();
+    };
+  }, [apiUrl, businessId, session?.access_token, trackDocument]);
 
   const handleUpload = async (file) => {
     if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
@@ -64,23 +106,44 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
       const response = await fetch(`${apiUrl}/api/documents/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'X-Idempotency-Key': globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
         },
         body: formData,
       });
       let data = {};
       try { data = await response.json(); } catch {}
 
-      const newEntry = {
-        id: data.document_id || Date.now().toString(),
-        name: file.name,
-        size: (file.size / 1024).toFixed(1) + ' KB',
-        date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-        status: response.ok ? (data.status === 'processing' ? 'processing' : 'success') : 'error',
-        message: response.ok ? data.message : (data.detail || 'Upload failed'),
-      };
-      saveHistory([newEntry, ...uploadHistory]);
-      setUploadStatus(response.ok ? 'Upload complete.' : (data.detail || 'Upload failed. Please try again.'));
+      const newEntry = response.ok
+        ? documentHistoryEntry({
+          id: data.document_id,
+          file_name: data.file_name || file.name,
+          byte_size: file.size,
+          status: data.status || 'processing',
+          created_at: data.created_at,
+          processing_stage: data.status === 'indexed' ? 'complete' : 'queued',
+          processing_progress: data.status === 'indexed' ? 100 : 0,
+        }, {
+          name: file.name,
+          message: data.message,
+        })
+        : {
+          id: data.document_id || Date.now().toString(),
+          name: file.name,
+          size: (file.size / 1024).toFixed(1) + ' KB',
+          date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+          status: 'error',
+          progress: 0,
+          stage: 'failed',
+          message: data.detail || 'Upload failed',
+        };
+      setUploadHistory(current => [newEntry, ...current]);
+      setUploadStatus(response.ok
+        ? (data.status === 'indexed' ? 'Upload complete.' : 'Upload queued. Processing will continue in the background.')
+        : (data.detail || 'Upload failed. Please try again.'));
+      if (response.ok && data.document_id && data.status !== 'indexed') {
+        void trackDocument(data.document_id, newEntry);
+      }
     } catch {
       const newEntry = {
         id: Date.now().toString(),
@@ -90,7 +153,7 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
         status: 'error',
         message: 'Network error. Please check your connection.',
       };
-      saveHistory([newEntry, ...uploadHistory]);
+      setUploadHistory(current => [newEntry, ...current]);
       setUploadStatus('Network error. Please check your connection and try again.');
     } finally {
       setUploading(false);
@@ -117,7 +180,7 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
       let data = {};
       try { data = await response.json(); } catch {}
       if (!response.ok) throw new Error(data.detail || 'The document could not be removed.');
-      saveHistory(uploadHistory.filter(u => u.id !== id));
+      setUploadHistory(current => current.filter(u => u.id !== id));
       setUploadStatus('Document removed from your workspace.');
     } catch (error) {
       setUploadStatus(error.message || 'The document could not be removed.');
@@ -224,17 +287,25 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
                 className="upload-history-item glass-panel"
               >
                 <div className="upload-file-icon">
-                  {item.status === 'success' ? <CheckCircle2 size={20} color="#4ade80" /> : <XCircle size={20} color="#f87171" />}
+                  {item.status === 'success' && <CheckCircle2 size={20} color="#4ade80" />}
+                  {item.status === 'error' && <XCircle size={20} color="#f87171" />}
+                  {item.status === 'processing' && <LoaderCircle size={20} color="var(--accent-primary)" className="spin" />}
                 </div>
                 <div className="upload-file-info">
                   <div className="upload-file-name">{item.name}</div>
                   <div className="upload-file-meta">
                     <Clock size={12} /> {item.date} · {item.size}
                     {item.status === 'success' && <span className="upload-success-label">· Indexed</span>}
+                    {item.status === 'processing' && <span>· {item.progress || 0}%</span>}
                   </div>
+                  {item.status === 'processing' && (
+                    <div className="document-progress" aria-label={`${item.progress || 0}% processed`}>
+                      <div className="document-progress-fill" style={{ width: `${Math.max(4, Math.min(100, item.progress || 0))}%` }} />
+                    </div>
+                  )}
                   {item.message && <div className="upload-message">{item.message}</div>}
                 </div>
-                <button className="icon-btn" onClick={() => handleDeleteHistory(item.id)} title="Remove local record" aria-label={`Remove local record for ${item.name}`}>
+                <button className="icon-btn" onClick={() => handleDeleteHistory(item.id)} title="Remove document" aria-label={`Remove document ${item.name}`}>
                   <Trash2 size={16} />
                 </button>
               </motion.div>
