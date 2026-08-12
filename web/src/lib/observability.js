@@ -157,7 +157,11 @@ export function captureException(error, context = {}) {
   Sentry.withScope(scope => {
     scope.setTag('error_name', error.name || 'Error');
     Object.entries(safeProperties(context)).forEach(([key, value]) => scope.setTag(key, value));
-    // Never send the original exception: its message can contain user input.
-    Sentry.captureException(new Error('BizGuide client operation failed'));
+    // Keep the original stack location for debugging, but replace the message
+    // because it can contain user input or a server echo.
+    const sanitizedError = new Error('BizGuide client operation failed');
+    sanitizedError.name = error.name || 'Error';
+    if (typeof error.stack === 'string') sanitizedError.stack = error.stack;
+    Sentry.captureException(sanitizedError);
   });
 }
