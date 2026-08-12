@@ -684,31 +684,55 @@ function App() {
                     transition={{ duration: 0.6 }}
                     className="hero-section"
                   >
-                    <div className="hero-badge">Educational beta · India-focused compliance</div>
-                    <h1 className="hero-title">
-                      Your <span className="gradient-text">Business Guide</span><br />
-                      for Business Compliance
-                    </h1>
-                    <p className="hero-subtitle">
-                      Explore AI-assisted planning information for Indian businesses and ask questions about your uploaded documents.
-                      Check important legal and tax decisions against the original source and a qualified professional.
-                    </p>
-                    <div className="quick-actions">
-                      {QUICK_ACTIONS.map((qa) => (
-                        <motion.button
-                          key={qa.title}
-                          type="button"
-                          whileHover={{ scale: 1.03, y: -4 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="glass-panel action-card"
-                          onClick={() => handleSend(qa.query)}
-                          aria-label={`${qa.title}: ${qa.desc}`}
-                        >
-                          <div className="action-icon">{qa.icon}</div>
-                          <div className="action-title">{qa.title}</div>
-                          <div className="action-desc">{qa.desc}</div>
-                        </motion.button>
-                      ))}
+                    <div className="hero-shell">
+                      <div className="hero-topline" aria-label="Workspace status">
+                        <span className="hero-status-dot" aria-hidden="true" />
+                        <span>Source-first workspace</span>
+                        <span className="hero-topline-divider" aria-hidden="true" />
+                        <span className="hero-topline-context">{activeBusinessProfile?.name || 'Personal workspace'}</span>
+                      </div>
+                      <div className="hero-copy">
+                        <div className="hero-badge">Educational beta · India-focused compliance</div>
+                        <h1 className="hero-title">
+                          Make your next<br />
+                          <span className="gradient-text">business decision</span> clearer.
+                        </h1>
+                        <p className="hero-subtitle">
+                          Ask grounded questions, organize business context, and turn official source material into a practical next step.
+                          Important legal and tax decisions should always be checked against the original source and a qualified professional.
+                        </p>
+                        <div className="hero-privacy-note">
+                          <span className="hero-privacy-icon" aria-hidden="true">✦</span>
+                          Answers use your selected workspace and uploaded sources when available.
+                        </div>
+                      </div>
+                      <div className="hero-workbench-heading">
+                        <div>
+                          <span className="hero-section-kicker">Start with a workflow</span>
+                          <h2>What are you working on?</h2>
+                        </div>
+                        <span className="hero-workbench-note">Choose a prompt or ask your own question</span>
+                      </div>
+                      <div className="quick-actions">
+                        {QUICK_ACTIONS.map((qa) => (
+                          <motion.button
+                            key={qa.title}
+                            type="button"
+                            whileHover={{ scale: 1.02, y: -3 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="glass-panel action-card"
+                            onClick={() => handleSend(qa.query)}
+                            aria-label={`${qa.title}: ${qa.desc}`}
+                          >
+                            <div className="action-icon">{qa.icon}</div>
+                            <div className="action-copy">
+                              <div className="action-title">{qa.title}</div>
+                              <div className="action-desc">{qa.desc}</div>
+                            </div>
+                            <span className="action-arrow" aria-hidden="true">↗</span>
+                          </motion.button>
+                        ))}
+                      </div>
                     </div>
                   </motion.div>
                 ) : (
