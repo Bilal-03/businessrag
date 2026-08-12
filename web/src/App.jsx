@@ -629,7 +629,6 @@ function App() {
             {persistenceStatus === 'unavailable' && <button type="button" className="persistence-retry" onClick={() => window.location.reload()}>Reload after migration</button>}
           </div>
         )}
-        <Suspense fallback={<PanelFallback />}>
         <AnimatePresence mode="wait">
           {currentView === 'home' ? (
             <motion.div
@@ -811,41 +810,48 @@ function App() {
             </motion.div>
           ) : currentView === 'businesses' ? (
             <motion.div key="businesses" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <MyBusinesses
-                session={session}
-                businesses={businesses}
-                onBusinessesChange={handleBusinessesChange}
-                onAskQuestion={handleAskQuestion}
-                activeBusinessId={activeBusinessId}
-                onSelectBusiness={handleSelectBusiness}
-              />
+              <Suspense fallback={<PanelFallback />}>
+                <MyBusinesses
+                  session={session}
+                  businesses={businesses}
+                  onBusinessesChange={handleBusinessesChange}
+                  onAskQuestion={handleAskQuestion}
+                  activeBusinessId={activeBusinessId}
+                  onSelectBusiness={handleSelectBusiness}
+                />
+              </Suspense>
             </motion.div>
           ) : currentView === 'upload' ? (
             <motion.div key="upload" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <UploadDocuments session={session} apiUrl={apiUrl} businessId={activeBusinessId} />
+              <Suspense fallback={<PanelFallback />}>
+                <UploadDocuments session={session} apiUrl={apiUrl} businessId={activeBusinessId} />
+              </Suspense>
             </motion.div>
           ) : currentView === 'workflow' ? (
             <motion.div key="workflow" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <WorkflowDashboard
-                session={session}
-                apiUrl={apiUrl}
-                activeBusinessId={activeBusinessId}
-                businessJurisdiction={activeBusinessProfile?.state || ''}
-                onGoToBusinesses={() => setCurrentView('businesses')}
-              />
+              <Suspense fallback={<PanelFallback />}>
+                <WorkflowDashboard
+                  session={session}
+                  apiUrl={apiUrl}
+                  activeBusinessId={activeBusinessId}
+                  businessJurisdiction={activeBusinessProfile?.state || ''}
+                  onGoToBusinesses={() => setCurrentView('businesses')}
+                />
+              </Suspense>
             </motion.div>
           ) : currentView === 'settings' ? (
             <motion.div key="settings" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <Settings
-                session={session}
-                onClearHistory={handleClearAllHistory}
-                onApiUrlChange={setApiUrl}
-                currentApiUrl={apiUrl}
-              />
+              <Suspense fallback={<PanelFallback />}>
+                <Settings
+                  session={session}
+                  onClearHistory={handleClearAllHistory}
+                  onApiUrlChange={setApiUrl}
+                  currentApiUrl={apiUrl}
+                />
+              </Suspense>
             </motion.div>
           ) : null}
         </AnimatePresence>
-        </Suspense>
       </main>
     </div>
   );
