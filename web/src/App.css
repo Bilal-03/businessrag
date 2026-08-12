@@ -613,6 +613,10 @@
 }
 .workflow-container { max-width: 1180px; }
 .workflow-kicker { display: inline-flex; align-items: center; gap: 6px; color: #a5b4fc; font-size: 11px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 8px; }
+.workflow-header-controls { display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; margin-left: auto; }
+.workflow-business-field { display: flex; flex-direction: column; gap: 5px; min-width: 240px; }
+.workflow-business-field > span { color: var(--text-secondary); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.workflow-header-controls .workflow-business-select { width: 260px; min-height: 42px; padding-top: 9px; padding-bottom: 9px; }
 .workflow-refresh { flex-shrink: 0; }
 .workflow-refresh .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -646,13 +650,15 @@
 .workflow-task-form { display: grid; grid-template-columns: minmax(0, 1fr) 160px auto; gap: 10px; align-items: center; padding: 12px; margin-bottom: 12px; }
 .task-date-input { color-scheme: dark; }
 .workflow-task-list { display: flex; flex-direction: column; gap: 8px; }
-.workflow-task-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.workflow-task-row { display: grid; grid-template-columns: minmax(0, 1fr) 132px auto; align-items: center; gap: 12px; padding: 12px 14px; }
 .workflow-task-main { min-width: 0; flex: 1; }
 .workflow-task-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
 .workflow-task-meta { color: var(--text-secondary); font-size: 12px; margin-top: 4px; }
-.task-status-select { width: 132px; min-height: 36px; padding: 7px 10px; }
+.workflow-task-row .task-status-select { width: 100%; min-width: 0; min-height: 36px; padding: 7px 10px; }
 .task-delete-button { flex-shrink: 0; color: var(--text-secondary); }
 .task-delete-button:hover { color: #f87171; }
+.task-delete-button.confirming { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: max-content; padding: 8px 10px; border: 1px solid rgba(248,113,113,0.42); border-radius: 9px; background: rgba(239,68,68,0.14); color: #fecaca; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.task-delete-button.confirming:hover { border-color: rgba(248,113,113,0.7); background: rgba(239,68,68,0.24); color: #fff1f2; }
 .workflow-task-empty { display: flex; align-items: center; gap: 8px; padding: 20px 4px; color: var(--text-secondary); font-size: 13px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .markdown-fallback { white-space: pre-wrap; line-height: 1.65; }
@@ -1586,6 +1592,9 @@
   .panel-title { font-size: 24px; }
   .panel-subtitle { font-size: 14px; }
   .panel-header > .btn-primary { width: 100%; justify-content: center; }
+  .workflow-header-controls { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; margin-left: 0; }
+  .workflow-business-field { min-width: 0; width: 100%; }
+  .workflow-header-controls .workflow-business-select { width: 100%; }
   .workflow-refresh { width: 100%; justify-content: center; }
   .workflow-stat-grid { grid-template-columns: 1fr; gap: 8px; }
   .workflow-stat { padding: 14px; flex-direction: row; align-items: center; justify-content: space-between; }
@@ -1593,8 +1602,10 @@
   .obligation-list { grid-template-columns: 1fr; }
   .workflow-task-form { grid-template-columns: 1fr; }
   .workflow-task-form .btn-primary { width: 100%; justify-content: center; }
-  .workflow-task-row { align-items: flex-start; flex-wrap: wrap; }
-  .task-status-select { width: calc(100% - 46px); }
+  .workflow-task-row { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+  .workflow-task-main { grid-column: 1 / -1; }
+  .workflow-task-row .task-status-select { grid-column: 1; width: 100%; }
+  .task-delete-button { grid-column: 2; align-self: stretch; }
   .form-grid { grid-template-columns: 1fr; }
   .form-group.full { grid-column: auto; }
 

@@ -30,7 +30,15 @@ function sourceHref(value) {
   return typeof value === 'string' && /^https:\/\//i.test(value) ? value : null;
 }
 
-const WorkflowDashboard = ({ session, apiUrl, activeBusinessId, businessJurisdiction, onGoToBusinesses }) => {
+const WorkflowDashboard = ({
+  session,
+  apiUrl,
+  businesses = [],
+  activeBusinessId,
+  businessJurisdiction,
+  onSelectBusiness,
+  onGoToBusinesses,
+}) => {
   const [obligations, setObligations] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -143,6 +151,14 @@ const WorkflowDashboard = ({ session, apiUrl, activeBusinessId, businessJurisdic
   };
 
   const doneCount = tasks.filter(task => task.status === 'done').length;
+  const selectedBusinessId = businesses.some(business => business.id === activeBusinessId)
+    ? activeBusinessId
+    : '';
+
+  const handleBusinessChange = (event) => {
+    const nextBusiness = businesses.find(business => business.id === event.target.value);
+    if (nextBusiness) onSelectBusiness?.(nextBusiness.id, nextBusiness);
+  };
 
   return (
     <div className="panel-container workflow-container">
@@ -152,9 +168,30 @@ const WorkflowDashboard = ({ session, apiUrl, activeBusinessId, businessJurisdic
           <h2 className="panel-title">Compliance Plan</h2>
           <p className="panel-subtitle">Track verified obligations and your own planning tasks for the selected business.</p>
         </div>
-        <button type="button" className="btn-ghost workflow-refresh" onClick={loadWorkflow} disabled={loading}>
-          <RefreshCw size={16} className={loading ? 'spin' : ''} /> Refresh
-        </button>
+        <div className="workflow-header-controls">
+          {businesses.length > 0 && (
+            <label className="workflow-business-field" htmlFor="workflow-business-select">
+              <span>Business workspace</span>
+              <select
+                id="workflow-business-select"
+                className="form-input workflow-business-select"
+                value={selectedBusinessId}
+                onChange={handleBusinessChange}
+                aria-label="Select business workspace"
+              >
+                <option value="" disabled>Select a business</option>
+                {businesses.map(business => (
+                  <option key={business.id} value={business.id}>
+                    {business.name}{business.state ? ` · ${business.state}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button type="button" className="btn-ghost workflow-refresh" onClick={loadWorkflow} disabled={loading}>
+            <RefreshCw size={16} className={loading ? 'spin' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -266,8 +303,15 @@ const WorkflowDashboard = ({ session, apiUrl, activeBusinessId, businessJurisdic
                     <select className="form-input task-status-select" aria-label={`Status for ${task.title}`} value={task.status} onChange={event => updateTask(task.id, { status: event.target.value })}>
                       {TASK_STATUSES.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
-                    <button type="button" className="icon-btn task-delete-button" onClick={() => deleteTask(task.id)} aria-label={`${pendingDeleteId === task.id ? 'Confirm deletion of' : 'Delete'} task ${task.title}`} title={pendingDeleteId === task.id ? 'Click again to confirm' : 'Delete task'}>
+                    <button
+                      type="button"
+                      className={`icon-btn task-delete-button ${pendingDeleteId === task.id ? 'confirming' : ''}`}
+                      onClick={() => deleteTask(task.id)}
+                      aria-label={`${pendingDeleteId === task.id ? 'Confirm deletion of' : 'Delete'} task ${task.title}`}
+                      title={pendingDeleteId === task.id ? 'Click again to confirm deletion' : 'Delete task'}
+                    >
                       <Trash2 size={16} />
+                      {pendingDeleteId === task.id && <span>Confirm delete</span>}
                     </button>
                   </div>
                 ))}

@@ -61,6 +61,15 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 - Source catalog: `./venv/bin/python scripts/validate_source_catalog.py` — passing (0 rows; no obligations are published by default).
 - Integrity: `git diff --check` — passing.
 
+## Post-rollout fixes
+
+- [x] **Compliance Plan business context selector**
+  - Added an explicit business workspace selector to the Compliance Plan header so users with multiple businesses can switch context without leaving the page.
+  - Switching the workspace refreshes jurisdiction-scoped obligations and owner-scoped planning tasks.
+- [x] **Compliance Plan task-row layout and deletion confirmation**
+  - Fixed the status select width overriding the task layout, which collapsed task titles and due dates.
+  - Added a visible `Confirm delete` state while retaining the two-step destructive-action safeguard.
+
 ## External gates still required
 
 - Apply `supabase/migrations/0001_core_workflow_schema.sql` and `0002_publish_gate_and_catalog_checks.sql` in staging, then production after backup/RLS verification.

@@ -833,8 +833,10 @@ function App() {
                 <WorkflowDashboard
                   session={session}
                   apiUrl={apiUrl}
+                  businesses={businesses}
                   activeBusinessId={activeBusinessId}
                   businessJurisdiction={activeBusinessProfile?.state || ''}
+                  onSelectBusiness={handleSelectBusiness}
                   onGoToBusinesses={() => setCurrentView('businesses')}
                 />
               </Suspense>
