@@ -81,10 +81,12 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
   - Observability implementation is complete in P2-03a. The repository now includes the first product/design-system slice plus a visible product-surface redesign: a clearer source-first hero, workspace context signal, workflow-oriented quick actions, refreshed navigation shell, stronger chat composer, premium panel/card surfaces, responsive tablet/mobile treatment, documented CSS tokens, stronger focus/forced-colors behavior, skip-link/main landmark, semantic business expanders, keyboard-operable custom selects, 44px touch targets, and privacy-safe workspace/auth funnel events.
   - The secondary-screen slice is now implemented: business and source-library context badges, explicit upload empty states, two-step document deletion confirmation, visible confirmation guidance, and Settings sections exposed as keyboard-operable ARIA tabs.
   - The visible redesign is intentionally presentation-only; existing API contracts, upload behavior, business switching, task CRUD, and observability behavior remain unchanged.
-  - Remaining work is event dashboards, real-device WCAG 2.2 AA checks, visual regression review, and final token/component extraction across any remaining tertiary states.
-  - Run real-device WCAG 2.2 AA checks across iOS Safari, Android Chrome, tablet, keyboard-only, screen-reader, contrast, focus, and reduced-motion flows.
-  - Replace the MVP visual layer with a documented token-based design system, premium responsive components, and measured performance budgets.
-  - **External gate:** validate analytics events without leaking document contents or tokens, complete the device matrix, and approve the visual regression baseline.
+  - [x] Added a dedicated accessibility device-preflight config and 12 checks across desktop Chrome, iPhone, Pixel, and iPad profiles. The latest run is 12/12 passing.
+  - [x] Removed chat-composer autofocus, standardized the skip link/sidebar collapse control to 44px, restored a valid global focus token, and verified reduced-motion behavior.
+  - [x] Added deterministic desktop/tablet/mobile visual baselines. The latest approval run is 3/3 passing with no diffs.
+  - [x] Completed the code-owned contrast review and mapped legacy color aliases/gradients to canonical design tokens.
+  - [x] Added the exact PostHog dashboard build sheet and privacy acceptance checks in `docs/P2_03_POSTHOG_DASHBOARDS.md`.
+  - [ ] **External gate:** create and verify the PostHog dashboard objects in the signed-in project, then complete physical iOS Safari/VoiceOver, Android Chrome/TalkBack, and iPad checks. Emulated browser profiles are not physical-device evidence.
 
 ## Verification baseline
 
@@ -92,6 +94,8 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 - Frontend: `npm run lint` — passing.
 - Frontend: `npm run build` — passing with split chunks.
 - Browser: `npm run test:e2e` — 6 passing (Chromium; deterministic route fixtures).
+- Accessibility: `npm run test:e2e:accessibility` — 12 passing across four device profiles.
+- Visual regression: `npm run test:e2e:visual` — 3 passing with approved desktop/tablet/mobile baselines.
 - Source catalog: `./venv/bin/python scripts/validate_source_catalog.py` — passing (0 rows; no obligations are published by default).
 - Integrity: `git diff --check` — passing.
 
@@ -109,4 +113,4 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 - [x] User confirmed the Supabase migrations, production environment variables, backend-first deployment, and authenticated canary checks described in `docs/PHASE_1_ROLLOUT.md`.
 - [ ] Populate and domain-review `supabase/seed/obligations.csv`; publish only reviewed rows. The current empty catalog is an intentional fail-closed state, not a complete compliance dataset.
 - [x] Finish the P2-02 external migration/worker canary; user verified the live queued-to-indexed document flow.
-- [ ] Start P2-03 product analytics, real-device WCAG audit, and design-system upgrade.
+- [ ] Complete the P2-03 external gate: create PostHog saved insights/dashboard and record physical-device accessibility results.

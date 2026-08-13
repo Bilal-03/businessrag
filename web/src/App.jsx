@@ -846,7 +846,6 @@ function App() {
                       }
                     }}
                     disabled={isUploading || isTyping}
-                    autoFocus
                   />
                   {!input && !isUploading && !isTyping && (
                     <div className="input-marquee" aria-hidden="true">

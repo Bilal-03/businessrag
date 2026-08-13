@@ -12,12 +12,16 @@
   --color-accent: #7168f6;
   --color-accent-strong: #8875ff;
   --color-accent-soft: rgba(113, 104, 246, 0.16);
+  --color-accent-gradient: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
   --color-positive: #45d483;
   --color-warning: #f6c453;
   --color-danger: #ff7d8b;
   --color-info: #6ec8ff;
   --border-subtle: rgba(148, 163, 184, 0.18);
   --border-accent: rgba(129, 140, 248, 0.42);
+  --surface-overlay: rgba(20, 29, 48, 0.72);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --surface-hover-subtle: rgba(255, 255, 255, 0.05);
   --shadow-panel: 0 18px 52px rgba(0, 0, 0, 0.28);
   --shadow-focus: 0 0 0 3px rgba(113, 104, 246, 0.34);
   --radius-sm: 8px;
@@ -36,16 +40,19 @@
   --motion-base: 220ms;
   --motion-slow: 360ms;
 
-  --bg-primary: #0a0e17;
-  --bg-secondary: #111827;
+  /* Legacy aliases: keep tertiary components on the same canonical token
+     values while they are migrated. Do not introduce new usages of these. */
+  --bg-primary: var(--color-canvas);
+  --bg-secondary: var(--color-surface-1);
   --bg-dark: var(--color-canvas);
-  --text-primary: #f8fafc;
-  --text-secondary: #b4c0d4;
-  --text-tertiary: #8d9ab1;
-  --accent-primary: #7168f6;
-  --accent-secondary: #8875ff;
-  --glass-bg: rgba(20, 29, 48, 0.72);
-  --glass-border: rgba(148, 163, 184, 0.18);
+  --text-primary: var(--color-content-primary);
+  --text-secondary: var(--color-content-secondary);
+  --text-tertiary: var(--color-content-muted);
+  --accent-primary: var(--color-accent);
+  --accent-secondary: var(--color-accent-strong);
+  --accent-strong: var(--color-accent-strong);
+  --glass-bg: var(--surface-overlay);
+  --glass-border: var(--border-subtle);
   --glass-shadow: var(--shadow-panel);
 }
 
@@ -157,6 +164,9 @@ button:not(:disabled),
   z-index: 200;
   transform: translateY(-160%);
   padding: 10px 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--radius-md);
   background: var(--color-content-primary);
   color: var(--color-canvas);
