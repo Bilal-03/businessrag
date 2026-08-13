@@ -298,7 +298,7 @@ The FastAPI backend is deployed on **Render** (free tier).
 
 The frontend deployment includes a restrictive Content Security Policy, HSTS, clickjacking and MIME-sniffing protections, a referrer policy, and a permissions policy through `web/vercel.json`. Keep server keys (Groq, Gemini, Pinecone, and JWT secrets) in the backend environment only; `VITE_*` variables are public client configuration.
 
-The source-backed workflow schema culminates in `supabase/migrations/0008_trusted_knowledge_platform.sql` and `0009_source_registry_candidates.sql`. The controlled obligation manifest is `supabase/seed/obligations.csv`; review it with `scripts/validate_source_catalog.py`. Follow [`docs/TRUSTED_BIZGUIDE_RELEASE.md`](docs/TRUSTED_BIZGUIDE_RELEASE.md) before production promotion.
+The source-backed workflow schema continues through `supabase/migrations/0014_bilingual_review_controls.sql`. Apply every migration in filename order. The controlled obligation manifest is `supabase/seed/obligations.csv`; review it with `scripts/validate_source_catalog.py`. Follow [`docs/TRUSTED_BIZGUIDE_RELEASE.md`](docs/TRUSTED_BIZGUIDE_RELEASE.md) before production promotion.
 
 ---
 

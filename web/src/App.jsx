@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Paperclip, Building2, UtensilsCrossed, Rocket, BarChart3, Wallet, Scale } from 'lucide-react';
+import { Send, Paperclip, Building2, UtensilsCrossed, Rocket, BarChart3, Wallet, Scale, Flag, ThumbsUp } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import { supabase } from './lib/supabase';
 import { captureEvent, captureException, durationBucket, lengthBucket, sizeBucket } from './lib/observability';
@@ -144,6 +144,7 @@ function App() {
   const [persistenceMessage, setPersistenceMessage] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [reviewerRoles, setReviewerRoles] = useState([]);
+  const [feedbackState, setFeedbackState] = useState({});
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const currentConvIdRef = useRef(null);
@@ -504,6 +505,7 @@ function App() {
             language: streamed.language || answerLanguage,
             assumptions: streamed.assumptions || [],
             missingInputs: streamed.missing_inputs || [],
+            conflicts: streamed.conflicts || [],
             coverage: streamed.coverage || {},
             effectiveDate: streamed.effective_date,
             profileVersion: streamed.profile_version,
@@ -533,6 +535,7 @@ function App() {
         language: data.language || answerLanguage,
         assumptions: data.assumptions || [],
         missingInputs: data.missing_inputs || [],
+        conflicts: data.conflicts || [],
         coverage: data.coverage || {},
         effectiveDate: data.effective_date,
         profileVersion: data.profile_version,
@@ -563,6 +566,33 @@ function App() {
       persistCurrentConv(finalMessages, currentConvIdRef.current);
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const submitAnswerFeedback = async (message, index, rating, reasonCode = null) => {
+    const key = message.id || `${activeConvId || 'current'}:${index}`;
+    if (feedbackState[key] === 'saving' || feedbackState[key] === 'saved') return;
+    setFeedbackState(current => ({ ...current, [key]: 'saving' }));
+    try {
+      const evidenceIds = (message.citations || []).map(citation => citation.evidence_id).filter(Boolean);
+      const response = await fetch(`${apiUrl}/api/answers/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          conversation_id: activeConvId || null,
+          message_id: message.id || null,
+          rating,
+          reason_code: reasonCode,
+          answer_status: message.evidenceStatus || 'general_guidance',
+          evidence_ids: evidenceIds,
+        }),
+      });
+      const data = await readApiResponse(response);
+      if (!response.ok) throw new Error(data.detail || 'Feedback could not be saved.');
+      setFeedbackState(current => ({ ...current, [key]: 'saved' }));
+    } catch (error) {
+      captureException(error, { source: 'answer_feedback' });
+      setFeedbackState(current => ({ ...current, [key]: 'error' }));
     }
   };
 
@@ -824,6 +854,9 @@ function App() {
                               {msg.missingInputs?.length > 0 && (
                                 <div className="grounding-warning" role="status"><strong>Missing inputs:</strong> {msg.missingInputs.join(', ')}</div>
                               )}
+                              {msg.conflicts?.length > 0 && (
+                                <div className="workflow-alert" role="alert"><strong>Evidence conflict:</strong> {msg.conflicts.join(' ')}</div>
+                              )}
                               {msg.citations?.length > 0 && (
                                 <div className="citation-list" aria-label="Answer evidence">
                                   <div className="citation-heading">{msg.citations.some(citation => citation.source_kind === 'official') ? 'Reviewed official evidence' : 'Sources from your documents (private evidence)'}</div>
@@ -861,6 +894,17 @@ function App() {
                                 </button>
                               )}
                               <p className="answer-disclaimer">{msg.evidenceStatus === 'verified' ? 'The answer is limited to the cited evidence, effective date, confirmed profile facts, and disclosed coverage.' : 'This answer is not a verified legal or tax conclusion. Coverage limits and missing evidence are shown above.'}</p>
+                              {msg.evidenceStatus && (() => {
+                                const feedbackKey = msg.id || `${activeConvId || 'current'}:${idx}`;
+                                const feedbackStatus = feedbackState[feedbackKey];
+                                return (
+                                  <div className="answer-feedback" aria-label="Answer feedback">
+                                    <span>{feedbackStatus === 'saved' ? 'Feedback recorded' : feedbackStatus === 'error' ? 'Feedback could not be saved' : 'Was this answer useful?'}</span>
+                                    <button type="button" className="btn-ghost" onClick={() => submitAnswerFeedback(msg, idx, 'helpful')} disabled={feedbackStatus === 'saving' || feedbackStatus === 'saved'}><ThumbsUp size={14} /> Helpful</button>
+                                    <button type="button" className="btn-ghost" onClick={() => submitAnswerFeedback(msg, idx, 'report', 'incorrect')} disabled={feedbackStatus === 'saving' || feedbackStatus === 'saved'}><Flag size={14} /> Report</button>
+                                  </div>
+                                );
+                              })()}
                             </>
                           ) : (
                             <span>{msg.content}</span>

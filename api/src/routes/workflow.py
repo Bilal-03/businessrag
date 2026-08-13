@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import urlparse
 from uuid import UUID
@@ -25,10 +25,13 @@ from src.contracts.workflow import (
     ComplianceProfileUpdate,
     ObligationRead,
     ReminderCreate,
+    ReminderDeliveryRead,
+    ReminderDeliveryRequest,
     ReminderRead,
     ReminderUpdate,
     TaskEvidenceCreate,
     TaskEvidenceRead,
+    TaskCompletionEventRead,
     TaskCreate,
     TaskRead,
     TaskUpdate,
@@ -113,6 +116,37 @@ def _has_review_evidence(obligation: ObligationRead, as_of: date) -> bool:
     return True
 
 
+def _source_version_fresh(last_checked_at: str | datetime | None, as_of: date, max_age_days: int = 90) -> bool:
+    if not last_checked_at:
+        return False
+    try:
+        checked = last_checked_at if isinstance(last_checked_at, datetime) else datetime.fromisoformat(last_checked_at.replace("Z", "+00:00"))
+        checked_date = checked.date()
+    except (TypeError, ValueError):
+        return False
+    return checked_date <= as_of and checked_date >= as_of - timedelta(days=max_age_days)
+
+
+def _authoritative_https(url: str | None) -> bool:
+    if not url:
+        return False
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").casefold()
+    return parsed.scheme.casefold() == "https" and any(
+        host == suffix or host.endswith(f".{suffix}")
+        for suffix in ("gov.in", "nic.in", "org.in")
+    )
+
+
+def _version_active(version: dict[str, Any], as_of: date) -> bool:
+    try:
+        starts = date.fromisoformat(version["effective_from"])
+        ends = date.fromisoformat(version["effective_to"]) if version.get("effective_to") else None
+    except (KeyError, TypeError, ValueError):
+        return False
+    return starts <= as_of and (ends is None or ends >= as_of)
+
+
 def _applicability_reasons(rule: dict[str, Any], context: dict[str, Any]) -> list[str]:
     reasons: list[str] = []
     labels = {
@@ -171,7 +205,7 @@ async def _list_obligation_rows(client: SupabaseRestClient) -> list[ObligationRe
     try:
         rows = await client.request(
             "GET", "obligations",
-            params={**base_params, "select": "id,jurisdiction,title,description,source_url,source_version,effective_from,effective_to,published,review_status,source_citation,review_owner,reviewed_at,applicability_version,applicability_rule,due_date_rule,evidence_requirements,risk_level,revalidate_by,kill_switch,metadata"},
+            params={**base_params, "select": "id,jurisdiction,title,description,source_url,source_version,effective_from,effective_to,published,review_status,source_citation,review_owner,reviewed_at,applicability_version,applicability_rule,due_date_rule,evidence_requirements,risk_level,revalidate_by,kill_switch,primary_claim_id,metadata"},
         )
     except SupabaseRestError as exc:
         if exc.status_code not in {400, 404}:
@@ -312,6 +346,52 @@ async def _build_plan(client: SupabaseRestClient, business_id: str, effective_da
     business = await _load_business(client, business_id)
     profile = await _load_profile(client, business_id)
     obligations = await _list_obligation_rows(client)
+    obligation_ids = [item.id for item in obligations]
+    due_rows: list[dict[str, Any]] = []
+    evidence_rows: list[dict[str, Any]] = []
+    if obligation_ids:
+        id_filter = f"in.({','.join(obligation_ids)})"
+        due_rows = await client.request(
+            "GET", "obligation_due_date_rules",
+            params={
+                "select": "id,obligation_id,formula,required_input_keys,lifecycle,revalidate_by,current,supporting_claim_id",
+                "obligation_id": id_filter, "lifecycle": "eq.published", "current": "eq.true",
+            },
+        )
+        evidence_rows = await client.request(
+            "GET", "obligation_evidence_items",
+            params={
+                "select": "id,obligation_id,label,description,required,lifecycle,revalidate_by,current,supporting_claim_id",
+                "obligation_id": id_filter, "lifecycle": "eq.published", "current": "eq.true",
+            },
+        )
+    primary_claim_ids = [item.primary_claim_id for item in obligations if item.primary_claim_id]
+    supporting_claim_ids = [row.get("supporting_claim_id") for row in due_rows + evidence_rows if row.get("supporting_claim_id")]
+    claim_ids = list(dict.fromkeys(primary_claim_ids + supporting_claim_ids))
+    verified_claims: dict[str, dict[str, Any]] = {}
+    verified_passages: dict[str, dict[str, Any]] = {}
+    verified_versions: dict[str, dict[str, Any]] = {}
+    verified_documents: dict[str, dict[str, Any]] = {}
+    if claim_ids:
+        claim_rows = await client.request(
+            "GET", "reviewed_claims",
+            params={
+                "select": "id,obligation_id,claim_type,claim_value,statement_en,support_excerpt,source_passage_id,lifecycle,current,kill_switch,revalidate_by,required_reviewer_role,required_approvals,reviewer_roles,approval_count,applicability_version,applicability_rule",
+                "id": f"in.({','.join(claim_ids)})", "lifecycle": "eq.published", "current": "eq.true", "kill_switch": "eq.false",
+            },
+        )
+        verified_claims = {row["id"]: row for row in claim_rows}
+        passage_ids = [row["source_passage_id"] for row in claim_rows]
+        if passage_ids:
+            passage_rows = await client.request("GET", "source_passages", params={"select": "id,source_version_id,anchor,page_number,passage_text", "id": f"in.({','.join(passage_ids)})"})
+            verified_passages = {row["id"]: row for row in passage_rows}
+            version_ids = [row["source_version_id"] for row in passage_rows]
+            version_rows = await client.request("GET", "source_versions", params={"select": "id,source_document_id,version_label,last_checked_at,content_hash,fetch_status,review_status,effective_from,effective_to", "id": f"in.({','.join(version_ids)})"})
+            verified_versions = {row["id"]: row for row in version_rows}
+            document_ids = [row["source_document_id"] for row in version_rows]
+            if document_ids:
+                document_rows = await client.request("GET", "source_documents", params={"select": "id,canonical_url,source_tier,authority_name,title,active", "id": f"in.({','.join(document_ids)})"})
+                verified_documents = {row["id"]: row for row in document_rows}
     context = _profile_context(business, profile)
     coverage_rows = await client.request(
         "GET",
@@ -339,31 +419,115 @@ async def _build_plan(client: SupabaseRestClient, business_id: str, effective_da
     normalized_jurisdiction = jurisdiction.casefold() if jurisdiction else None
     applicable: list[ObligationRead] = []
     unknown_fields: set[str] = set()
+
+    def verified_supporting_claim(claim_id: str | None, obligation_id: str, rule: dict[str, Any]) -> dict[str, Any] | None:
+        claim = verified_claims.get(claim_id or "")
+        passage = verified_passages.get(claim.get("source_passage_id")) if claim else None
+        version = verified_versions.get(passage.get("source_version_id")) if passage else None
+        document = verified_documents.get(version.get("source_document_id")) if version else None
+        if not claim or claim.get("obligation_id") != obligation_id or not passage or not version or not document:
+            return None
+        if claim.get("applicability_version") != PROFILE_VERSION or claim.get("applicability_rule") != rule:
+            return None
+        required_approvals = max(
+            claim.get("required_approvals") or 1,
+            2 if claim.get("claim_type") in {"deadline", "rate", "threshold", "penalty", "eligibility"} else 1,
+        )
+        if (claim.get("approval_count") or 0) < required_approvals or claim.get("required_reviewer_role") not in (claim.get("reviewer_roles") or []):
+            return None
+        if claim.get("revalidate_by", "") < effective_date.isoformat() or version.get("fetch_status") != "healthy" or version.get("review_status") != "approved":
+            return None
+        if not document.get("active") or not _authoritative_https(document.get("canonical_url")):
+            return None
+        if not _source_version_fresh(version.get("last_checked_at"), effective_date) or not _version_active(version, effective_date):
+            return None
+        excerpt = " ".join((claim.get("support_excerpt") or "").casefold().split())
+        if not excerpt or excerpt not in " ".join(passage["passage_text"].casefold().split()):
+            return None
+        return claim
+
     for obligation in obligations:
         if not _eligible_on(obligation, effective_date):
             continue
         if not _matches_jurisdiction(obligation, normalized_jurisdiction):
             continue
-        if obligation.applicability_version != PROFILE_VERSION or not obligation.applicability_rule:
+        primary_claim = verified_claims.get(obligation.primary_claim_id or "")
+        passage = verified_passages.get(primary_claim.get("source_passage_id")) if primary_claim else None
+        version = verified_versions.get(passage.get("source_version_id")) if passage else None
+        document = verified_documents.get(version.get("source_document_id")) if version else None
+        if not primary_claim or primary_claim.get("obligation_id") != obligation.id or not passage or not version or not document:
+            continue
+        if primary_claim.get("revalidate_by", "") < effective_date.isoformat() or version.get("fetch_status") != "healthy" or version.get("review_status") != "approved" or not document.get("active"):
+            continue
+        freshness_days = 2 if obligation.risk_level == "critical" or primary_claim.get("claim_type") in {"deadline", "rate", "threshold", "penalty", "eligibility"} else 90
+        if not _authoritative_https(document.get("canonical_url")) or not _source_version_fresh(version.get("last_checked_at"), effective_date, freshness_days) or not _version_active(version, effective_date):
+            continue
+        excerpt = " ".join((primary_claim.get("support_excerpt") or "").casefold().split())
+        if not excerpt or excerpt not in " ".join(passage["passage_text"].casefold().split()):
+            continue
+        required_approvals = max(
+            primary_claim.get("required_approvals") or 1,
+            2 if obligation.risk_level in {"high", "critical"} or primary_claim.get("claim_type") in {"deadline", "rate", "threshold", "penalty", "eligibility"} else 1,
+        )
+        if (primary_claim.get("approval_count") or 0) < required_approvals or primary_claim.get("required_reviewer_role") not in (primary_claim.get("reviewer_roles") or []):
+            continue
+        claim_rule = primary_claim.get("applicability_rule")
+        if (
+            obligation.applicability_version != PROFILE_VERSION
+            or primary_claim.get("applicability_version") != PROFILE_VERSION
+            or not obligation.applicability_rule
+            or claim_rule != obligation.applicability_rule
+        ):
             logger.warning("workflow_obligation_rule_rejected", extra={"event": "workflow_obligation_rule_rejected"})
             continue
         try:
-            result = evaluate_rule(obligation.applicability_rule, context)
+            result = evaluate_rule(claim_rule, context)
         except ValueError:
             logger.warning("workflow_obligation_rule_rejected", extra={"event": "workflow_obligation_rule_rejected"})
             continue
         if result.outcome == Outcome.APPLICABLE:
+            due_rule = next((row for row in due_rows if row["obligation_id"] == obligation.id), None)
+            verified_due_rule = None
+            if due_rule and due_rule.get("revalidate_by", "") >= effective_date.isoformat():
+                supporting_claim = verified_supporting_claim(due_rule.get("supporting_claim_id"), obligation.id, claim_rule)
+                if supporting_claim and supporting_claim.get("claim_type") == "deadline" and supporting_claim.get("claim_value") == due_rule.get("formula"):
+                    verified_due_rule = due_rule.get("formula")
             try:
-                due_date, due_basis = evaluate_due_date(obligation.due_date_rule, context["date_answers"], effective_date)
+                due_date, due_basis = evaluate_due_date(verified_due_rule, context["date_answers"], effective_date)
             except DueDateRuleError:
                 # Malformed or unsupported formulas fail closed exactly like an
                 # invalid applicability rule.
                 due_date, due_basis = None, "Published due-date formula failed validation; deadline not determined."
+            verified_evidence = []
+            for item in evidence_rows:
+                if item["obligation_id"] != obligation.id or item.get("revalidate_by", "") < effective_date.isoformat():
+                    continue
+                supporting_claim = verified_supporting_claim(item.get("supporting_claim_id"), obligation.id, claim_rule)
+                if (
+                    not supporting_claim
+                    or supporting_claim.get("claim_type") not in {"duty", "procedure"}
+                    or not isinstance(supporting_claim.get("claim_value"), dict)
+                    or supporting_claim["claim_value"].get("evidence_label") != item["label"]
+                ):
+                    continue
+                verified_evidence.append({
+                    "id": item["id"], "label": item["label"], "description": item.get("description"),
+                    "required": item.get("required", True), "supporting_claim_id": item["supporting_claim_id"],
+                })
             applicable.append(obligation.model_copy(update={
-                "applicability_reason": _applicability_reasons(obligation.applicability_rule, context),
+                "description": primary_claim["statement_en"],
+                "source_url": document["canonical_url"],
+                "source_version": version["version_label"],
+                "source_citation": f"{document['title']}, {passage['anchor']}",
+                "applicability_reason": _applicability_reasons(claim_rule, context),
                 "due_date": due_date,
                 "deadline_status": "determined" if due_date else "not_determined",
                 "due_date_basis": due_basis,
+                "due_date_rule": verified_due_rule,
+                "evidence_requirements": verified_evidence,
+                "source_version_id": version["id"], "source_tier": document["source_tier"],
+                "source_last_checked_at": version["last_checked_at"], "source_content_hash": version["content_hash"],
+                "reviewer_roles": primary_claim.get("reviewer_roles") or [], "approval_count": primary_claim.get("approval_count"),
             }))
         elif result.outcome == Outcome.UNKNOWN:
             unknown_fields.update(result.unknown_fields)
@@ -388,7 +552,7 @@ async def _list_task_rows(client: SupabaseRestClient, business_id: str) -> list[
         "GET",
         "tasks",
         params={
-            "select": "id,business_id,obligation_id,title,status,due_date,completed_at,created_at,updated_at",
+            "select": "id,business_id,obligation_id,title,status,due_date,completed_at,created_at,updated_at,recurrence_rule,series_id,occurrence_number",
             "business_id": f"eq.{business_id}",
             "order": "created_at.desc",
         },
@@ -695,6 +859,100 @@ async def delete_reminder(request: Request, reminder_id: str, _user_id: str = De
     return None
 
 
+@router.get("/reminders/due", response_model=list[ReminderDeliveryRead])
+async def due_reminders(request: Request, _user_id: str = Depends(get_current_user)):
+    """Return due owner-scoped reminders without changing delivery state."""
+    now = datetime.now(timezone.utc)
+    try:
+        client = _client(request)
+        rows = await client.request(
+            "GET", "reminders",
+            params={
+                "select": "id,title,business_id,task_id,remind_at,timezone,status,alert_offsets_days,snoozed_until",
+                "status": "in.(scheduled,snoozed)",
+                "remind_at": f"lte.{(now + timedelta(days=365)).isoformat()}",
+                "order": "remind_at.asc", "limit": 100,
+            },
+        )
+        reminder_ids = [row["id"] for row in rows]
+        events = await client.request(
+            "GET", "reminder_events",
+            params={
+                "select": "reminder_id,metadata", "event_type": "eq.delivered",
+                "reminder_id": f"in.({','.join(reminder_ids)})" if reminder_ids else "eq.00000000-0000-0000-0000-000000000000",
+                "limit": 1000,
+            },
+        )
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "due_reminders") from exc
+    delivered_offsets: dict[str, set[int]] = {}
+    for event in events:
+        offset = (event.get("metadata") or {}).get("alert_offset_days")
+        if isinstance(offset, int):
+            delivered_offsets.setdefault(event["reminder_id"], set()).add(offset)
+    due: list[ReminderDeliveryRead] = []
+    for row in rows:
+        if row["status"] == "snoozed":
+            scheduled_for = datetime.fromisoformat((row.get("snoozed_until") or "").replace("Z", "+00:00")) if row.get("snoozed_until") else None
+            if scheduled_for and scheduled_for <= now:
+                due.append(ReminderDeliveryRead(
+                    id=row["id"], title=row["title"], business_id=row["business_id"], task_id=row.get("task_id"),
+                    scheduled_for=scheduled_for, timezone=row["timezone"], alert_offset_days=0,
+                ))
+            continue
+        target = datetime.fromisoformat(row["remind_at"].replace("Z", "+00:00"))
+        offsets = sorted({int(value) for value in row.get("alert_offsets_days") or []}, reverse=True)
+        already_delivered = delivered_offsets.get(row["id"], set())
+        candidates = [offset for offset in offsets if target - timedelta(days=offset) <= now and offset not in already_delivered]
+        if not candidates:
+            continue
+        # If the reminder was created after an earlier alert window, skip that
+        # obsolete window and deliver only the most recent elapsed alert.
+        offset = min(candidates)
+        due.append(ReminderDeliveryRead(
+            id=row["id"], title=row["title"], business_id=row["business_id"], task_id=row.get("task_id"),
+            scheduled_for=target - timedelta(days=offset), timezone=row["timezone"], alert_offset_days=offset,
+        ))
+    return due
+
+
+@router.post("/reminders/{reminder_id}/delivered", response_model=ReminderRead)
+async def mark_reminder_delivered(
+    request: Request,
+    reminder_id: str,
+    body: ReminderDeliveryRequest,
+    user_id: str = Depends(get_current_user),
+):
+    reminder_id = _uuid_identifier(reminder_id)
+    delivered_at = body.delivered_at or datetime.now(timezone.utc)
+    try:
+        client = _client(request)
+        reminder_rows = await client.request(
+            "GET", "reminders",
+            params={"select": "id,status,remind_at,alert_offsets_days", "id": f"eq.{reminder_id}", "limit": 1},
+        )
+        if not reminder_rows:
+            raise HTTPException(status_code=404, detail="Reminder not found.")
+        reminder = reminder_rows[0]
+        allowed_offsets = {int(value) for value in reminder.get("alert_offsets_days") or []}
+        if reminder["status"] != "snoozed" and body.alert_offset_days not in allowed_offsets:
+            raise HTTPException(status_code=422, detail="The alert offset is not configured for this reminder.")
+        final_alert = reminder["status"] == "snoozed" or body.alert_offset_days == min(allowed_offsets, default=0)
+        rows = await client.request(
+            "PATCH", "reminders", params={"id": f"eq.{reminder_id}"},
+            payload={"status": "delivered" if final_alert else "scheduled", "snoozed_until": None},
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail="Reminder not found.")
+        await client.request("POST", "reminder_events", payload={
+            "reminder_id": reminder_id, "owner_id": user_id, "event_type": "delivered",
+            "event_at": delivered_at.isoformat(), "metadata": {"alert_offset_days": body.alert_offset_days},
+        })
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "deliver_reminder") from exc
+    return ReminderRead.model_validate(rows[0])
+
+
 @router.get("/tasks/{task_id}/evidence", response_model=list[TaskEvidenceRead])
 async def list_task_evidence(request: Request, task_id: str, _user_id: str = Depends(get_current_user)):
     task_id = _uuid_identifier(task_id)
@@ -733,6 +991,19 @@ async def add_task_evidence(
     except SupabaseRestError as exc:
         raise _storage_error(exc, "add_task_evidence") from exc
     return TaskEvidenceRead.model_validate(rows[0])
+
+
+@router.get("/tasks/{task_id}/history", response_model=list[TaskCompletionEventRead])
+async def task_completion_history(request: Request, task_id: str, _user_id: str = Depends(get_current_user)):
+    task_id = _uuid_identifier(task_id)
+    try:
+        rows = await _client(request).request(
+            "GET", "task_completion_events",
+            params={"select": "id,task_id,from_status,to_status,changed_at", "task_id": f"eq.{task_id}", "order": "changed_at.desc"},
+        )
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "task_history") from exc
+    return [TaskCompletionEventRead.model_validate(row) for row in rows]
 
 
 @router.get("/summary", response_model=WorkflowSummary)

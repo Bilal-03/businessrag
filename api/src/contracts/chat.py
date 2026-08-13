@@ -45,9 +45,13 @@ class SourceCitation(BaseModel):
     snippet: str = Field(min_length=1, max_length=1200)
     score: float | None = Field(default=None, ge=-1, le=1)
     source_tier: int | None = Field(default=None, ge=1, le=5)
+    publication_date: date | None = None
     effective_from: date | None = None
     effective_to: date | None = None
     last_checked_at: datetime | None = None
+    content_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    reviewed_at: datetime | None = None
+    approval_count: int | None = Field(default=None, ge=1)
     reviewer_roles: list[str] = Field(default_factory=list, max_length=8)
 
 
@@ -57,7 +61,10 @@ class VerifiedClaim(BaseModel):
     evidence_ids: list[str] = Field(min_length=1, max_length=8)
     applicability: list[str] = Field(default_factory=list, max_length=12)
     risk_level: Literal["low", "medium", "high", "critical"]
+    claim_type: Literal["duty", "deadline", "rate", "threshold", "penalty", "eligibility", "definition", "procedure", "exemption"] | None = None
     language_status: Literal["reviewed", "generated_explanation", "english_only"] = "reviewed"
+    statutory_text_en: str
+    explanation_hi: str | None = None
 
 
 class EscalationGuidance(BaseModel):
@@ -81,6 +88,7 @@ class ChatResponse(BaseModel):
     citations: list[SourceCitation] = Field(default_factory=list, max_length=20)
     assumptions: list[str] = Field(default_factory=list, max_length=20)
     missing_inputs: list[str] = Field(default_factory=list, max_length=20)
+    conflicts: list[str] = Field(default_factory=list, max_length=20)
     coverage: dict[str, Any] = Field(default_factory=dict)
     effective_date: date
     profile_version: int | None = Field(default=None, ge=1)

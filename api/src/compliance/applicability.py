@@ -91,6 +91,21 @@ APPROVED_DATE_KEYS = {
     "event_date",
 }
 APPROVED_OPERATORS = {"eq", "neq", "in", "contains_any", "contains_all"}
+LIST_PROFILE_FIELDS = {"regulated_activities", "operating_state_codes"}
+BOOLEAN_PROFILE_FIELDS = {
+    "has_physical_establishment", "uses_contractors", "handles_personal_data",
+    "operates_multiple_states", "imports_goods_services", "exports_goods_services",
+}
+PROFILE_FIELD_VALUES: dict[str, set[Any]] = {
+    "industry_code": set(INDUSTRY_LABELS),
+    "business_status": {"planning", "registered", "operating", "on_hold"},
+    "gst_registration_status": {"registered", "not_registered", "not_applicable"},
+    "gst_scheme": {"regular", "composition", "qrmp", "not_known", "not_applicable"},
+    "incorporation_stage": {"pre_incorporation", "incorporated", "operating", "winding_down"},
+    "turnover_band": {"under_20_lakh", "20_lakh_to_1_crore", "1_to_5_crore", "over_5_crore"},
+    "employee_count_band": {"0", "1_to_9", "10_to_19", "20_to_49", "50_to_99", "100_plus"},
+    "premises_status": {"none", "owned", "leased", "shared", "virtual"},
+}
 
 
 QUESTION_CATALOG: dict[str, dict[str, Any]] = {
@@ -254,11 +269,24 @@ def _validate_condition(node: dict[str, Any]) -> None:
         raise ValueError("Applicability conditions require a value.")
     if operator in {"in", "contains_any", "contains_all"} and not isinstance(node["value"], list):
         raise ValueError(f"Operator {operator} requires a list value.")
+    if field in LIST_PROFILE_FIELDS and operator not in {"eq", "neq", "contains_any", "contains_all"}:
+        raise ValueError(f"List field {field} does not support operator {operator}.")
+    if field not in LIST_PROFILE_FIELDS and operator in {"contains_any", "contains_all"}:
+        raise ValueError(f"Scalar field {field} does not support operator {operator}.")
     values = node["value"] if isinstance(node["value"], list) else [node["value"]]
     if field == "industry_code" and any(value not in INDUSTRY_LABELS for value in values):
         raise ValueError("Applicability rule contains an unknown industry code.")
     if field == "regulated_activities" and any(value not in ACTIVITY_LABELS for value in values):
         raise ValueError("Applicability rule contains an unknown regulated activity.")
+    if field == "operating_state_codes" and any(not isinstance(value, str) or not value.isupper() or len(value) not in range(2, 9) for value in values):
+        raise ValueError("Applicability rule contains an invalid operating state code.")
+    if field in BOOLEAN_PROFILE_FIELDS or field.startswith("answers."):
+        if any(not isinstance(value, bool) for value in values):
+            raise ValueError(f"Applicability field {field} requires boolean values.")
+    if field in PROFILE_FIELD_VALUES and any(value not in PROFILE_FIELD_VALUES[field] for value in values):
+        raise ValueError(f"Applicability rule contains an invalid value for {field}.")
+    if field == "entity_type" and any(not isinstance(value, str) or not value.strip() or len(value) > 80 for value in values):
+        raise ValueError("Applicability rule contains an invalid entity type.")
 
 
 def validate_rule(rule: Any) -> None:

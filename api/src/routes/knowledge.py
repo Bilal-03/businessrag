@@ -8,8 +8,11 @@ from src.compliance.applicability import validate_rule
 from src.contracts.knowledge import (
     AnswerFeedbackCreate,
     ClaimCreate,
+    ChangeEventResolution,
+    ConflictResolution,
     LifecycleTransition,
     ReviewDecisionCreate,
+    ReviewerAssignmentCreate,
     SourceDocumentCreate,
     SourcePassageCreate,
     SourceVersionCreate,
@@ -87,6 +90,28 @@ async def reviewer_identity(request: Request, user_id: str = Depends(get_current
     return {"is_reviewer": bool(roles), "roles": sorted(roles)}
 
 
+@router.get("/review/assignments")
+async def reviewer_assignments(request: Request, user_id: str = Depends(get_current_user)):
+    client = _client(request)
+    await _require_reviewer(client, user_id, "catalog_admin")
+    return await client.request("GET", "reviewer_assignments", params={"select": "*", "order": "assigned_at.desc"})
+
+
+@router.post("/review/assignments", status_code=status.HTTP_201_CREATED)
+async def create_reviewer_assignment(
+    request: Request,
+    body: ReviewerAssignmentCreate,
+    user_id: str = Depends(get_current_user),
+):
+    client = _client(request)
+    await _require_reviewer(client, user_id, "catalog_admin")
+    payload = body.model_dump(mode="json") | {
+        "reviewer_user_id": _uuid(body.reviewer_user_id), "assigned_by": user_id,
+    }
+    rows = await client.request("POST", "reviewer_assignments", payload=payload)
+    return rows[0]
+
+
 @router.get("/review/queue")
 async def review_queue(request: Request, lifecycle: str = Query("in_review"), user_id: str = Depends(get_current_user)):
     client = _client(request)
@@ -94,6 +119,18 @@ async def review_queue(request: Request, lifecycle: str = Query("in_review"), us
     if lifecycle not in {"draft", "in_review", "published", "rejected", "quarantined", "superseded"}:
         raise HTTPException(status_code=422, detail="Unknown lifecycle state.")
     return await client.request("GET", "reviewed_claims", params={"select": "*", "lifecycle": f"eq.{lifecycle}", "order": "updated_at.asc", "limit": 200})
+
+
+@router.get("/review/source-versions")
+async def source_version_queue(request: Request, review_status: str = Query("in_review"), user_id: str = Depends(get_current_user)):
+    client = _client(request)
+    await _require_reviewer(client, user_id)
+    if review_status not in {"draft", "in_review", "approved", "superseded", "quarantined"}:
+        raise HTTPException(status_code=422, detail="Unknown source review state.")
+    return await client.request(
+        "GET", "source_versions",
+        params={"select": "id,source_document_id,version_label,content_hash,fetch_status,review_status,last_checked_at", "review_status": f"eq.{review_status}", "order": "retrieved_at.asc", "limit": 200},
+    )
 
 
 @router.get("/review/change-events")
@@ -143,10 +180,82 @@ async def create_claim(request: Request, body: ClaimCreate, user_id: str = Depen
         validate_rule(body.applicability_rule)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    passage_rows = await client.request(
+        "GET", "source_passages",
+        params={"select": "id,passage_text", "id": f"eq.{_uuid(body.source_passage_id)}", "limit": 1},
+    )
+    if not passage_rows:
+        raise HTTPException(status_code=422, detail="The referenced source passage is unavailable.")
+    normalized_passage = " ".join(passage_rows[0]["passage_text"].casefold().split())
+    normalized_excerpt = " ".join(body.support_excerpt.casefold().split())
+    if normalized_excerpt not in normalized_passage:
+        raise HTTPException(status_code=422, detail="The support excerpt must appear verbatim in the referenced passage.")
     payload = body.model_dump(mode="json", exclude_none=True)
     payload.update({"created_by": user_id, "lifecycle": "draft", "current": True})
     rows = await client.request("POST", "reviewed_claims", payload=payload)
     await _audit(client, user_id, "claim", rows[0]["id"], "created", None, "draft", "Claim drafted for qualified review.")
+    return rows[0]
+
+
+@router.get("/review/conflicts")
+async def claim_conflict_queue(request: Request, user_id: str = Depends(get_current_user)):
+    client = _client(request)
+    await _require_reviewer(client, user_id)
+    return await client.request(
+        "GET", "claim_conflicts",
+        params={"select": "*", "resolution_status": "eq.open", "order": "detected_at.asc", "limit": 200},
+    )
+
+
+@router.post("/review/conflicts/{conflict_id}/resolve")
+async def resolve_claim_conflict(
+    request: Request,
+    conflict_id: str,
+    body: ConflictResolution,
+    user_id: str = Depends(get_current_user),
+):
+    conflict_id = _uuid(conflict_id)
+    client = _client(request)
+    await _require_reviewer(client, user_id, "catalog_admin")
+    rows = await client.request(
+        "PATCH", "claim_conflicts", params={"id": f"eq.{conflict_id}"},
+        payload={
+            "resolution_status": body.resolution_status, "resolution_notes": body.resolution_notes,
+            "resolved_by": user_id, "resolved_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="Claim conflict not found.")
+    return rows[0]
+
+
+@router.post("/review/change-events/{event_id}/resolve")
+async def resolve_source_change(
+    request: Request,
+    event_id: str,
+    body: ChangeEventResolution,
+    user_id: str = Depends(get_current_user),
+):
+    event_id = _uuid(event_id)
+    client = _client(request)
+    await _require_reviewer(client, user_id, "catalog_admin")
+    existing = await client.request(
+        "GET", "source_change_events", params={"select": "id,details", "id": f"eq.{event_id}", "limit": 1},
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Source-change event not found.")
+    details = existing[0].get("details") or {}
+    details["resolution"] = {"notes": body.notes, "resolved_by": user_id}
+    rows = await client.request(
+        "PATCH", "source_change_events", params={"id": f"eq.{event_id}"},
+        payload={
+            "resolution_status": body.resolution_status,
+            "resolved_at": datetime.now(timezone.utc).isoformat() if body.resolution_status in {"resolved", "ignored"} else None,
+            "details": details,
+        },
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="Source-change event not found.")
     return rows[0]
 
 

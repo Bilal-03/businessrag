@@ -87,6 +87,7 @@ export const WORKFLOW_OBLIGATIONS = [
     source_url: 'https://fssai.gov.in/cms/licensing.php',
     source_version: 'Regulations 2011; Amendment 5 (23 Jun 2026)',
     source_citation: 'FSS Act, 2006, section 31(1); FSS Licensing Regulations, 2011, regulation 1.1.2.',
+    primary_claim_id: 'claim-fssai',
     effective_from: '2011-08-05',
     effective_to: null,
     published: true,
@@ -103,6 +104,7 @@ export const WORKFLOW_OBLIGATIONS = [
     source_url: 'https://cbic-gst.gov.in/pdf/10112020_CGST-Rules-2017_Part-A_Rules.pdf',
     source_version: 'Central Goods and Services Tax Rules, 2017, rule 61',
     source_citation: 'Central Goods and Services Tax Act, 2017, section 39; CGST Rules, rule 61.',
+    primary_claim_id: 'claim-gstr3b',
     effective_from: '2017-07-01',
     effective_to: null,
     published: true,
@@ -119,6 +121,7 @@ export const WORKFLOW_OBLIGATIONS = [
     source_url: 'https://labour.delhi.gov.in/labour/inspectorate',
     source_version: 'Delhi Shops and Establishments Act, 1954',
     source_citation: 'Delhi Shops and Establishments Act, 1954, sections 8, 10, 15, 16, and 34.',
+    primary_claim_id: 'claim-delhi-shop',
     effective_from: '1955-02-01',
     effective_to: null,
     published: true,
@@ -438,6 +441,14 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
       await fulfillJson(route, []);
       return;
     }
+    if (path === '/api/workflow/reminders/due' && request.method() === 'GET') {
+      await fulfillJson(route, []);
+      return;
+    }
+    if (path === '/api/answers/feedback' && request.method() === 'POST') {
+      await fulfillJson(route, { id: '99999999-9999-4999-8999-999999999999', ...bodyFromRequest(request) }, 201);
+      return;
+    }
     if (path === '/api/review/me' && request.method() === 'GET') {
       await fulfillJson(route, { is_reviewer: false, roles: [] });
       return;
@@ -456,6 +467,19 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
       state.nextTaskNumber += 1;
       state.tasks.unshift(task);
       await fulfillJson(route, task, 201);
+      return;
+    }
+    if (path.endsWith('/evidence') && request.method() === 'GET') {
+      await fulfillJson(route, []);
+      return;
+    }
+    if (path.endsWith('/history') && request.method() === 'GET') {
+      await fulfillJson(route, []);
+      return;
+    }
+    if (path.endsWith('/evidence') && request.method() === 'POST') {
+      const taskId = path.split('/')[4];
+      await fulfillJson(route, { id: '88888888-8888-4888-8888-888888888888', task_id: taskId, created_at: '2026-08-14T00:00:00Z', ...bodyFromRequest(request) }, 201);
       return;
     }
     if (path.startsWith('/api/workflow/tasks/') && request.method() === 'PATCH') {

@@ -9,6 +9,7 @@ removes changed high-risk claims from the active answer set.
 from __future__ import annotations
 
 import asyncio
+import difflib
 import hashlib
 import re
 from datetime import UTC, datetime
@@ -32,6 +33,15 @@ def normalize_content(content: bytes, content_type: str) -> bytes:
     text = re.sub(r"(?is)<(script|style).*?>.*?</\1>", " ", text)
     text = re.sub(r"(?s)<[^>]+>", " ", text)
     return " ".join(text.split()).encode("utf-8")
+
+
+def diff_preview(previous: str | None, observed: str | None) -> str | None:
+    if not previous or not observed:
+        return None
+    lines = list(difflib.unified_diff(
+        previous.splitlines(), observed.splitlines(), fromfile="reviewed", tofile="observed", lineterm="",
+    ))
+    return "\n".join(lines)[:6000] or None
 
 
 async def quarantine_claims(client: SupabaseRestClient, version_id: str) -> int:
@@ -61,7 +71,7 @@ async def monitor() -> dict[str, int]:
         for source in sources:
             versions = await client.request(
                 "GET", "source_versions",
-                params={"select": "id,content_hash,fetch_status", "source_document_id": f"eq.{source['id']}", "order": "retrieved_at.desc", "limit": 1},
+                params={"select": "id,content_hash,fetch_status,extracted_text", "source_document_id": f"eq.{source['id']}", "order": "retrieved_at.desc", "limit": 1},
             )
             latest = versions[0] if versions else None
             counts["checked"] += 1
@@ -77,16 +87,32 @@ async def monitor() -> dict[str, int]:
                     await client.request("PATCH", "source_versions", params={"id": f"eq.{latest['id']}"}, payload={"fetch_status": "changed", "last_checked_at": datetime.now(UTC).isoformat()})
                     quarantined = await quarantine_claims(client, latest["id"])
                     counts["quarantined_claims"] += quarantined
-                    await client.request("POST", "source_change_events", payload={"source_document_id": source["id"], "previous_version_id": latest["id"], "observed_hash": observed, "event_type": "content_changed", "severity": "critical" if quarantined else "high", "details": {"quarantined_claims": quarantined}})
                     await storage.upload(snapshot_path, response.content, content_type)
-                    await client.request("POST", "source_versions", payload={
+                    observed_versions = await client.request("POST", "source_versions", payload={
                         "source_document_id": source["id"], "version_label": f"Observed {datetime.now(UTC).date().isoformat()}",
                         "retrieved_at": datetime.now(UTC).isoformat(), "last_checked_at": datetime.now(UTC).isoformat(),
                         "content_hash": observed, "snapshot_path": snapshot_path,
                         "extracted_text": normalized.decode("utf-8", errors="ignore")[:1000000] if "html" in content_type.casefold() else None,
                         "fetch_status": "healthy", "review_status": "draft",
                     })
+                    observed_text = normalized.decode("utf-8", errors="ignore") if "html" in content_type.casefold() else None
+                    await client.request("POST", "source_change_events", payload={
+                        "source_document_id": source["id"], "previous_version_id": latest["id"],
+                        "observed_hash": observed, "event_type": "content_changed",
+                        "severity": "critical" if quarantined else "high",
+                        "details": {
+                            "quarantined_claims": quarantined,
+                            "observed_version_id": observed_versions[0]["id"] if observed_versions else None,
+                            "diff_preview": diff_preview(latest.get("extracted_text"), observed_text),
+                        },
+                    })
                 elif latest:
+                    if latest.get("fetch_status") in {"unavailable", "error"}:
+                        await client.request("POST", "source_change_events", payload={
+                            "source_document_id": source["id"], "previous_version_id": latest["id"],
+                            "observed_hash": observed, "event_type": "restored", "severity": "medium",
+                            "details": {"restored_at": datetime.now(UTC).isoformat()},
+                        })
                     await client.request("PATCH", "source_versions", params={"id": f"eq.{latest['id']}"}, payload={"last_checked_at": datetime.now(UTC).isoformat(), "fetch_status": "healthy"})
                 else:
                     await storage.upload(snapshot_path, response.content, content_type)

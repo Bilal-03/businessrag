@@ -80,12 +80,15 @@ const WorkflowDashboard = ({
   const [sourceStatus, setSourceStatus] = useState('unavailable');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
+  const [newTaskRecurrence, setNewTaskRecurrence] = useState('');
   const [newReminderTitle, setNewReminderTitle] = useState('');
   const [newReminderAt, setNewReminderAt] = useState('');
   const [newReminderTaskId, setNewReminderTaskId] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [answeringKey, setAnsweringKey] = useState(null);
   const [answerDrafts, setAnswerDrafts] = useState({});
+  const [taskDetails, setTaskDetails] = useState({});
+  const [taskNote, setTaskNote] = useState({});
 
   const headers = useMemo(() => ({
     Authorization: `Bearer ${session?.access_token || ''}`,
@@ -185,6 +188,7 @@ const WorkflowDashboard = ({
           business_id: activeBusinessId,
           title: newTaskTitle.trim(),
           due_date: newTaskDueDate || null,
+          recurrence_rule: newTaskRecurrence ? { frequency: newTaskRecurrence } : null,
         }),
       });
       const task = await parseResponse(response);
@@ -192,6 +196,7 @@ const WorkflowDashboard = ({
       captureEvent('workflow_task_created');
       setNewTaskTitle('');
       setNewTaskDueDate('');
+      setNewTaskRecurrence('');
     } catch (requestError) {
       setError(requestError.message || 'The planning task could not be created.');
     } finally {
@@ -239,6 +244,33 @@ const WorkflowDashboard = ({
     }
   };
 
+  const loadTaskDetails = async taskId => {
+    if (taskDetails[taskId]?.open) {
+      setTaskDetails(current => ({ ...current, [taskId]: { ...current[taskId], open: false } }));
+      return;
+    }
+    try {
+      const [evidence, history] = await Promise.all([
+        fetch(`${apiUrl}/api/workflow/tasks/${encodeURIComponent(taskId)}/evidence`, { headers }).then(parseResponse),
+        fetch(`${apiUrl}/api/workflow/tasks/${encodeURIComponent(taskId)}/history`, { headers }).then(parseResponse),
+      ]);
+      setTaskDetails(current => ({ ...current, [taskId]: { open: true, evidence, history } }));
+    } catch (requestError) { setError(requestError.message || 'Task details are unavailable.'); }
+  };
+
+  const addTaskNote = async task => {
+    const note = taskNote[task.id]?.trim();
+    if (!note) return;
+    try {
+      const created = await fetch(`${apiUrl}/api/workflow/tasks/${encodeURIComponent(task.id)}/evidence`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ business_id: task.business_id, evidence_type: 'note', title: 'Completion note', note }),
+      }).then(parseResponse);
+      setTaskDetails(current => ({ ...current, [task.id]: { ...(current[task.id] || {}), open: true, evidence: [created, ...(current[task.id]?.evidence || [])], history: current[task.id]?.history || [] } }));
+      setTaskNote(current => ({ ...current, [task.id]: '' }));
+    } catch (requestError) { setError(requestError.message || 'Task evidence could not be saved.'); }
+  };
+
   const createReminder = async (event) => {
     event.preventDefault();
     if (!activeBusinessId || !newReminderTitle.trim() || !newReminderAt || saving) return;
@@ -282,6 +314,34 @@ const WorkflowDashboard = ({
       setError(requestError.message || 'The reminder could not be updated.');
     }
   };
+
+  useEffect(() => {
+    if (!session || typeof Notification === 'undefined' || Notification.permission !== 'granted') return undefined;
+    let cancelled = false;
+    const deliverDue = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/api/workflow/reminders/due`, { headers });
+        const due = await parseResponse(response);
+        for (const reminder of Array.isArray(due) ? due : []) {
+          if (cancelled) return;
+          try { new Notification('BizGuide reminder', { body: reminder.title }); } catch {}
+          const delivered = await fetch(`${apiUrl}/api/workflow/reminders/${encodeURIComponent(reminder.id)}/delivered`, {
+            method: 'POST', headers, body: JSON.stringify({
+              delivered_at: new Date().toISOString(), alert_offset_days: reminder.alert_offset_days,
+            }),
+          });
+          const updated = await parseResponse(delivered);
+          setReminders(current => current.map(item => item.id === reminder.id ? updated : item));
+        }
+      } catch {
+        // Delivery is opportunistic while the signed-in app is open. The
+        // scheduled reminder remains intact for the next poll.
+      }
+    };
+    deliverDue();
+    const interval = window.setInterval(deliverDue, 60_000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [apiUrl, headers, session]);
 
   const doneCount = tasks.filter(task => task.status === 'done').length;
   const selectedBusinessId = businesses.some(business => business.id === activeBusinessId)
@@ -529,6 +589,9 @@ const WorkflowDashboard = ({
               <input id="new-workflow-task" className="form-input" value={newTaskTitle} onChange={event => setNewTaskTitle(event.target.value)} placeholder="Add a planning task" maxLength={240} disabled={sourceStatus === 'unavailable' || saving} />
               <label className="sr-only" htmlFor="new-workflow-due-date">Due date</label>
               <input id="new-workflow-due-date" className="form-input task-date-input" type="date" value={newTaskDueDate} onChange={event => setNewTaskDueDate(event.target.value)} disabled={sourceStatus === 'unavailable' || saving} />
+              <select className="form-input" aria-label="Task recurrence" value={newTaskRecurrence} onChange={event => setNewTaskRecurrence(event.target.value)} disabled={saving}>
+                <option value="">Does not repeat</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option>
+              </select>
               <button type="submit" className="btn-primary" disabled={sourceStatus === 'unavailable' || saving || !newTaskTitle.trim()}><Plus size={16} /> Add task</button>
             </form>
             {tasks.length === 0 ? (
@@ -544,6 +607,7 @@ const WorkflowDashboard = ({
                     <select className="form-input task-status-select" aria-label={`Status for ${task.title}`} value={task.status} onChange={event => updateTask(task.id, { status: event.target.value })}>
                       {TASK_STATUSES.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
+                    <button type="button" className="btn-ghost" onClick={() => loadTaskDetails(task.id)}>{taskDetails[task.id]?.open ? 'Hide details' : 'Evidence & history'}</button>
                     <button
                       type="button"
                       className={`icon-btn task-delete-button ${pendingDeleteId === task.id ? 'confirming' : ''}`}
@@ -554,6 +618,12 @@ const WorkflowDashboard = ({
                       <Trash2 size={16} />
                       {pendingDeleteId === task.id && <span>Confirm delete</span>}
                     </button>
+                    {taskDetails[task.id]?.open && <div className="task-detail-panel">
+                      <p><strong>Series:</strong> {task.recurrence_rule?.frequency ? `${task.recurrence_rule.frequency}, occurrence ${task.occurrence_number}` : 'One-time task'}</p>
+                      <div><strong>Evidence:</strong>{taskDetails[task.id].evidence?.length ? <ul>{taskDetails[task.id].evidence.map(item => <li key={item.id}>{item.title}{item.note ? ` — ${item.note}` : ''}</li>)}</ul> : <p>No evidence attached.</p>}</div>
+                      <div className="task-note-form"><input className="form-input" aria-label={`Completion note for ${task.title}`} value={taskNote[task.id] || ''} onChange={event => setTaskNote(current => ({ ...current, [task.id]: event.target.value }))} placeholder="Add completion evidence note" /><button type="button" className="btn-ghost" onClick={() => addTaskNote(task)}>Add note</button></div>
+                      <div><strong>Status history:</strong>{taskDetails[task.id].history?.length ? <ul>{taskDetails[task.id].history.map(item => <li key={item.id}>{item.from_status || 'created'} → {item.to_status} · {formatDateTime(item.changed_at)}</li>)}</ul> : <p>No status changes yet.</p>}</div>
+                    </div>}
                   </div>
                 ))}
               </div>

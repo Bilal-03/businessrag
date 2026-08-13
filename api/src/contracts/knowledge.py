@@ -69,6 +69,12 @@ class ClaimCreate(BaseModel):
     claim_type: Literal["duty", "deadline", "rate", "threshold", "penalty", "eligibility", "definition", "procedure", "exemption"]
     statement_en: str = Field(min_length=1, max_length=4000)
     statement_hi: str | None = Field(default=None, max_length=4000)
+    support_excerpt: str = Field(min_length=5, max_length=1200)
+    # A reviewer-authored canonical value makes contradiction checks
+    # deterministic. Examples: true, "18%", "2026-09-30", or a bounded
+    # object such as {"amount": 2000000, "currency": "INR"}.
+    claim_value: Any
+    search_terms: list[str] = Field(default_factory=list, max_length=40)
     risk_level: Literal["low", "medium", "high", "critical"]
     required_reviewer_role: Literal["CA", "CS", "lawyer", "sector_specialist"]
     required_approvals: int = Field(default=1, ge=1, le=3)
@@ -78,6 +84,14 @@ class ClaimCreate(BaseModel):
     effective_from: date
     effective_to: date | None = None
     revalidate_by: date
+
+    @field_validator("search_terms")
+    @classmethod
+    def validate_search_terms(cls, values: list[str]) -> list[str]:
+        normalized = sorted({" ".join(value.casefold().split()) for value in values if value.strip()})
+        if any(len(value) > 120 for value in normalized):
+            raise ValueError("Search terms may not exceed 120 characters.")
+        return normalized
 
 
 class ReviewDecisionCreate(BaseModel):
@@ -100,3 +114,25 @@ class SourceVersionTransition(BaseModel):
 
     review_status: Literal["draft", "in_review", "approved", "superseded", "quarantined"]
     reason: str = Field(min_length=1, max_length=4000)
+
+
+class ConflictResolution(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    resolution_status: Literal["resolved", "not_a_conflict"]
+    resolution_notes: str = Field(min_length=5, max_length=4000)
+
+
+class ChangeEventResolution(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    resolution_status: Literal["triaged", "resolved", "ignored"]
+    notes: str = Field(min_length=5, max_length=4000)
+
+
+class ReviewerAssignmentCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    reviewer_user_id: str
+    reviewer_role: ReviewerRole
+    active: bool = True

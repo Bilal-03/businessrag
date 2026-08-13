@@ -56,6 +56,13 @@ class ObligationRead(BaseModel):
     risk_level: Literal["low", "medium", "high", "critical"] = "medium"
     revalidate_by: date | None = None
     kill_switch: bool = False
+    primary_claim_id: Identifier | None = None
+    source_version_id: Identifier | None = None
+    source_tier: int | None = Field(default=None, ge=1, le=5)
+    source_last_checked_at: datetime | None = None
+    source_content_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    reviewer_roles: list[str] = Field(default_factory=list)
+    approval_count: int | None = Field(default=None, ge=1)
     metadata: dict = Field(default_factory=dict)
 
 
@@ -130,9 +137,17 @@ class TaskCreate(BaseModel):
     title: str = Field(min_length=1, max_length=240)
     status: TaskStatus = "todo"
     due_date: date | None = None
+    recurrence_rule: dict[str, Literal["monthly", "quarterly", "yearly"]] | None = None
 
     _business_id = field_validator("business_id")(staticmethod(_validate_identifier))
     _obligation_id = field_validator("obligation_id")(staticmethod(_validate_identifier))
+
+    @field_validator("recurrence_rule")
+    @classmethod
+    def validate_recurrence(cls, value):
+        if value is not None and set(value) != {"frequency"}:
+            raise ValueError("Recurrence rule must contain only frequency.")
+        return value
 
 
 class TaskUpdate(BaseModel):
@@ -155,6 +170,9 @@ class TaskRead(BaseModel):
     completed_at: datetime | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    recurrence_rule: dict[str, Any] | None = None
+    series_id: Identifier | None = None
+    occurrence_number: int = Field(default=1, ge=1)
 
 
 class ReminderCreate(BaseModel):
@@ -177,6 +195,13 @@ class ReminderUpdate(BaseModel):
     timezone: str | None = Field(default=None, min_length=1, max_length=100)
     status: Literal["scheduled", "snoozed", "delivered", "dismissed"] | None = None
     snoozed_until: datetime | None = None
+
+
+class ReminderDeliveryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    delivered_at: datetime | None = None
+    alert_offset_days: int = Field(ge=0, le=365)
 
 
 class ReminderRead(BaseModel):
@@ -211,6 +236,24 @@ class TaskEvidenceRead(TaskEvidenceCreate):
     id: Identifier
     task_id: Identifier
     created_at: datetime | None = None
+
+
+class TaskCompletionEventRead(BaseModel):
+    id: int
+    task_id: Identifier
+    from_status: str | None = None
+    to_status: str
+    changed_at: datetime
+
+
+class ReminderDeliveryRead(BaseModel):
+    id: Identifier
+    title: str
+    business_id: Identifier
+    task_id: Identifier | None = None
+    scheduled_for: datetime
+    timezone: str
+    alert_offset_days: int = Field(ge=0, le=365)
 
 
 class WorkflowSummary(BaseModel):

@@ -24,6 +24,11 @@ def test_all_any_not_use_three_valued_logic():
         {"field": "unknown", "op": "eq", "value": True},
         {"field": "industry_code", "op": "python", "value": "x"},
         {"field": "industry_code", "op": "in", "value": "technology_it"},
+        {"field": "industry_code", "op": "eq", "value": "unknown_industry"},
+        {"field": "gst_registration_status", "op": "eq", "value": "maybe"},
+        {"field": "has_physical_establishment", "op": "eq", "value": "yes"},
+        {"field": "regulated_activities", "op": "in", "value": ["food_handling"]},
+        {"field": "turnover_band", "op": "contains_any", "value": ["over_5_crore"]},
         {"all": [{"field": "industry_code", "op": "eq", "value": "other"}], "unexpected": True},
     ],
 )

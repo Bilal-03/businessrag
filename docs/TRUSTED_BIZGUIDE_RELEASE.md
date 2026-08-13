@@ -28,7 +28,7 @@ These cannot honestly be completed by software or by AI:
 
 ## Required rollout order
 
-1. Back up Supabase and apply migrations `0008` then `0009` in staging.
+1. Back up Supabase and apply every migration through `0014` in staging, in filename order.
 2. Configure reviewer identities. Validate RLS with two unrelated users and every reviewer role.
 3. Run source ingestion and monitoring in a private worker. Review all source versions before claim work.
 4. Complete and approve coverage cells; never replace `blocked` with `covered` based on row count.
@@ -42,6 +42,7 @@ These cannot honestly be completed by software or by AI:
 python scripts/generate_trust_evaluations.py
 .venv/bin/pytest -q api/tests
 cd web && npm run lint && npm run build && npm run test:e2e
+bash scripts/validate_migrations.sh
 python scripts/monitor_sources.py
 python scripts/check_release_gates.py
 ```

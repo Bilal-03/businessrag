@@ -42,6 +42,10 @@ jobs:
       - name: Run backend tests
         run: PYTHONPATH=. pytest -q tests
 
+      - name: Validate database migration chain
+        working-directory: .
+        run: bash scripts/validate_migrations.sh
+
       - name: Validate compliance source catalog and applicability rules
         run: PYTHONPATH=. python ../scripts/validate_source_catalog.py ../supabase/seed/obligations.csv
 

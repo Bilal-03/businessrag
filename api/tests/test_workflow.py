@@ -58,6 +58,7 @@ def obligation(
         "applicability_rule": rule or {"field": "industry_code", "op": "eq", "value": "other"},
         "revalidate_by": "2026-11-01",
         "kill_switch": False,
+        "primary_claim_id": f"claim-{obligation_id}",
         "due_date_rule": None,
         "evidence_requirements": [],
         "risk_level": "medium",
@@ -114,6 +115,34 @@ def plan_store(*, industry_code="technology_it", state_code="DL", profile=None, 
             assert params["published"] == "eq.true"
             assert params["review_status"] == "eq.published"
             return obligations
+        if table == "reviewed_claims":
+            return [{
+                "id": row["primary_claim_id"], "obligation_id": row["id"],
+                "statement_en": row["description"], "support_excerpt": "Authoritative supporting passage.",
+                "source_passage_id": f"passage-{row['id']}", "lifecycle": "published", "current": True,
+                "kill_switch": False, "revalidate_by": "2026-11-01", "reviewer_roles": ["lawyer"], "approval_count": 1,
+                "required_reviewer_role": "lawyer", "required_approvals": 1, "claim_type": "procedure", "claim_value": True,
+                "applicability_version": row["applicability_version"], "applicability_rule": row["applicability_rule"],
+            } for row in obligations if row.get("published") and row.get("review_status") == "published"]
+        if table == "source_passages":
+            return [{
+                "id": f"passage-{row['id']}", "source_version_id": f"version-{row['id']}",
+                "anchor": "section 1", "page_number": 1, "passage_text": "Authoritative supporting passage.",
+            } for row in obligations if row.get("published") and row.get("review_status") == "published"]
+        if table == "source_versions":
+            return [{
+                "id": f"version-{row['id']}", "source_document_id": f"source-{row['id']}",
+                "version_label": row["source_version"], "last_checked_at": "2026-08-12T00:00:00Z",
+                "content_hash": "a" * 64, "fetch_status": "healthy", "review_status": "approved",
+                "effective_from": row["effective_from"], "effective_to": row["effective_to"],
+            } for row in obligations if row.get("published") and row.get("review_status") == "published"]
+        if table == "source_documents":
+            return [{
+                "id": f"source-{row['id']}", "canonical_url": row["source_url"], "source_tier": 1,
+                "authority_name": "Official authority", "title": "Official source", "active": True,
+            } for row in obligations if row.get("published") and row.get("review_status") == "published"]
+        if table in {"obligation_due_date_rules", "obligation_evidence_items"}:
+            return []
         if table == "compliance_catalog_coverage":
             return [{"industry_code": industry_code, "jurisdiction": "India", "status": "partial", "notes": "Reviewed central coverage is partial."}]
         if table == "compliance_coverage_cells":
