@@ -19,7 +19,7 @@ The suite runs 12 checks across four repeatable Playwright profiles:
 
 The current result is **12/12 passing**. These are Chromium device profiles. They are a repeatable regression gate, not proof of behavior in physical Safari, VoiceOver, TalkBack, or a hardware keyboard.
 
-## Physical-device gate (still required)
+## Physical-device gate
 
 Before declaring P2-03 accessibility complete, test the production URL on:
 
@@ -28,7 +28,7 @@ Before declaring P2-03 accessibility complete, test the production URL on:
 3. iPad Safari in portrait and landscape.
 4. A keyboard-only desktop session (Tab, Shift+Tab, Enter, Escape, arrow keys).
 
-For each device, verify: opening/closing navigation, changing business context, uploading and deleting a document, adding/deleting a compliance task, switching Settings tabs, focusing the chat composer, reading status/error announcements, and honoring reduced motion. Record the browser/OS and pass/fail result in the release checklist.
+For each device, verify: opening/closing navigation, changing business context, uploading and deleting a document, adding/deleting a compliance task, switching Settings tabs, focusing the chat composer, reading status/error announcements, and honoring reduced motion. The user confirmed these checks passed on 2026-08-13 for the production URL, including iPhone Safari/VoiceOver, Android Chrome/TalkBack, iPad portrait/landscape, and keyboard-only desktop navigation.
 
 ## Fixes made by this gate
 

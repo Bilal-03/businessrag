@@ -41,5 +41,5 @@ content-primary/secondary tokens on dark surfaces instead.
 - Removed chat-composer autofocus so keyboard users reach the skip link first.
 - Standardized the collapse control and skip link to 44px minimum height.
 
-Physical VoiceOver, TalkBack, and Safari verification remains an external
-release gate and is listed in `docs/P2_03_WCAG.md`.
+Physical VoiceOver, TalkBack, and Safari verification was completed as the
+external release gate on 2026-08-13, based on user confirmation.
