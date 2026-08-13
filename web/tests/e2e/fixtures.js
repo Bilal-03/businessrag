@@ -504,5 +504,5 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
 export async function openAuthenticatedApp(page, options = {}) {
   await installMocks(page, { authenticated: true, ...options });
   await page.goto('/');
-  await expect(page.getByText('Educational beta · India-focused compliance')).toBeVisible();
+  await expect(page.getByText('Guided by your business context and sources')).toBeVisible();
 }

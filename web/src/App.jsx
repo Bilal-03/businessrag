@@ -146,6 +146,7 @@ function App() {
   const [reviewerRoles, setReviewerRoles] = useState([]);
   const [feedbackState, setFeedbackState] = useState({});
   const fileInputRef = useRef(null);
+  const chatInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const currentConvIdRef = useRef(null);
   const sessionUserIdRef = useRef(null);
@@ -263,18 +264,18 @@ function App() {
     const savedAccent = localStorage.getItem(`bizguide_accent:${userId}`);
     if (savedAccent) {
       const ACCENT_COLORS = [
-        { primary: '#6366f1', secondary: '#8b5cf6' },
-        { primary: '#14b8a6', secondary: '#06b6d4' },
-        { primary: '#f43f5e', secondary: '#ec4899' },
-        { primary: '#f59e0b', secondary: '#f97316' },
-        { primary: '#10b981', secondary: '#059669' },
-        { primary: '#0ea5e9', secondary: '#6366f1' },
+        { primary: '#9f3f29', secondary: '#7f321f' },
+        { primary: '#52634d', secondary: '#394737' },
+        { primary: '#8a5c18', secondary: '#684511' },
+        { primary: '#8f4650', secondary: '#6d333c' },
       ];
       const idx = parseInt(savedAccent, 10);
-      if (ACCENT_COLORS[idx]) {
-        document.documentElement.style.setProperty('--accent-primary', ACCENT_COLORS[idx].primary);
-        document.documentElement.style.setProperty('--accent-secondary', ACCENT_COLORS[idx].secondary);
-      }
+      const palette = ACCENT_COLORS[idx] || ACCENT_COLORS[0];
+      document.documentElement.style.setProperty('--color-accent', palette.primary);
+      document.documentElement.style.setProperty('--color-accent-strong', palette.secondary);
+      document.documentElement.style.setProperty('--color-accent-soft', `${palette.primary}1f`);
+      document.documentElement.style.setProperty('--accent-primary', palette.primary);
+      document.documentElement.style.setProperty('--accent-secondary', palette.secondary);
     }
     return () => { cancelled = true; };
   }, [session?.user?.id]);
@@ -329,6 +330,13 @@ function App() {
       window.cancelAnimationFrame(scrollFrameRef.current);
     }
   }, []);
+
+  useEffect(() => {
+    const inputElement = chatInputRef.current;
+    if (!inputElement) return;
+    inputElement.style.height = 'auto';
+    inputElement.style.height = `${Math.min(inputElement.scrollHeight, 152)}px`;
+  }, [input]);
 
   const saveConversations = useCallback((updated) => {
     setConversations(updated);
@@ -551,7 +559,7 @@ function App() {
         duration: durationBucket((typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAt),
       });
       // Fire browser notification if page is hidden
-      fireNotification('BizGuide AI', 'Your answer is ready!');
+      fireNotification('BizGuide', 'Your answer is ready!');
     } catch (error) {
       captureException(error, { source: 'chat_request' });
       captureEvent('chat_failed', { has_request_id: Boolean(error.requestId) });
@@ -636,7 +644,7 @@ function App() {
       });
       const data = await readApiResponse(response);
       const resultMsg = response.ok
-        ? { role: 'ai', content: `✅ **${data.status === 'indexed' ? 'Upload complete.' : 'Upload queued.'}** ${data.message}\n\n${data.status === 'indexed' ? 'You can now ask questions that use this document as context.' : 'Processing continues in the background. Open Upload Documents to monitor progress.'} Always verify important legal and tax decisions against the original source or a qualified professional.` }
+        ? { role: 'ai', content: `✅ **${data.status === 'indexed' ? 'Upload complete.' : 'Upload queued.'}** ${data.message}\n\n${data.status === 'indexed' ? 'You can now ask questions that use this document as context.' : 'Processing continues in the background. Open Source Library to monitor progress.'} Always verify important legal and tax decisions against the original source or a qualified professional.` }
         : (() => {
             const { detail, requestId } = getApiError(data, response, 'We could not process this PDF.');
             return { role: 'ai', content: `❌ **Upload failed:** ${detail}${requestId ? `\n\nReference: \`${requestId}\`` : ''}` };
@@ -646,7 +654,7 @@ function App() {
       persistCurrentConv(finalMessages, currentConvIdRef.current);
       if (response.ok) {
         captureEvent(data.status === 'indexed' ? 'upload_indexed' : 'upload_queued');
-        fireNotification('BizGuide AI', data.status === 'indexed' ? `${file.name} uploaded and indexed successfully!` : `${file.name} is queued for processing.`);
+        fireNotification('BizGuide', data.status === 'indexed' ? `${file.name} uploaded and indexed successfully!` : `${file.name} is queued for processing.`);
       }
       else captureEvent('upload_failed', { status: response.status });
     } catch (error) {
@@ -782,34 +790,34 @@ function App() {
                         <span className="hero-topline-context">{activeBusinessProfile?.name || 'Personal workspace'}</span>
                       </div>
                       <div className="hero-copy">
-                        <div className="hero-badge">Educational beta · India-focused compliance</div>
+                        <div className="hero-badge">Guided by your business context and sources</div>
                         <h1 className="hero-title">
-                          Make your next<br />
-                          <span className="gradient-text">business decision</span> clearer.
+                          What do you need to<br />
+                          <span className="gradient-text">verify today?</span>
                         </h1>
                         <p className="hero-subtitle">
-                          Ask grounded questions, organize business context, and turn official source material into a practical next step.
-                          Important legal and tax decisions should always be checked against the original source and a qualified professional.
+                          Ask a question, review an obligation, or work from your own documents. BizGuide will show the evidence and coverage limits behind each answer.
+                          <span className="hero-mobile-disclaimer"> Verify important decisions against the original source and with a qualified professional.</span>
                         </p>
                         <div className="hero-privacy-note">
-                          <span className="hero-privacy-icon" aria-hidden="true">✦</span>
-                          Answers use your selected workspace and uploaded sources when available.
+                          <span className="hero-privacy-icon" aria-hidden="true">i</span>
+                          Important legal and tax decisions should still be checked against the original source and a qualified professional.
                         </div>
                       </div>
                       <div className="hero-workbench-heading">
                         <div>
                           <span className="hero-section-kicker">Start with a workflow</span>
-                          <h2>What are you working on?</h2>
+                          <h2>Common starting points</h2>
                         </div>
-                        <span className="hero-workbench-note">Choose a prompt or ask your own question</span>
+                        <span className="hero-workbench-note">Choose one to begin a sourced conversation</span>
                       </div>
                       <div className="quick-actions">
                         {QUICK_ACTIONS.map((qa) => (
                           <motion.button
                             key={qa.title}
                             type="button"
-                            whileHover={{ scale: 1.02, y: -3 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ y: -2 }}
+                            whileTap={{ y: 0 }}
                             className="glass-panel action-card"
                             onClick={() => handleSend(qa.query)}
                             aria-label={`${qa.title}: ${qa.desc}`}
@@ -831,8 +839,8 @@ function App() {
                       {messages.map((msg, idx) => (
                         <motion.div
                           key={idx}
-                          initial={{ opacity: 0, y: 12, scale: 0.97 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3 }}
                           className={`message-bubble ${msg.role === 'user' ? 'message-user' : 'message-ai'}`}
                         >
@@ -840,7 +848,7 @@ function App() {
                             <>
                               <div className="ai-label">
                                 <span className="ai-dot" />
-                                BizGuide AI
+                                BizGuide
                               </div>
                               <Suspense fallback={<div className="markdown-fallback">{msg.content}</div>}>
                                 <MarkdownMessage content={msg.content} />
@@ -918,7 +926,7 @@ function App() {
                           animate={{ opacity: 1, y: 0 }}
                           className="message-bubble message-ai"
                         >
-                          <div className="ai-label"><span className="ai-dot pulsing" /> BizGuide AI</div>
+                          <div className="ai-label"><span className="ai-dot pulsing" /> BizGuide</div>
                           <div className="typing-indicator" role="status" aria-live="polite">
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} className="typing-dot" />
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }} className="typing-dot" />
@@ -937,9 +945,15 @@ function App() {
 
               {/* Input Area */}
               <div className="input-container">
-                <div className="language-switch" aria-label="Answer language">
-                  <button type="button" className={answerLanguage === 'en' ? 'active' : ''} onClick={() => setAnswerLanguage('en')}>English</button>
-                  <button type="button" className={answerLanguage === 'hi' ? 'active' : ''} onClick={() => setAnswerLanguage('hi')}>हिन्दी</button>
+                <div className="composer-context">
+                  <div className="composer-workspace" title={activeBusinessProfile?.name || 'Personal workspace'}>
+                    <span className="composer-status-dot" aria-hidden="true" />
+                    <span>{activeBusinessProfile?.name || 'Personal workspace'}</span>
+                  </div>
+                  <div className="language-switch" aria-label="Answer language">
+                    <button type="button" className={answerLanguage === 'en' ? 'active' : ''} onClick={() => setAnswerLanguage('en')}>English</button>
+                    <button type="button" className={answerLanguage === 'hi' ? 'active' : ''} onClick={() => setAnswerLanguage('hi')}>हिन्दी</button>
+                  </div>
                 </div>
                 <div className="chat-input-wrapper">
                   <button
@@ -958,31 +972,25 @@ function App() {
                     ref={fileInputRef}
                     onChange={handleFileUpload}
                   />
-                  <input
-                    type="text"
+                  <textarea
+                    ref={chatInputRef}
+                    rows="1"
                     className="chat-input"
                     aria-label="Ask BizGuide a question"
-                    placeholder="Ask about business structures, GST, licenses…"
+                    placeholder="Ask about registration, GST, licences, or your uploaded sources…"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => {
-                      if (e.key === 'Enter' && input.trim() && !isTyping && !isUploading) {
+                      if (e.key === 'Enter' && !e.shiftKey && input.trim() && !isTyping && !isUploading) {
+                        e.preventDefault();
                         handleSend(input);
                       }
                     }}
                     disabled={isUploading || isTyping}
                   />
-                  {!input && !isUploading && !isTyping && (
-                    <div className="input-marquee" aria-hidden="true">
-                      <span>
-                        Ask about business structures, GST, licenses, and more&nbsp;&nbsp;•&nbsp;&nbsp;
-                        Ask about business structures, GST, licenses, and more&nbsp;&nbsp;•&nbsp;&nbsp;
-                      </span>
-                    </div>
-                  )}
                   <motion.button
-                    whileHover={input.trim() && !isTyping && !isUploading ? { scale: 1.1 } : {}}
-                    whileTap={input.trim() && !isTyping && !isUploading ? { scale: 0.9 } : {}}
+                    whileHover={input.trim() && !isTyping && !isUploading ? { y: -1 } : {}}
+                    whileTap={input.trim() && !isTyping && !isUploading ? { y: 0 } : {}}
                     className="send-button"
                     onClick={() => handleSend(input)}
                     disabled={!input.trim() || isTyping || isUploading}

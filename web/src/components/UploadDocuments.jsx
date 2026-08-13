@@ -215,7 +215,7 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
       <div className="panel-header">
         <div>
           <div className="panel-kicker"><FileText size={14} /> Source library</div>
-          <h2 className="panel-title">Upload Documents</h2>
+          <h2 className="panel-title">Source Library</h2>
           <p className="panel-subtitle">Upload PDFs to ground answers in your source documents. {businessId ? 'Showing documents for the selected business.' : 'Select a business to keep documents scoped to one workspace.'}</p>
         </div>
         <div className="panel-context-badge" role="status">
@@ -242,8 +242,8 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
         tabIndex={uploading ? -1 : 0}
         aria-label="Choose a PDF document to upload"
         aria-busy={uploading}
-        whileHover={!uploading ? { scale: 1.01, borderColor: 'rgba(99,102,241,0.6)' } : {}}
-        animate={isDragging ? { scale: 1.02, borderColor: '#6366f1' } : {}}
+        whileHover={!uploading ? { y: -1, borderColor: 'rgba(159,63,41,0.6)' } : {}}
+        animate={isDragging ? { y: -2, borderColor: '#9f3f29' } : {}}
       >
         <input
           ref={fileInputRef}
@@ -259,7 +259,7 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-                style={{ color: '#6366f1' }}
+                style={{ color: '#9f3f29' }}
               >
                 <UploadCloud size={48} />
               </motion.div>
@@ -271,14 +271,14 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
             </motion.div>
           ) : (
             <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="drop-zone-content">
-              <motion.div animate={isDragging ? { scale: 1.2, y: -8 } : { scale: 1, y: 0 }} style={{ color: isDragging ? '#6366f1' : 'var(--text-secondary)' }}>
+              <motion.div animate={isDragging ? { y: -6 } : { y: 0 }} style={{ color: isDragging ? '#9f3f29' : 'var(--text-secondary)' }}>
                 <UploadCloud size={52} />
               </motion.div>
               <div className="drop-zone-title">{isDragging ? 'Drop your PDF here!' : 'Drag & drop a PDF or click to browse'}</div>
               <div className="drop-zone-subtitle">Supports: PDF files only · Max file size: 50MB</div>
               <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ y: -1 }}
+                whileTap={{ y: 0 }}
                 className="btn-primary"
                 style={{ marginTop: '8px', pointerEvents: 'none' }}
               >

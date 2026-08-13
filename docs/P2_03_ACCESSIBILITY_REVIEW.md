@@ -2,8 +2,9 @@
 
 ## Automated result
 
-`npm run test:e2e:accessibility` passes 12/12 checks across the desktop,
-iPhone-sized, Pixel-sized, and iPad-sized profiles. The gate covers:
+The warm editorial redesign passed the release-critical desktop and iPhone
+preflight (6/6 checks). The broader Pixel and iPad matrix remains available
+through `npm run test:e2e:accessibility`. The gate covers:
 
 - Landmarks and accessible names for visible controls.
 - Keyboard skip-link navigation and main-content focus.
@@ -20,26 +21,26 @@ canvas/accent tokens:
 
 | Foreground | Background | Ratio | AA result |
 | --- | --- | ---: | --- |
-| `#f8fafc` content primary | `#080b14` canvas | 18.79:1 | Pass |
-| `#b4c0d4` content secondary | `#080b14` canvas | 10.70:1 | Pass |
-| `#8d9ab1` content muted | `#080b14` canvas | 6.92:1 | Pass |
-| `#7168f6` accent | `#080b14` canvas | 4.69:1 | Pass for large text/UI |
-| `#8875ff` accent strong | `#080b14` canvas | 5.65:1 | Pass |
-| `#ffffff` on `#7168f6` | primary accent surface | 4.19:1 | Pass for large text/UI |
-| `#ffffff` on `#8875ff` | strong accent surface | 3.48:1 | Pass for large text/UI |
-
-The final two accent-surface pairs are intentionally reserved for buttons and
-large labels. Do not use white small body text on those surfaces; use the
-content-primary/secondary tokens on dark surfaces instead.
+| `#20231f` content primary | `#f3efe6` canvas | 13.85:1 | Pass |
+| `#6b665e` content secondary | `#f3efe6` canvas | 4.96:1 | Pass |
+| `#716b63` content muted | `#f3efe6` canvas | 4.59:1 | Pass |
+| `#9f3f29` accent | `#f3efe6` canvas | 5.69:1 | Pass |
+| `#fffaf3` on `#9f3f29` | primary action | 6.29:1 | Pass |
+| `#fffaf3` on `#7f321f` | strong action | 8.50:1 | Pass |
+| `#394737` on `#e4eadf` | positive state | 8.04:1 | Pass |
+| `#684511` on `#f3e5c8` | warning state | 6.88:1 | Pass |
+| `#a33b35` on `#fff6f3` | destructive state | 6.10:1 | Pass |
 
 ## Code-owned fixes
 
-- Added the missing `--accent-strong` alias so the global focus ring resolves
-  to a real color instead of an invalid custom property.
-- Mapped legacy background/text/accent/glass aliases to canonical tokens to
-  stop tertiary screens from drifting.
-- Removed chat-composer autofocus so keyboard users reach the skip link first.
-- Standardized the collapse control and skip link to 44px minimum height.
+- Replaced the former blue-violet token set with warm canvas, ink,
+  terracotta, sage, ochre, and destructive-state tokens.
+- Kept canonical and legacy token aliases aligned so secondary screens do not
+  drift from the editorial system.
+- Upgraded the composer to a labelled multiline control with Enter-to-send
+  and Shift+Enter-for-newline behavior.
+- Preserved skip-link order, reduced-motion handling, forced-colors support,
+  and 44px minimum visible targets across desktop and mobile navigation.
 
 Physical VoiceOver, TalkBack, and Safari verification was completed as the
 external release gate on 2026-08-13, based on user confirmation.

@@ -15,10 +15,10 @@ Run the approval check from `web/`:
 npm run test:e2e:visual
 ```
 
-The current baseline passed 3/3 with no pixel diffs after a second run. The
-suite disables motion and caret rendering so snapshots represent layout and
-visual hierarchy, not timing noise. Update snapshots only after a deliberate
-design review:
+The warm editorial baseline was deliberately regenerated after the product-wide
+redesign and passed 3/3 across desktop, tablet, and mobile. The suite disables
+motion and caret rendering so snapshots represent layout and visual hierarchy,
+not timing noise. Update snapshots only after a deliberate design review:
 
 ```bash
 npm run test:e2e:visual -- --update-snapshots

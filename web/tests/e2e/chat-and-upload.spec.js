@@ -13,6 +13,17 @@ test('streams a source-aware answer with citation metadata', async ({ page }) =>
   await expect(page.getByText('page 2')).toBeVisible();
 });
 
+test('supports multiline questions and sends with Enter', async ({ page }) => {
+  await openAuthenticatedApp(page, { chatMode: 'stream' });
+  const input = page.getByLabel('Ask BizGuide a question');
+  await input.fill('First line');
+  await input.press('Shift+Enter');
+  await input.type('Second line');
+  await expect(input).toHaveValue('First line\nSecond line');
+  await input.press('Enter');
+  await expect(page.getByText('Grounded answer from your document.')).toBeVisible();
+});
+
 test('offers a retry action when the AI request fails', async ({ page }) => {
   await openAuthenticatedApp(page, { chatMode: 'error' });
   const input = page.getByLabel('Ask BizGuide a question');
@@ -25,8 +36,8 @@ test('offers a retry action when the AI request fails', async ({ page }) => {
 
 test('rejects non-PDF files and records a successful PDF upload', async ({ page }) => {
   await openAuthenticatedApp(page);
-  await page.getByRole('button', { name: 'Upload Documents' }).click();
-  await expect(page.getByRole('heading', { name: 'Upload Documents' })).toBeVisible();
+  await page.getByRole('button', { name: 'Source Library' }).click();
+  await expect(page.getByRole('heading', { name: 'Source Library' })).toBeVisible();
 
   const fileInput = page.getByLabel('PDF document', { exact: true });
   await fileInput.setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not a pdf') });

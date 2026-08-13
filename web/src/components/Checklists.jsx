@@ -9,7 +9,7 @@ const CHECKLISTS = [
     title: 'Private Limited Company Registration',
     description: 'Complete step-by-step guide to incorporate a Pvt Ltd company in India with MCA.',
     icon: <Building2 size={24} />,
-    accentColor: '#6366f1',
+    accentColor: '#9f3f29',
     items: [
       { id: 'pl1', text: 'Obtain Digital Signature Certificate (DSC) for all directors', link: 'https://www.mca.gov.in' },
       { id: 'pl2', text: 'Apply for Director Identification Number (DIN) via MCA portal' },
@@ -66,7 +66,7 @@ const CHECKLISTS = [
     title: 'Startup India Registration',
     description: 'DPIIT recognition for tax benefits, funding access, and government scheme eligibility.',
     icon: <Rocket size={24} />,
-    accentColor: '#8b5cf6',
+    accentColor: '#7f321f',
     items: [
       { id: 'si1', text: 'Ensure entity is Pvt Ltd, LLP, or Partnership (not older than 10 years)' },
       { id: 'si2', text: 'Confirm annual turnover not exceeding ₹100 Crore' },

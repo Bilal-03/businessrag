@@ -4,10 +4,10 @@ import { Home, Folder, UploadCloud, ClipboardCheck, Settings, Plus, MessageSquar
 import Logo from './Logo';
 
 const NAV_ITEMS = [
-  { id: 'home',       label: 'Home',             icon: Home },
-  { id: 'businesses', label: 'My Businesses',     icon: Folder },
-  { id: 'upload',     label: 'Upload Documents',  icon: UploadCloud },
-  { id: 'workflow',   label: 'Compliance Plan',   icon: ClipboardCheck },
+  { id: 'home',       label: 'Ask BizGuide',     shortLabel: 'Ask',        icon: Home },
+  { id: 'businesses', label: 'Businesses',       shortLabel: 'Businesses', icon: Folder },
+  { id: 'upload',     label: 'Source Library',   shortLabel: 'Sources',    icon: UploadCloud },
+  { id: 'workflow',   label: 'Compliance Plan',  shortLabel: 'Plan',       icon: ClipboardCheck },
 ];
 
 const Sidebar = ({
@@ -24,7 +24,7 @@ const Sidebar = ({
   onSignOut,
   isReviewer = false,
 }) => {
-  const navItems = isReviewer ? [...NAV_ITEMS, { id: 'review', label: 'Review Console', icon: ShieldCheck }] : NAV_ITEMS;
+  const navItems = isReviewer ? [...NAV_ITEMS, { id: 'review', label: 'Review Desk', shortLabel: 'Review', icon: ShieldCheck }] : NAV_ITEMS;
   const recentConvos = (conversations || []).slice(0, 8);
   const conversationActivationRef = useRef(false);
   const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
@@ -59,13 +59,13 @@ const Sidebar = ({
 
             {/* New chat button */}
             <motion.button
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ x: 2 }}
+              whileTap={{ x: 0 }}
               className="new-chat-btn"
               onClick={startNewChat}
             >
               <Plus size={18} />
-              <span>New Chat</span>
+              <span>New question</span>
             </motion.button>
 
             {/* Main Nav */}
@@ -74,7 +74,7 @@ const Sidebar = ({
                 <motion.button
                   key={item.id}
                   whileHover={{ x: 2 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileTap={{ x: 0 }}
                   className={`nav-item ${currentView === item.id ? 'active' : ''}`}
                   onClick={() => navigate(item.id)}
                   aria-current={currentView === item.id ? 'page' : undefined}
@@ -135,7 +135,7 @@ const Sidebar = ({
             <div className="sidebar-bottom">
               <motion.button
                 whileHover={{ x: 2 }}
-                whileTap={{ scale: 0.97 }}
+                whileTap={{ x: 0 }}
                 className={`nav-item ${currentView === 'settings' ? 'active' : ''}`}
                 onClick={() => navigate('settings')}
                 aria-current={currentView === 'settings' ? 'page' : undefined}
@@ -149,7 +149,7 @@ const Sidebar = ({
               {session && (
                 <motion.button
                   whileHover={{ x: 2 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileTap={{ x: 0 }}
                   className="nav-item sign-out-item"
                   onClick={onSignOut}
                   title={`Sign out ${session.user?.email || ''}`}
@@ -204,6 +204,21 @@ const Sidebar = ({
         </div>
         </>
       )}
+      <nav className={`mobile-bottom-nav ${!collapsed ? 'drawer-open' : ''}`} aria-label="Mobile navigation">
+        {NAV_ITEMS.map(item => (
+          <button
+            key={item.id}
+            type="button"
+            className={currentView === item.id ? 'active' : ''}
+            onClick={() => navigate(item.id)}
+            aria-current={currentView === item.id ? 'page' : undefined}
+            aria-label={item.label}
+          >
+            <item.icon size={19} />
+            <span>{item.shortLabel}</span>
+          </button>
+        ))}
+      </nav>
     </>
   );
 };

@@ -52,22 +52,32 @@ export default function Auth() {
 
   return (
     <div className="auth-container">
-      <div className="auth-background">
-        <div className="auth-gradient-blob" />
-        <div className="auth-gradient-blob secondary" />
-      </div>
+      <section className="auth-story" aria-label="About BizGuide">
+        <Logo size={46} showText textSize={24} />
+        <div className="auth-story-copy">
+          <span className="auth-eyebrow">India-focused compliance workspace</span>
+          <h1>Compliance work deserves a clearer starting point.</h1>
+          <p>Bring your business context, source documents, obligations, and next questions into one calm workspace.</p>
+        </div>
+        <div className="auth-trust-list" aria-label="Product safeguards">
+          <span><CheckCircle2 size={17} /> Source-aware answers</span>
+          <span><CheckCircle2 size={17} /> Business-scoped workspaces</span>
+          <span><CheckCircle2 size={17} /> Clear evidence and coverage limits</span>
+        </div>
+        <p className="auth-disclaimer">Educational guidance only. Verify important legal and tax decisions with the original source and a qualified professional.</p>
+      </section>
 
       <motion.div 
-        className="auth-card glass-panel"
+        className="auth-card"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <div className="auth-header">
-          <Logo size={48} showText={false} />
-          <h2 className="auth-title">Welcome to BizGuide AI</h2>
+          <span className="auth-card-kicker">Your workspace</span>
+          <h2 className="auth-title">{isLogin ? 'Welcome back' : 'Create your account'}</h2>
           <p className="auth-subtitle">
-            {isLogin ? 'Sign in to access your business copilot' : 'Create an account to get started'}
+            {isLogin ? 'Sign in to continue your compliance work.' : 'Set up a secure place for your business guidance.'}
           </p>
         </div>
 
@@ -152,8 +162,8 @@ export default function Auth() {
           </div>
 
           <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ y: -1 }}
+            whileTap={{ y: 0 }}
             className="btn-primary auth-submit"
             type="submit"
             disabled={loading}

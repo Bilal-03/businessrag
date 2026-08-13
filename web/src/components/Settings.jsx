@@ -6,12 +6,10 @@ import Logo from './Logo';
 const APP_VERSION = '1.0.0';
 
 const ACCENT_COLORS = [
-  { name: 'Indigo', primary: '#6366f1', secondary: '#8b5cf6' },
-  { name: 'Teal', primary: '#14b8a6', secondary: '#06b6d4' },
-  { name: 'Rose', primary: '#f43f5e', secondary: '#ec4899' },
-  { name: 'Amber', primary: '#f59e0b', secondary: '#f97316' },
-  { name: 'Emerald', primary: '#10b981', secondary: '#059669' },
-  { name: 'Sky', primary: '#0ea5e9', secondary: '#6366f1' },
+  { name: 'Terracotta', primary: '#9f3f29', secondary: '#7f321f' },
+  { name: 'Olive', primary: '#52634d', secondary: '#394737' },
+  { name: 'Ochre', primary: '#8a5c18', secondary: '#684511' },
+  { name: 'Rosewood', primary: '#8f4650', secondary: '#6d333c' },
 ];
 
 const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) => {
@@ -33,7 +31,10 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
     const savedProfile = localStorage.getItem(userKey('bizguide_profile'));
     if (savedProfile) setProfile(JSON.parse(savedProfile));
     const savedAccent = localStorage.getItem(userKey('bizguide_accent'));
-    if (savedAccent) setSelectedAccent(parseInt(savedAccent, 10));
+    if (savedAccent) {
+      const savedIndex = parseInt(savedAccent, 10);
+      setSelectedAccent(Number.isInteger(savedIndex) && ACCENT_COLORS[savedIndex] ? savedIndex : 0);
+    }
     const savedApiUrl = localStorage.getItem(userKey('bizguide_api_url'));
     if (savedApiUrl) setApiUrl(savedApiUrl);
     const savedNotifs = localStorage.getItem(userKey('bizguide_notifications'));
@@ -52,6 +53,9 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
     setSelectedAccent(idx);
     localStorage.setItem(userKey('bizguide_accent'), idx.toString());
     const color = ACCENT_COLORS[idx];
+    document.documentElement.style.setProperty('--color-accent', color.primary);
+    document.documentElement.style.setProperty('--color-accent-strong', color.secondary);
+    document.documentElement.style.setProperty('--color-accent-soft', `${color.primary}1f`);
     document.documentElement.style.setProperty('--accent-primary', color.primary);
     document.documentElement.style.setProperty('--accent-secondary', color.secondary);
   };
@@ -170,7 +174,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                     <input id="profile-company" className="form-input" placeholder="Your company name" value={profile.company} onChange={e => setProfile({ ...profile, company: e.target.value })} />
                   </div>
                 </div>
-                <motion.button whileHover={{ scale: 1.03 }} className="btn-primary" onClick={handleSaveProfile}>
+                <motion.button whileHover={{ y: -1 }} className="btn-primary" onClick={handleSaveProfile}>
                   {saved ? <><Check size={16} /> Saved!</> : <><Check size={16} /> Save Profile</>}
                 </motion.button>
               </motion.div>
@@ -184,15 +188,18 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                   {ACCENT_COLORS.map((color, idx) => (
                     <motion.button
                       key={color.name}
-                      whileHover={{ scale: 1.08 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ y: -1 }}
+                      whileTap={{ y: 0 }}
                       className={`accent-swatch ${selectedAccent === idx ? 'selected' : ''}`}
                       onClick={() => handleAccentChange(idx)}
                       title={color.name}
                       aria-label={`${color.name} accent theme`}
                       aria-pressed={selectedAccent === idx}
                     >
-                      <div className="accent-circle" style={{ background: `linear-gradient(135deg, ${color.primary}, ${color.secondary})` }} />
+                      <div
+                        className="accent-circle"
+                        style={{ background: color.primary, '--swatch-secondary': color.secondary }}
+                      />
                       <span className="accent-name">{color.name}</span>
                       {selectedAccent === idx && <Check size={14} className="accent-check" />}
                     </motion.button>
@@ -256,7 +263,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                     <label htmlFor="api-base-url">API Base URL</label>
                     <div style={{ display: 'flex', gap: '12px' }}>
                       <input id="api-base-url" className="form-input" placeholder="https://your-api.com" value={apiUrl} onChange={e => setApiUrl(e.target.value)} style={{ flex: 1 }} />
-                      <motion.button whileHover={{ scale: 1.03 }} className="btn-primary" style={{ flexShrink: 0 }} onClick={handleSaveApiUrl}>
+                      <motion.button whileHover={{ y: -1 }} className="btn-primary" style={{ flexShrink: 0 }} onClick={handleSaveApiUrl}>
                         Save
                       </motion.button>
                     </div>
@@ -270,7 +277,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                       <div className="danger-item-desc">Remove all PDFs currently indexed for your account. This action cannot be undone.</div>
                     </div>
                     <motion.button
-                      whileHover={{ scale: 1.03 }}
+                      whileHover={{ y: -1 }}
                       className={`btn-danger ${confirmClearDocs ? 'confirming' : ''}`}
                       onClick={handleClearDocuments}
                       aria-label={confirmClearDocs ? 'Confirm clearing uploaded documents' : 'Clear uploaded documents'}
@@ -284,7 +291,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                       <div className="danger-item-desc">Permanently delete all saved conversations from this browser.</div>
                     </div>
                     <motion.button
-                      whileHover={{ scale: 1.03 }}
+                      whileHover={{ y: -1 }}
                       className={`btn-danger ${confirmClear ? 'confirming' : ''}`}
                       onClick={handleClearHistory}
                       aria-label={confirmClear ? 'Confirm clearing conversation history' : 'Clear conversation history'}

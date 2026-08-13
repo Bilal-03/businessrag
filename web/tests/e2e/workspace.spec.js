@@ -63,8 +63,9 @@ test('keeps navigation usable on a mobile viewport', async ({ page }) => {
 
   await expect(page.getByRole('button', { name: 'Open navigation' })).toBeVisible();
   await page.getByRole('button', { name: 'Open navigation' }).click();
-  await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
-  await page.getByRole('button', { name: 'My Businesses' }).click();
+  const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
+  await expect(primaryNavigation).toBeVisible();
+  await primaryNavigation.getByRole('button', { name: 'Businesses', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'My Businesses' })).toBeVisible();
 });
 

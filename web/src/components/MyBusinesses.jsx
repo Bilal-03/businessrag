@@ -134,7 +134,7 @@ const CustomSelect = ({ id, value, onChange, options, placeholder, ariaLabel }) 
 
 const STATUS_COLORS = {
   'Planning':   { bg: 'rgba(234, 179, 8, 0.15)',  text: '#fbbf24', border: 'rgba(234,179,8,0.3)' },
-  'Registered': { bg: 'rgba(99, 102, 241, 0.15)', text: '#818cf8', border: 'rgba(99,102,241,0.3)' },
+  'Registered': { bg: 'rgba(159, 63, 41, 0.15)', text: '#9f3f29', border: 'rgba(159,63,41,0.3)' },
   'Operating':  { bg: 'rgba(34, 197, 94, 0.15)',  text: '#4ade80', border: 'rgba(34,197,94,0.3)' },
   'On Hold':    { bg: 'rgba(148, 163, 184, 0.1)', text: '#94a3b8', border: 'rgba(148,163,184,0.2)' },
 };
@@ -282,8 +282,8 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
             </div>
           )}
           <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ y: -1 }}
+            whileTap={{ y: 0 }}
             className="btn-primary"
             onClick={() => { setShowForm(true); setEditingId(null); setForm(defaultForm); }}
           >
@@ -397,7 +397,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
               </div>
               <div className="modal-actions">
                 <button className="btn-ghost" onClick={handleCancel}>Cancel</button>
-                <motion.button whileHover={{ scale: 1.03 }} className="btn-primary" onClick={handleSubmit}>
+                <motion.button whileHover={{ y: -1 }} className="btn-primary" onClick={handleSubmit}>
                   <Check size={16} /> {editingId ? 'Save Changes' : 'Add Business'}
                 </motion.button>
               </div>
@@ -411,7 +411,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
           <div className="empty-icon"><Building2 size={48} /></div>
           <h3>No businesses yet</h3>
           <p>Add your first business profile to get personalized compliance guidance and track your requirements.</p>
-          <motion.button whileHover={{ scale: 1.04 }} className="btn-primary" onClick={() => setShowForm(true)}>
+          <motion.button whileHover={{ y: -1 }} className="btn-primary" onClick={() => setShowForm(true)}>
             <Plus size={18} /> Add Your First Business
           </motion.button>
         </motion.div>
@@ -482,8 +482,8 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
                             {QUICK_ACTIONS.map(qa => (
                               <motion.button
                                 key={qa.label}
-                                whileHover={{ scale: 1.03 }}
-                                whileTap={{ scale: 0.97 }}
+                                whileHover={{ y: -1 }}
+                                whileTap={{ y: 0 }}
                                 className="chip-btn"
                                 onClick={() => {
                                   onSelectBusiness?.(b.id, b);
