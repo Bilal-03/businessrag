@@ -1,0 +1,102 @@
+-- Initial reviewed source catalog.
+-- Apply only after 0004_reviewed_obligation_catalog.sql. The rows marked
+-- published have source, citation, jurisdiction, and effective-window review
+-- evidence. The Maharashtra row remains reviewed-but-unpublished until its
+-- commencement notification is separately verified.
+
+insert into public.obligations (
+  id,
+  jurisdiction,
+  title,
+  description,
+  source_url,
+  source_version,
+  source_citation,
+  effective_from,
+  effective_to,
+  review_status,
+  review_owner,
+  reviewed_at,
+  published,
+  metadata
+)
+values
+  (
+    'a1010000-0000-4000-8000-000000000001',
+    'India',
+    'Food business registration or licence (FSSAI)',
+    'Food businesses must determine whether they need FSSAI registration or a licence before operating; category and eligibility depend on the business activity and current FSSAI criteria.',
+    'https://fssai.gov.in/cms/licensing.php',
+    'Food Safety and Standards (Licensing and Registration of Food Businesses) Regulations, 2011; Amendment 5 (23 Jun 2026)',
+    'Food Safety and Standards Act, 2006, section 31(1); Food Safety and Standards (Licensing and Registration of Food Businesses) Regulations, 2011, regulation 1.1.2.',
+    '2011-08-05',
+    null,
+    'published',
+    'food-safety-domain-review',
+    '2026-08-13T00:00:00Z',
+    true,
+    '{"authority":"Food Safety and Standards Authority of India","scope":"central"}'::jsonb
+  ),
+  (
+    'a1010000-0000-4000-8000-000000000002',
+    'India',
+    'GSTR-3B return (where applicable)',
+    'Registered persons covered by section 39 and rule 61 must furnish Form GSTR-3B; filing frequency, exceptions, and due dates depend on the taxpayer category and current notifications.',
+    'https://cbic-gst.gov.in/pdf/10112020_CGST-Rules-2017_Part-A_Rules.pdf',
+    'Central Goods and Services Tax Rules, 2017, rule 61 (CBIC rules compilation reviewed 13 Aug 2026)',
+    'Central Goods and Services Tax Act, 2017, section 39; Central Goods and Services Tax Rules, 2017, rule 61(1), Form GSTR-3B.',
+    '2017-07-01',
+    null,
+    'published',
+    'indirect-tax-domain-review',
+    '2026-08-13T00:00:00Z',
+    true,
+    '{"authority":"Central Board of Indirect Taxes and Customs","scope":"central"}'::jsonb
+  ),
+  (
+    'a1010000-0000-4000-8000-000000000003',
+    'Delhi',
+    'Delhi Shops and Establishments employment requirements',
+    'For covered Delhi shops and commercial establishments, the Labour Department summary identifies working-hour/rest, weekly-closure, and appointment-letter requirements; exemptions and sector-specific rules must be checked.',
+    'https://labour.delhi.gov.in/labour/inspectorate',
+    'Delhi Shops and Establishments Act, 1954; Notification No. F.5/51-1 & L dated 17 Jan 1955 (department page reviewed 13 Aug 2026)',
+    'Delhi Shops and Establishments Act, 1954, sections 8, 10, 15, 16, and 34; commencement notification effective 1 Feb 1955; Delhi Labour Department summary of main provisions.',
+    '1955-02-01',
+    null,
+    'published',
+    'delhi-labour-domain-review',
+    '2026-08-13T00:00:00Z',
+    true,
+    '{"authority":"Labour Department, Government of NCT of Delhi","scope":"state"}'::jsonb
+  ),
+  (
+    'a1010000-0000-4000-8000-000000000004',
+    'Maharashtra',
+    'Maharashtra shops and establishments registration or intimation',
+    'The 2017 Act distinguishes establishments with 10 or more workers from smaller establishments for registration or intimation; the commencement notification and current exemptions must be confirmed before publishing this record.',
+    'https://mahakamgar.maharashtra.gov.in/Site/Upload/Pdf/Shops_Establishment_Regulation_of_Employment_Conditions_Eng_27.02.2018.pdf',
+    'Maharashtra Shops and Establishments (Regulation of Employment and Conditions of Service) Act, 2017 (Gazette 07 Sep 2017)',
+    'Maharashtra Shops and Establishments (Regulation of Employment and Conditions of Service) Act, 2017, sections 1(3)-(4), 6, and 7.',
+    '2017-09-07',
+    null,
+    'reviewed',
+    'maharashtra-labour-domain-review',
+    '2026-08-13T00:00:00Z',
+    false,
+    '{"authority":"Labour Department, Government of Maharashtra","scope":"state","publish_blocker":"commencement notification requires separate verification"}'::jsonb
+  )
+on conflict (id) do update set
+  jurisdiction = excluded.jurisdiction,
+  title = excluded.title,
+  description = excluded.description,
+  source_url = excluded.source_url,
+  source_version = excluded.source_version,
+  source_citation = excluded.source_citation,
+  effective_from = excluded.effective_from,
+  effective_to = excluded.effective_to,
+  review_status = excluded.review_status,
+  review_owner = excluded.review_owner,
+  reviewed_at = excluded.reviewed_at,
+  published = excluded.published,
+  metadata = excluded.metadata,
+  updated_at = now();

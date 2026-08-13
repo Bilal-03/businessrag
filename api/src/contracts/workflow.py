@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Identifier = str
 TaskStatus = Literal["todo", "in_progress", "blocked", "done", "dismissed"]
+ReviewStatus = Literal["draft", "reviewed", "published"]
 
 
 def _validate_identifier(value: str | None) -> str | None:
@@ -27,6 +28,11 @@ class ObligationRead(BaseModel):
     source_version: str = Field(min_length=1, max_length=120)
     effective_from: date | None = None
     effective_to: date | None = None
+    published: bool = False
+    review_status: ReviewStatus = "draft"
+    source_citation: str | None = Field(default=None, max_length=2000)
+    review_owner: str | None = Field(default=None, max_length=160)
+    reviewed_at: datetime | None = None
     metadata: dict = Field(default_factory=dict)
 
 

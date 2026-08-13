@@ -55,6 +55,73 @@ export const WORKFLOW_TASK = {
   updated_at: '2026-08-03T10:00:00.000Z',
 };
 
+export const WORKFLOW_OBLIGATIONS = [
+  {
+    id: '77777777-7777-4777-8777-777777777771',
+    jurisdiction: 'India',
+    title: 'Food business registration or licence (FSSAI)',
+    description: 'Confirm the applicable FSSAI registration or licence category from the current official criteria.',
+    source_url: 'https://fssai.gov.in/cms/licensing.php',
+    source_version: 'Regulations 2011; Amendment 5 (23 Jun 2026)',
+    source_citation: 'FSS Act, 2006, section 31(1); FSS Licensing Regulations, 2011, regulation 1.1.2.',
+    effective_from: '2011-08-05',
+    effective_to: null,
+    published: true,
+    review_status: 'published',
+    review_owner: 'food-safety-domain-review',
+    reviewed_at: '2026-08-12T10:00:00.000Z',
+    metadata: {},
+  },
+  {
+    id: '77777777-7777-4777-8777-777777777772',
+    jurisdiction: 'Delhi',
+    title: 'Delhi Shops and Establishments employment requirements',
+    description: 'Check the current Delhi Labour Department summary for covered establishments.',
+    source_url: 'https://labour.delhi.gov.in/labour/inspectorate',
+    source_version: 'Delhi Shops and Establishments Act, 1954',
+    source_citation: 'Delhi Shops and Establishments Act, 1954, sections 8, 10, 15, 16, and 34.',
+    effective_from: '1955-02-01',
+    effective_to: null,
+    published: true,
+    review_status: 'published',
+    review_owner: 'delhi-labour-domain-review',
+    reviewed_at: '2026-08-12T10:00:00.000Z',
+    metadata: {},
+  },
+  {
+    id: '77777777-7777-4777-8777-777777777773',
+    jurisdiction: 'India',
+    title: 'Pending review source must stay hidden',
+    description: 'This fixture row is intentionally not user-facing.',
+    source_url: 'https://fssai.gov.in/cms/licensing.php',
+    source_version: 'pending',
+    source_citation: 'Pending domain review.',
+    effective_from: '2011-08-05',
+    effective_to: null,
+    published: true,
+    review_status: 'reviewed',
+    review_owner: 'pending-review',
+    reviewed_at: '2026-08-12T10:00:00.000Z',
+    metadata: {},
+  },
+  {
+    id: '77777777-7777-4777-8777-777777777774',
+    jurisdiction: 'India',
+    title: 'Expired source must stay hidden',
+    description: 'This fixture row is outside its effective window.',
+    source_url: 'https://fssai.gov.in/cms/licensing.php',
+    source_version: 'expired',
+    source_citation: 'Expired source window.',
+    effective_from: '2011-08-05',
+    effective_to: '2026-01-01',
+    published: true,
+    review_status: 'published',
+    review_owner: 'food-safety-domain-review',
+    reviewed_at: '2026-08-12T10:00:00.000Z',
+    metadata: {},
+  },
+];
+
 export const DOCUMENT = {
   id: '55555555-5555-4555-8555-555555555555',
   business_id: BUSINESSES[1].id,
@@ -100,6 +167,7 @@ function bodyFromRequest(request) {
 export async function installMocks(page, { authenticated = true, chatMode = 'stream' } = {}) {
   const state = {
     tasks: [WORKFLOW_TASK],
+    obligations: WORKFLOW_OBLIGATIONS,
     documents: [],
     nextTaskNumber: 1,
   };
@@ -261,7 +329,11 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
     }
 
     if (path === '/api/workflow/obligations' && request.method() === 'GET') {
-      await fulfillJson(route, []);
+      const jurisdiction = (url.searchParams.get('jurisdiction') || '').toLowerCase();
+      const obligations = state.obligations.filter(obligation => (
+        obligation.jurisdiction.toLowerCase() === jurisdiction || obligation.jurisdiction === 'India'
+      ));
+      await fulfillJson(route, obligations);
       return;
     }
     if (path === '/api/workflow/tasks' && request.method() === 'GET') {

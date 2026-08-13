@@ -31,6 +31,28 @@ function sourceHref(value) {
   return typeof value === 'string' && /^https:\/\//i.test(value) ? value : null;
 }
 
+function isAuthoritativeSource(value) {
+  const href = sourceHref(value);
+  if (!href) return false;
+  try {
+    const hostname = new URL(href).hostname.toLowerCase();
+    return hostname.endsWith('.gov.in') || hostname.endsWith('.nic.in') || hostname.endsWith('.org.in');
+  } catch {
+    return false;
+  }
+}
+
+function isCurrentReviewedObligation(obligation, asOf = new Date()) {
+  if (!obligation || obligation.published !== true || obligation.review_status !== 'published') return false;
+  if (!obligation.source_citation?.trim() || !obligation.review_owner?.trim() || !obligation.reviewed_at) return false;
+  if (!isAuthoritativeSource(obligation.source_url) || Number.isNaN(new Date(obligation.reviewed_at).getTime())) return false;
+  const effectiveFrom = obligation.effective_from ? new Date(`${obligation.effective_from}T00:00:00`) : null;
+  const effectiveTo = obligation.effective_to ? new Date(`${obligation.effective_to}T23:59:59`) : null;
+  if (!effectiveFrom || Number.isNaN(effectiveFrom.getTime()) || effectiveFrom > asOf) return false;
+  if (effectiveTo && (Number.isNaN(effectiveTo.getTime()) || effectiveTo < asOf)) return false;
+  return new Date(obligation.reviewed_at) <= asOf;
+}
+
 const WorkflowDashboard = ({
   session,
   apiUrl,
@@ -63,7 +85,8 @@ const WorkflowDashboard = ({
       let nextObligations = [];
       if (businessJurisdiction?.trim()) {
         const obligationsResponse = await fetch(`${apiUrl}/api/workflow/obligations?jurisdiction=${encodeURIComponent(businessJurisdiction.trim())}`, { headers });
-        nextObligations = await parseResponse(obligationsResponse);
+        const catalogRows = await parseResponse(obligationsResponse);
+        nextObligations = Array.isArray(catalogRows) ? catalogRows.filter(obligation => isCurrentReviewedObligation(obligation)) : [];
         setSourceStatus(nextObligations.length > 0 ? 'ready' : 'empty');
       } else {
         setSourceStatus('needs_jurisdiction');
@@ -246,12 +269,22 @@ const WorkflowDashboard = ({
             </div>
           )}
 
+          {sourceStatus === 'error' && (
+            <div className="workflow-gated glass-panel" role="status">
+              <ShieldAlert size={22} />
+              <div>
+                <h3>Published source records could not be verified</h3>
+                <p>No obligation is shown because the catalog response failed its review or date checks. Try again later or verify the source catalog deployment.</p>
+              </div>
+            </div>
+          )}
+
           {sourceStatus === 'empty' && (
             <div className="workflow-gated glass-panel" role="status">
               <ShieldAlert size={22} />
               <div>
-                <h3>No published obligations yet</h3>
-                <p>The database is reachable, but no source-versioned obligations are published for this beta. Add planning tasks only; do not treat this as a complete compliance list.</p>
+                <h3>No current reviewed obligations</h3>
+                <p>The database is reachable, but no reviewed and published source record is active for this jurisdiction. Add planning tasks only; do not treat this as a complete compliance list.</p>
               </div>
             </div>
           )}
@@ -271,7 +304,7 @@ const WorkflowDashboard = ({
               <div className="workflow-section-heading">
                 <div>
                   <h3 id="published-obligations-title">Published obligations</h3>
-                  <p>Only records with an effective source window are shown.</p>
+                  <p>Only reviewed, published records with an active effective window are shown.</p>
                 </div>
               </div>
               <div className="obligation-list">
@@ -285,6 +318,13 @@ const WorkflowDashboard = ({
                       </div>
                       <h4>{obligation.title}</h4>
                       <p>{obligation.description}</p>
+                      <div className="obligation-citation">
+                        <span>Source citation</span>
+                        <p>{obligation.source_citation}</p>
+                      </div>
+                      <div className="obligation-review">
+                        Reviewed by {obligation.review_owner} · {formatDate(obligation.reviewed_at?.slice(0, 10))}
+                      </div>
                       <div className="obligation-card-footer">
                         <span>Effective {formatDate(obligation.effective_from)}{obligation.effective_to ? ` – ${formatDate(obligation.effective_to)}` : ''}</span>
                         {href && <a href={href} target="_blank" rel="noreferrer">Open source <ExternalLink size={13} /></a>}

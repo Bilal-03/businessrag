@@ -685,6 +685,10 @@
 .obligation-version { color: var(--text-secondary); font-weight: 500; text-transform: none; letter-spacing: 0; }
 .obligation-card h4 { font-size: 16px; margin-bottom: 8px; }
 .obligation-card p { min-height: 44px; color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
+.obligation-citation { padding: 10px 12px; margin-top: 14px; border-left: 2px solid rgba(165,180,252,0.55); border-radius: 0 8px 8px 0; background: rgba(99,102,241,0.08); }
+.obligation-citation span { color: #c4b5fd; font-size: 10px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; }
+.obligation-citation p { min-height: 0; margin-top: 4px; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.obligation-review { margin-top: 10px; color: var(--text-secondary); font-size: 11px; }
 .obligation-card-footer { padding-top: 14px; margin-top: 14px; border-top: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 11px; }
 .obligation-card-footer a { display: inline-flex; align-items: center; gap: 4px; color: #a5b4fc; text-decoration: none; }
 .obligation-card-footer a:hover { color: white; text-decoration: underline; }

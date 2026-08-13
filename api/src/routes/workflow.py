@@ -1,7 +1,9 @@
 from datetime import date, datetime, timezone
 from typing import Any
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import ValidationError
 
 from src.auth.dependencies import get_current_user
 from src.contracts.workflow import (
@@ -36,6 +38,15 @@ def _storage_error(exc: SupabaseRestError, operation: str) -> HTTPException:
         "workflow_storage_failed",
         extra={"event": "workflow_storage_failed", "operation": operation, "status_code": exc.status_code},
     )
+    # Read failures are commonly caused by an unapplied or stale schema
+    # (PostgREST reports that as 400/404). Keep the response fail-closed and
+    # actionable instead of presenting a schema mismatch as a user input
+    # error. Mutation validation errors retain their 400 response.
+    if operation in {"list_obligations", "list_tasks", "summary"}:
+        return HTTPException(
+            status_code=503,
+            detail="Compliance Plan data is not available yet. Apply the workflow schema before using this view.",
+        )
     if exc.status_code in {400, 409, 422}:
         return HTTPException(status_code=400, detail="The workflow change is invalid. Check the business and obligation IDs.")
     return HTTPException(
@@ -45,6 +56,8 @@ def _storage_error(exc: SupabaseRestError, operation: str) -> HTTPException:
 
 
 def _active_on(obligation: ObligationRead, as_of: date) -> bool:
+    if not obligation.effective_from:
+        return False
     if obligation.effective_from and obligation.effective_from > as_of:
         return False
     if obligation.effective_to and obligation.effective_to < as_of:
@@ -52,17 +65,63 @@ def _active_on(obligation: ObligationRead, as_of: date) -> bool:
     return True
 
 
+def _has_review_evidence(obligation: ObligationRead, as_of: date) -> bool:
+    if not obligation.published or obligation.review_status != "published":
+        return False
+    if not obligation.source_citation or not obligation.source_citation.strip():
+        return False
+    if not obligation.review_owner or not obligation.review_owner.strip():
+        return False
+    parsed_source = urlparse(obligation.source_url)
+    source_host = (parsed_source.hostname or "").casefold()
+    if parsed_source.scheme.casefold() != "https" or not parsed_source.netloc:
+        return False
+    if not (source_host.endswith(".gov.in") or source_host.endswith(".nic.in") or source_host.endswith(".org.in")):
+        return False
+    if not obligation.reviewed_at or obligation.reviewed_at.date() > as_of:
+        return False
+    return True
+
+
+def _eligible_on(obligation: ObligationRead, as_of: date) -> bool:
+    return _has_review_evidence(obligation, as_of) and _active_on(obligation, as_of)
+
+
+def _matches_jurisdiction(obligation: ObligationRead, normalized_jurisdiction: str | None) -> bool:
+    if not normalized_jurisdiction:
+        return True
+    normalized_obligation = obligation.jurisdiction.casefold()
+    if normalized_obligation == normalized_jurisdiction:
+        return True
+    return normalized_jurisdiction != "india" and normalized_obligation in {"india", "central", "all-india"}
+
+
 async def _list_obligation_rows(client: SupabaseRestClient) -> list[ObligationRead]:
     rows = await client.request(
         "GET",
         "obligations",
         params={
-            "select": "id,jurisdiction,title,description,source_url,source_version,effective_from,effective_to,metadata",
+            "select": "id,jurisdiction,title,description,source_url,source_version,effective_from,effective_to,published,review_status,source_citation,review_owner,reviewed_at,metadata",
             "published": "eq.true",
+            "review_status": "eq.published",
+            "source_citation": "not.is.null",
+            "review_owner": "not.is.null",
+            "reviewed_at": "not.is.null",
             "order": "effective_from.asc",
         },
     )
-    return [ObligationRead.model_validate(row) for row in rows]
+    obligations = []
+    for row in rows:
+        try:
+            obligations.append(ObligationRead.model_validate(row))
+        except ValidationError:
+            # A malformed catalog row is not a reason to show an unverified
+            # claim. The next controlled import can repair it safely.
+            logger.warning(
+                "workflow_obligation_row_rejected",
+                extra={"event": "workflow_obligation_row_rejected"},
+            )
+    return obligations
 
 
 async def _list_task_rows(client: SupabaseRestClient, business_id: str) -> list[TaskRead]:
@@ -85,7 +144,7 @@ async def list_obligations(
     as_of: date | None = None,
     _user_id: str = Depends(get_current_user),
 ):
-    """Return only source-backed obligations active on the requested date."""
+    """Return only reviewed, published obligations active on the requested date."""
     try:
         obligations = await _list_obligation_rows(_client(request))
     except SupabaseRestError as exc:
@@ -96,8 +155,8 @@ async def list_obligations(
     return [
         obligation
         for obligation in obligations
-        if _active_on(obligation, effective_date)
-        and (not normalized_jurisdiction or obligation.jurisdiction.casefold() == normalized_jurisdiction)
+        if _eligible_on(obligation, effective_date)
+        and _matches_jurisdiction(obligation, normalized_jurisdiction)
     ]
 
 
@@ -189,7 +248,7 @@ async def workflow_summary(
         tasks = await _list_task_rows(client, business_id)
     except SupabaseRestError as exc:
         raise _storage_error(exc, "summary") from exc
-    active_obligations = sum(_active_on(obligation, date.today()) for obligation in obligations)
+    active_obligations = sum(_eligible_on(obligation, date.today()) for obligation in obligations)
     return WorkflowSummary(
         business_id=business_id,
         obligations_count=active_obligations,

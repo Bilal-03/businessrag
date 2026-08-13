@@ -299,7 +299,7 @@ The FastAPI backend is deployed on **Render** (free tier).
 
 The frontend deployment includes a restrictive Content Security Policy, HSTS, clickjacking and MIME-sniffing protections, a referrer policy, and a permissions policy through `web/vercel.json`. Keep server keys (Groq, Gemini, Pinecone, and JWT secrets) in the backend environment only; `VITE_*` variables are public client configuration.
 
-The source-backed workflow schema is defined in `supabase/migrations/0001_core_workflow_schema.sql` and `0002_publish_gate_and_catalog_checks.sql`. It is intentionally additive: the current beta can remain online while the application is migrated from the legacy `user_data`/Pinecone-only persistence model. Follow [`docs/PHASE_1_ROLLOUT.md`](docs/PHASE_1_ROLLOUT.md) before production promotion.
+The source-backed workflow schema is defined in `supabase/migrations/0001_core_workflow_schema.sql`, `0002_publish_gate_and_catalog_checks.sql`, and the reviewed-catalog migrations `0004_reviewed_obligation_catalog.sql` and `0005_seed_reviewed_obligations.sql`. The controlled manifest is `supabase/seed/obligations.csv`; review it with `scripts/validate_source_catalog.py` before applying a catalog change. It is intentionally additive: the current beta can remain online while the application is migrated from the legacy `user_data`/Pinecone-only persistence model. Follow [`docs/PHASE_1_ROLLOUT.md`](docs/PHASE_1_ROLLOUT.md) and [`docs/P2_04_SOURCE_CATALOG.md`](docs/P2_04_SOURCE_CATALOG.md) before production promotion.
 
 ---
 

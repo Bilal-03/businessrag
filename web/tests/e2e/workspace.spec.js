@@ -1,6 +1,18 @@
 import { test, expect } from '@playwright/test';
 import { BUSINESSES, openAuthenticatedApp } from './fixtures';
 
+test('shows only current reviewed source obligations with citations', async ({ page }) => {
+  await openAuthenticatedApp(page);
+  await page.getByRole('button', { name: 'Compliance Plan' }).click();
+  await page.getByLabel('Select business workspace').selectOption(BUSINESSES[0].id);
+
+  await expect(page.getByRole('heading', { name: 'Published obligations' })).toBeVisible();
+  await expect(page.getByText('Food business registration or licence (FSSAI)')).toBeVisible();
+  await expect(page.getByText('Source citation')).toBeVisible();
+  await expect(page.getByText('Pending review source must stay hidden')).not.toBeVisible();
+  await expect(page.getByText('Expired source must stay hidden')).not.toBeVisible();
+});
+
 test('switches business context and manages a compliance task safely', async ({ page }) => {
   await openAuthenticatedApp(page);
   await page.getByRole('button', { name: 'Compliance Plan' }).click();

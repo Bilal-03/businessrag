@@ -88,20 +88,21 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
   - [x] Added the exact PostHog dashboard build sheet and privacy acceptance checks in `docs/P2_03_POSTHOG_DASHBOARDS.md`.
   - [x] **External gate:** user confirmed the signed-in PostHog dashboard setup and production accessibility checks were completed, including physical iPhone Safari/VoiceOver, Android Chrome/TalkBack, iPad, and keyboard-only desktop verification. Emulated browser profiles remain regression evidence, not a substitute for the physical-device checks.
 
-- [ ] **P2-04 — Reviewed compliance source catalog and obligation publishing**
-  - Replace the intentionally empty obligation catalog with domain-reviewed, jurisdiction-scoped source records.
-  - Validate effective dates, source URLs, citations, review ownership, and publish-state gates before exposing obligations in Compliance Plan.
-  - Keep the fail-closed empty state until every published row passes review and migration verification.
+- [x] **P2-04 — Reviewed compliance source catalog and obligation publishing**
+  - Added explicit draft/reviewed/published lifecycle metadata, citations, review ownership, review timestamps, official-source constraints, and publish-state checks in migrations `0004` and `0005`.
+  - Added an initial reviewed source slice for FSSAI, CBIC GST, and Delhi Labour; kept the Maharashtra row reviewed-but-unpublished until its commencement notification is separately verified.
+  - Strengthened the CSV validator and API/UI gates so only current, cited, reviewed, published records can reach Compliance Plan; malformed, unreviewed, future, expired, or unavailable records remain hidden.
+  - Documented source review and staging rollout in `docs/P2_04_SOURCE_CATALOG.md`.
 
 ## Verification baseline
 
-- Backend: `./venv/bin/python -m pytest -q api/tests` — 25 passing.
+- Backend: `./venv/bin/python -m pytest -q api/tests` — 26 passing.
 - Frontend: `npm run lint` — passing.
 - Frontend: `npm run build` — passing with split chunks.
-- Browser: `npm run test:e2e` — 6 passing (Chromium; deterministic route fixtures).
+- Browser: `npm run test:e2e` — 8 passing (Chromium; deterministic route fixtures).
 - Accessibility: `npm run test:e2e:accessibility` — 12 passing across four device profiles.
 - Visual regression: `npm run test:e2e:visual` — 3 passing with approved desktop/tablet/mobile baselines.
-- Source catalog: `./venv/bin/python scripts/validate_source_catalog.py` — passing (0 rows; no obligations are published by default).
+- Source catalog: `./venv/bin/python scripts/validate_source_catalog.py supabase/seed/obligations.csv` — passing (4 rows; 3 published, 1 reviewed-but-unpublished).
 - Integrity: `git diff --check` — passing.
 
 ## Post-rollout fixes
@@ -116,7 +117,7 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 ## Operational follow-ups
 
 - [x] User confirmed the Supabase migrations, production environment variables, backend-first deployment, and authenticated canary checks described in `docs/PHASE_1_ROLLOUT.md`.
-- [ ] Populate and domain-review `supabase/seed/obligations.csv`; publish only reviewed rows. The current empty catalog is an intentional fail-closed state, not a complete compliance dataset.
+- [x] Populate and domain-review the initial `supabase/seed/obligations.csv`; publish only rows with complete review evidence. The catalog remains intentionally narrow and does not claim to be a complete compliance dataset.
 - [x] Finish the P2-02 external migration/worker canary; user verified the live queued-to-indexed document flow.
 - [x] Complete the P2-03 external gate: user confirmed the PostHog saved insights/dashboard and physical-device accessibility results.
-- [ ] Start P2-04 source-catalog preparation and domain review; do not publish unreviewed compliance obligations.
+- [ ] External gate: apply migrations `0004` and `0005` in staging, verify RLS/authenticated reads and central-plus-state jurisdiction behavior, then promote the catalog only after domain owners confirm the source slice.
