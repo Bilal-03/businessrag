@@ -92,6 +92,10 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
   - Added explicit draft/reviewed/published lifecycle metadata, citations, review ownership, review timestamps, official-source constraints, and publish-state checks in migrations `0004` and `0005`.
   - Added an initial reviewed source slice for FSSAI, CBIC GST, and Delhi Labour; kept the Maharashtra row reviewed-but-unpublished until its commencement notification is separately verified.
   - Strengthened the CSV validator and API/UI gates so only current, cited, reviewed, published records can reach Compliance Plan; malformed, unreviewed, future, expired, or unavailable records remain hidden.
+- [x] **Business-scoped, industry-aware Compliance Plan**
+  - Added stable codes for all ten industries, versioned owner-scoped compliance profiles, regulated-activity selection, deterministic applicability rules, and explicit catalog coverage.
+  - Added the business-scoped plan/profile API, rejected jurisdiction-only catalog access, and made unknown applicability return questions rather than obligations.
+  - Updated Compliance Plan with “Needs your input,” coverage notices, immediate recalculation, and business-switch stale-state protection.
   - Documented source review and staging rollout in `docs/P2_04_SOURCE_CATALOG.md`.
 
 ## Verification baseline

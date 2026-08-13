@@ -58,12 +58,15 @@ const WorkflowDashboard = ({
   apiUrl,
   businesses = [],
   activeBusinessId,
-  businessJurisdiction,
   onSelectBusiness,
   onGoToBusinesses,
+  onComplianceProfileUpdated,
 }) => {
   const [obligations, setObligations] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [questions, setQuestions] = useState([]);
+  const [coverage, setCoverage] = useState(null);
+  const [profileVersion, setProfileVersion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -71,6 +74,8 @@ const WorkflowDashboard = ({
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [answeringKey, setAnsweringKey] = useState(null);
+  const [answerDrafts, setAnswerDrafts] = useState({});
 
   const headers = useMemo(() => ({
     Authorization: `Bearer ${session?.access_token || ''}`,
@@ -81,15 +86,22 @@ const WorkflowDashboard = ({
     if (!session) return;
     setLoading(true);
     setError('');
+    setObligations([]);
+    setQuestions([]);
+    setCoverage(null);
     try {
       let nextObligations = [];
-      if (businessJurisdiction?.trim()) {
-        const obligationsResponse = await fetch(`${apiUrl}/api/workflow/obligations?jurisdiction=${encodeURIComponent(businessJurisdiction.trim())}`, { headers });
-        const catalogRows = await parseResponse(obligationsResponse);
-        nextObligations = Array.isArray(catalogRows) ? catalogRows.filter(obligation => isCurrentReviewedObligation(obligation)) : [];
-        setSourceStatus(nextObligations.length > 0 ? 'ready' : 'empty');
+      if (activeBusinessId) {
+        const planResponse = await fetch(`${apiUrl}/api/workflow/plan?business_id=${encodeURIComponent(activeBusinessId)}`, { headers });
+        const plan = await parseResponse(planResponse);
+        nextObligations = Array.isArray(plan.obligations) ? plan.obligations.filter(obligation => isCurrentReviewedObligation(obligation)) : [];
+        const nextQuestions = Array.isArray(plan.questions) ? plan.questions : [];
+        setQuestions(nextQuestions);
+        setCoverage(plan.coverage || null);
+        setProfileVersion(plan.profile_version || null);
+        setSourceStatus(nextObligations.length > 0 ? 'ready' : nextQuestions.length > 0 ? 'partial' : 'empty');
       } else {
-        setSourceStatus('needs_jurisdiction');
+        setSourceStatus('needs_business');
       }
       setObligations(Array.isArray(nextObligations) ? nextObligations : []);
 
@@ -108,9 +120,38 @@ const WorkflowDashboard = ({
     } finally {
       setLoading(false);
     }
-  }, [activeBusinessId, apiUrl, businessJurisdiction, headers, session]);
+  }, [activeBusinessId, apiUrl, headers, session]);
 
   useEffect(() => { loadWorkflow(); }, [loadWorkflow]);
+
+  useEffect(() => {
+    setAnswerDrafts(Object.fromEntries(questions.map(question => [question.key, question.current_value])));
+  }, [questions]);
+
+  const updateComplianceAnswer = async (key, value) => {
+    if (!activeBusinessId || answeringKey) return;
+    setAnsweringKey(key);
+    setError('');
+    try {
+      const payload = key.startsWith('answers.')
+        ? { answers: { [key.replace('answers.', '')]: value } }
+        : { [key]: value };
+      const response = await fetch(`${apiUrl}/api/workflow/businesses/${encodeURIComponent(activeBusinessId)}/compliance-profile`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(payload),
+      });
+      const updatedProfile = await parseResponse(response);
+      onComplianceProfileUpdated?.(activeBusinessId, updatedProfile);
+      captureEvent('compliance_profile_answered', { question_key: key, profile_version: profileVersion || 1 });
+      await loadWorkflow();
+    } catch (requestError) {
+      captureException(requestError, { source: 'compliance_profile_update', question_key: key });
+      setError(requestError.message || 'The compliance answer could not be saved.');
+    } finally {
+      setAnsweringKey(null);
+    }
+  };
 
   const createTask = async (event) => {
     event.preventDefault();
@@ -289,22 +330,83 @@ const WorkflowDashboard = ({
             </div>
           )}
 
-          {sourceStatus === 'needs_jurisdiction' && (
-            <div className="workflow-gated glass-panel" role="status">
-              <ShieldAlert size={22} />
+          {coverage?.state && coverage.state.status !== 'available' && (
+            <div className="workflow-coverage glass-panel" role="status">
+              <ShieldAlert size={20} />
               <div>
-                <h3>Add a primary state before viewing obligations</h3>
-                <p>Jurisdiction is required to avoid presenting a misleading universal compliance list. Update this business profile, then refresh.</p>
+                <h3>{coverage.state.jurisdiction || 'State'} catalog coverage: {coverage.state.status.replace('_', ' ')}</h3>
+                <p>{coverage.state.message}</p>
               </div>
             </div>
           )}
 
-          {sourceStatus === 'ready' && (
+          {questions.length > 0 && (
+            <section className="workflow-section workflow-questions" aria-labelledby="needs-input-title">
+              <div className="workflow-section-heading">
+                <div>
+                  <h3 id="needs-input-title">Needs your input</h3>
+                  <p>Uncertain requirements stay hidden until these facts are confirmed.</p>
+                </div>
+              </div>
+              <div className="question-list">
+                {questions.map(question => (
+                  <div className="question-card glass-panel" key={question.key}>
+                    <div>
+                      <h4>{question.label}</h4>
+                      <p>{question.description}</p>
+                    </div>
+                    {question.answer_type === 'multi_select' ? (
+                      <div className="question-multi-options">
+                        {question.options.map(option => {
+                          const currentValues = Array.isArray(answerDrafts[question.key]) ? answerDrafts[question.key] : [];
+                          const selected = currentValues.includes(option.value);
+                          const nextValues = selected
+                            ? currentValues.filter(value => value !== option.value)
+                            : [...currentValues, option.value];
+                          return (
+                            <button
+                              type="button"
+                              key={option.value}
+                              className={`question-option ${selected ? 'selected' : ''}`}
+                              disabled={answeringKey === question.key}
+                              onClick={() => setAnswerDrafts(current => ({ ...current, [question.key]: nextValues }))}
+                              aria-pressed={selected}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                        <button type="button" className="btn-ghost question-none" disabled={answeringKey === question.key} onClick={() => updateComplianceAnswer(question.key, answerDrafts[question.key] || [])}>Save activities</button>
+                        <button type="button" className="btn-ghost question-none" disabled={answeringKey === question.key} onClick={() => updateComplianceAnswer(question.key, [])}>None apply</button>
+                      </div>
+                    ) : (
+                      <select
+                        className="form-input question-select"
+                        aria-label={question.label}
+                        defaultValue=""
+                        disabled={answeringKey === question.key}
+                        onChange={event => {
+                          const raw = event.target.value;
+                          const value = question.answer_type === 'boolean' ? raw === 'true' : raw;
+                          if (raw) updateComplianceAnswer(question.key, value);
+                        }}
+                      >
+                        <option value="" disabled>Select an answer</option>
+                        {question.options.map(option => <option key={String(option.value)} value={String(option.value)}>{option.label}</option>)}
+                      </select>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {obligations.length > 0 && (
             <section className="workflow-section" aria-labelledby="published-obligations-title">
               <div className="workflow-section-heading">
                 <div>
                   <h3 id="published-obligations-title">Published obligations</h3>
-                  <p>Only reviewed, published records with an active effective window are shown.</p>
+                  <p>Only reviewed, current records confirmed applicable to this business are shown.</p>
                 </div>
               </div>
               <div className="obligation-list">

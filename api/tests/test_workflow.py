@@ -1,14 +1,16 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi.testclient import TestClient
+import pytest
 from config import get_settings
+from fastapi.testclient import TestClient
 from main import app
 from src.integrations import supabase_rest
 from src.routes import workflow
 
 client = TestClient(app)
 settings = get_settings()
+BUSINESS_ID = "22222222-2222-4222-8222-222222222222"
 
 
 def auth_headers(*, audience=None, expires_in_minutes=5):
@@ -27,176 +29,229 @@ def auth_headers(*, audience=None, expires_in_minutes=5):
     return {"Authorization": f"Bearer {token}"}
 
 
+def obligation(
+    obligation_id: str,
+    *,
+    jurisdiction="India",
+    rule=None,
+    effective_from="2026-01-01",
+    effective_to=None,
+    review_status="published",
+    published=True,
+    source_url="https://example.gov.in/source",
+):
+    return {
+        "id": obligation_id,
+        "jurisdiction": jurisdiction,
+        "title": obligation_id,
+        "description": "Use the current official source.",
+        "source_url": source_url,
+        "source_version": "2026-01",
+        "effective_from": effective_from,
+        "effective_to": effective_to,
+        "published": published,
+        "review_status": review_status,
+        "source_citation": "Official notice, section 1.",
+        "review_owner": "domain-review",
+        "reviewed_at": "2026-01-01T00:00:00Z",
+        "applicability_version": 1,
+        "applicability_rule": rule or {"field": "industry_code", "op": "eq", "value": "other"},
+        "metadata": {},
+    }
+
+
+def plan_store(*, industry_code="technology_it", state_code="DL", profile=None, rows=None, owns_business=True):
+    profile_row = {
+        "business_id": BUSINESS_ID,
+        "owner_id": "test-user-id",
+        "profile_version": 1,
+        "regulated_activities": [],
+        "gst_registration_status": "not_registered",
+        "turnover_band": None,
+        "employee_count_band": None,
+        "has_physical_establishment": False,
+        "operates_multiple_states": None,
+        "imports_goods_services": None,
+        "exports_goods_services": None,
+        "answers": {},
+        **(profile or {}),
+    }
+    obligations = rows or []
+
+    async def fake_request(self, method, table, *, params=None, payload=None):
+        if table == "businesses":
+            if method == "PATCH":
+                return [{
+                    "id": BUSINESS_ID,
+                    "owner_id": "test-user-id",
+                    "legal_name": "Test Business",
+                    "entity_type": "Private Limited (Pvt Ltd)",
+                    "industry": payload["industry"],
+                    "industry_code": payload["industry_code"],
+                    "state_code": state_code,
+                    "status": "operating",
+                }]
+            return [{
+                "id": BUSINESS_ID,
+                "owner_id": "test-user-id",
+                "legal_name": "Test Business",
+                "entity_type": "Private Limited (Pvt Ltd)",
+                "industry": None,
+                "industry_code": industry_code,
+                "state_code": state_code,
+                "status": "operating",
+            }] if owns_business else []
+        if table == "business_compliance_profiles":
+            if method == "PATCH":
+                return [{**profile_row, **payload}]
+            return [profile_row]
+        if table == "obligations":
+            assert params["published"] == "eq.true"
+            assert params["review_status"] == "eq.published"
+            return obligations
+        if table == "compliance_catalog_coverage":
+            return [{"industry_code": industry_code, "jurisdiction": "India", "status": "partial", "notes": "Reviewed central coverage is partial."}]
+        raise AssertionError(f"unexpected table: {table}")
+
+    return fake_request
+
+
 def test_workflow_tasks_require_authentication():
     response = client.get("/api/workflow/tasks", params={"business_id": "biz-1"})
     assert response.status_code == 401
 
 
-def test_obligations_are_filtered_to_active_jurisdiction(monkeypatch):
-    async def fake_request(self, method, table, *, params=None, payload=None):
-        assert method == "GET"
-        assert table == "obligations"
-        assert params["published"] == "eq.true"
-        assert params["review_status"] == "eq.published"
-        assert params["source_citation"] == "not.is.null"
-        assert params["review_owner"] == "not.is.null"
-        assert params["reviewed_at"] == "not.is.null"
-        return [
-            {
-                "id": "obligation-1",
-                "jurisdiction": "Karnataka",
-                "title": "Active filing",
-                "description": "Use the current official source.",
-                "source_url": "https://example.gov.in/filing",
-                "source_version": "2026-01",
-                "effective_from": "2026-01-01",
-                "effective_to": None,
-                "published": True,
-                "review_status": "published",
-                "source_citation": "Karnataka notice, section 1.",
-                "review_owner": "state-review",
-                "reviewed_at": "2026-01-01T00:00:00Z",
-                "metadata": {},
-            },
-            {
-                "id": "obligation-2",
-                "jurisdiction": "Karnataka",
-                "title": "Future filing",
-                "description": "Not active yet.",
-                "source_url": "https://example.gov.in/future",
-                "source_version": "2027-01",
-                "effective_from": "2027-01-01",
-                "effective_to": None,
-                "published": True,
-                "review_status": "published",
-                "source_citation": "Karnataka notice, section 1.",
-                "review_owner": "state-review",
-                "reviewed_at": "2026-01-01T00:00:00Z",
-                "metadata": {},
-            },
-            {
-                "id": "obligation-central",
-                "jurisdiction": "India",
-                "title": "Central filing",
-                "description": "The central source also applies.",
-                "source_url": "https://example.gov.in/central",
-                "source_version": "2026-central",
-                "effective_from": "2026-01-01",
-                "effective_to": None,
-                "published": True,
-                "review_status": "published",
-                "source_citation": "Central notice, section 1.",
-                "review_owner": "central-review",
-                "reviewed_at": "2026-01-01T00:00:00Z",
-                "metadata": {},
-            },
-        ]
-
-    monkeypatch.setattr(supabase_rest.SupabaseRestClient, "request", fake_request)
+def test_jurisdiction_only_obligation_request_is_rejected():
     response = client.get(
         "/api/workflow/obligations",
-        params={"jurisdiction": "karnataka", "as_of": "2026-08-12"},
+        params={"jurisdiction": "Delhi"},
         headers=auth_headers(),
     )
-
-    assert response.status_code == 200
-    assert [row["id"] for row in response.json()] == ["obligation-1", "obligation-central"]
+    assert response.status_code == 422
 
 
-def test_obligations_fail_closed_for_unreviewed_or_outdated_rows(monkeypatch):
-    async def fake_request(self, method, table, *, params=None, payload=None):
-        return [
-            {
-                "id": "good",
-                "jurisdiction": "Karnataka",
-                "title": "Current reviewed obligation",
-                "description": "Current.",
-                "source_url": "https://karnataka.gov.in/notice",
-                "source_version": "2026-01",
-                "source_citation": "Notice, section 1.",
-                "effective_from": "2026-01-01",
-                "effective_to": None,
-                "published": True,
-                "review_status": "published",
-                "review_owner": "state-review",
-                "reviewed_at": "2026-01-01T00:00:00Z",
-                "metadata": {},
-            },
-            {
-                "id": "draft",
-                "jurisdiction": "Karnataka",
-                "title": "Draft obligation",
-                "description": "Not reviewed.",
-                "source_url": "https://karnataka.gov.in/draft",
-                "source_version": "2026-draft",
-                "source_citation": "Draft.",
-                "effective_from": "2026-01-01",
-                "effective_to": None,
-                "published": True,
-                "review_status": "draft",
-                "review_owner": "state-review",
-                "reviewed_at": None,
-                "metadata": {},
-            },
-            {
-                "id": "missing-citation",
-                "jurisdiction": "Karnataka",
-                "title": "Missing citation",
-                "description": "Not evidenced.",
-                "source_url": "https://karnataka.gov.in/missing",
-                "source_version": "2026-missing",
-                "source_citation": None,
-                "effective_from": "2026-01-01",
-                "effective_to": None,
-                "published": True,
-                "review_status": "published",
-                "review_owner": "state-review",
-                "reviewed_at": "2026-01-01T00:00:00Z",
-                "metadata": {},
-            },
-            {
-                "id": "expired",
-                "jurisdiction": "Karnataka",
-                "title": "Expired obligation",
-                "description": "Outdated.",
-                "source_url": "https://karnataka.gov.in/expired",
-                "source_version": "2025-expired",
-                "source_citation": "Old notice.",
-                "effective_from": "2025-01-01",
-                "effective_to": "2026-01-01",
-                "published": True,
-                "review_status": "published",
-                "review_owner": "state-review",
-                "reviewed_at": "2025-01-01T00:00:00Z",
-                "metadata": {},
-            },
-            {
-                "id": "untrusted-source",
-                "jurisdiction": "Karnataka",
-                "title": "Untrusted source",
-                "description": "Not authoritative.",
-                "source_url": "https://example.com/notice",
-                "source_version": "2026-untrusted",
-                "source_citation": "Untrusted notice.",
-                "effective_from": "2026-01-01",
-                "effective_to": None,
-                "published": True,
-                "review_status": "published",
-                "review_owner": "state-review",
-                "reviewed_at": "2026-01-01T00:00:00Z",
-                "metadata": {},
-            },
-        ]
-
-    monkeypatch.setattr(supabase_rest.SupabaseRestClient, "request", fake_request)
+@pytest.mark.parametrize(
+    "industry_code",
+    [
+        "food_beverage",
+        "technology_it",
+        "healthcare",
+        "education",
+        "manufacturing",
+        "retail_ecommerce",
+        "consulting_services",
+        "real_estate",
+        "finance",
+        "other",
+    ],
+)
+def test_plan_has_no_cross_industry_food_leakage(monkeypatch, industry_code):
+    food_rule = {"field": "regulated_activities", "op": "contains_any", "value": ["food_handling", "food_delivery"]}
+    activities = ["food_handling"] if industry_code == "food_beverage" else []
+    monkeypatch.setattr(
+        supabase_rest.SupabaseRestClient,
+        "request",
+        plan_store(industry_code=industry_code, profile={"regulated_activities": activities}, rows=[obligation("fssai", rule=food_rule)]),
+    )
     response = client.get(
-        "/api/workflow/obligations",
-        params={"jurisdiction": "karnataka", "as_of": "2026-08-12"},
+        "/api/workflow/plan",
+        params={"business_id": BUSINESS_ID, "as_of": "2026-08-12"},
         headers=auth_headers(),
     )
-
     assert response.status_code == 200
-    assert [row["id"] for row in response.json()] == ["good"]
+    ids = [row["id"] for row in response.json()["obligations"]]
+    assert ("fssai" in ids) is (industry_code == "food_beverage")
+
+
+def test_technology_marketplace_with_food_delivery_receives_food_rule(monkeypatch):
+    rule = {"field": "regulated_activities", "op": "contains_any", "value": ["food_handling", "food_delivery"]}
+    monkeypatch.setattr(
+        supabase_rest.SupabaseRestClient,
+        "request",
+        plan_store(profile={"regulated_activities": ["ecommerce_marketplace", "food_delivery"]}, rows=[obligation("fssai", rule=rule)]),
+    )
+    response = client.get("/api/workflow/plan", params={"business_id": BUSINESS_ID}, headers=auth_headers())
+    assert [row["id"] for row in response.json()["obligations"]] == ["fssai"]
+
+
+def test_unknown_gst_returns_question_not_obligation(monkeypatch):
+    gst_rule = {"field": "gst_registration_status", "op": "eq", "value": "registered"}
+    monkeypatch.setattr(
+        supabase_rest.SupabaseRestClient,
+        "request",
+        plan_store(profile={"gst_registration_status": None}, rows=[obligation("gstr-3b", rule=gst_rule)]),
+    )
+    response = client.get("/api/workflow/plan", params={"business_id": BUSINESS_ID}, headers=auth_headers())
+    body = response.json()
+    assert body["obligations"] == []
+    assert [question["key"] for question in body["questions"]] == ["gst_registration_status"]
+
+
+def test_confirmed_gst_returns_gstr_3b(monkeypatch):
+    rule = {"field": "gst_registration_status", "op": "eq", "value": "registered"}
+    monkeypatch.setattr(
+        supabase_rest.SupabaseRestClient,
+        "request",
+        plan_store(profile={"gst_registration_status": "registered"}, rows=[obligation("gstr-3b", rule=rule)]),
+    )
+    response = client.get("/api/workflow/plan", params={"business_id": BUSINESS_ID}, headers=auth_headers())
+    assert [row["id"] for row in response.json()["obligations"]] == ["gstr-3b"]
+
+
+def test_plan_fails_closed_for_invalid_future_expired_and_unpublished_rules(monkeypatch):
+    rows = [
+        obligation("good", jurisdiction="Delhi", rule={"field": "has_physical_establishment", "op": "eq", "value": True}),
+        obligation("future", effective_from="2027-01-01"),
+        obligation("expired", effective_to="2026-01-01"),
+        obligation("unpublished", review_status="reviewed", published=False),
+        obligation("malformed", rule={"field": "industry_code", "op": "execute", "value": "technology_it"}),
+        obligation("wrong-state", jurisdiction="Karnataka", rule={"field": "industry_code", "op": "eq", "value": "technology_it"}),
+    ]
+    monkeypatch.setattr(
+        supabase_rest.SupabaseRestClient,
+        "request",
+        plan_store(profile={"has_physical_establishment": True}, rows=rows),
+    )
+    response = client.get(
+        "/api/workflow/plan",
+        params={"business_id": BUSINESS_ID, "as_of": "2026-08-12"},
+        headers=auth_headers(),
+    )
+    assert [row["id"] for row in response.json()["obligations"]] == ["good"]
+
+
+def test_another_users_business_cannot_be_read_or_updated(monkeypatch):
+    monkeypatch.setattr(supabase_rest.SupabaseRestClient, "request", plan_store(owns_business=False))
+    read = client.get("/api/workflow/plan", params={"business_id": BUSINESS_ID}, headers=auth_headers())
+    update = client.patch(
+        f"/api/workflow/businesses/{BUSINESS_ID}/compliance-profile",
+        json={"gst_registration_status": "registered"},
+        headers=auth_headers(),
+    )
+    assert read.status_code == 404
+    assert update.status_code == 404
+
+
+def test_compliance_profile_rejects_unknown_activity(monkeypatch):
+    monkeypatch.setattr(supabase_rest.SupabaseRestClient, "request", plan_store())
+    response = client.patch(
+        f"/api/workflow/businesses/{BUSINESS_ID}/compliance-profile",
+        json={"regulated_activities": ["made_up_activity"]},
+        headers=auth_headers(),
+    )
+    assert response.status_code == 422
+
+
+def test_business_applicability_update_validates_and_persists_codes(monkeypatch):
+    monkeypatch.setattr(supabase_rest.SupabaseRestClient, "request", plan_store())
+    response = client.patch(
+        f"/api/workflow/businesses/{BUSINESS_ID}/applicability",
+        json={"industry_code": "retail_ecommerce", "regulated_activities": ["physical_retail"]},
+        headers=auth_headers(),
+    )
+    assert response.status_code == 200
+    assert response.json()["business"]["industry_code"] == "retail_ecommerce"
+    assert response.json()["compliance_profile"]["regulated_activities"] == ["physical_retail"]
 
 
 def test_create_task_is_owner_scoped_and_returns_created_task(monkeypatch):
@@ -222,7 +277,6 @@ def test_create_task_is_owner_scoped_and_returns_created_task(monkeypatch):
         headers=auth_headers(),
         json={"business_id": "biz-1", "title": "Collect records", "due_date": "2026-09-01"},
     )
-
     assert response.status_code == 201
     assert captured["payload"]["owner_id"] == "test-user-id"
     assert response.json()["status"] == "todo"
@@ -233,22 +287,21 @@ def test_workflow_storage_failure_is_fail_closed(monkeypatch):
         raise supabase_rest.SupabaseRestError(404)
 
     monkeypatch.setattr(supabase_rest.SupabaseRestClient, "request", unavailable)
-    response = client.get("/api/workflow/obligations", headers=auth_headers())
-
+    response = client.get("/api/workflow/plan", params={"business_id": BUSINESS_ID}, headers=auth_headers())
     assert response.status_code == 503
     assert "not available yet" in response.json()["detail"]
 
 
-def test_workflow_schema_read_failure_is_not_exposed_as_client_input_error(monkeypatch):
+def test_workflow_schema_read_failure_keeps_cors_header(monkeypatch):
     async def unavailable(*args, **kwargs):
         raise supabase_rest.SupabaseRestError(400)
 
     monkeypatch.setattr(supabase_rest.SupabaseRestClient, "request", unavailable)
     response = client.get(
-        "/api/workflow/obligations",
+        "/api/workflow/plan",
+        params={"business_id": BUSINESS_ID},
         headers={**auth_headers(), "Origin": "https://businessrag.vercel.app"},
     )
-
     assert response.status_code == 503
     assert response.headers.get("access-control-allow-origin")
 
@@ -257,13 +310,13 @@ def test_unhandled_workflow_failure_keeps_cors_header(monkeypatch):
     async def explode(*args, **kwargs):
         raise RuntimeError("simulated backend failure")
 
-    monkeypatch.setattr(workflow, "_list_obligation_rows", explode)
+    monkeypatch.setattr(workflow, "_build_plan", explode)
     no_raise_client = TestClient(app, raise_server_exceptions=False)
     response = no_raise_client.get(
-        "/api/workflow/obligations",
+        "/api/workflow/plan",
+        params={"business_id": BUSINESS_ID},
         headers={**auth_headers(), "Origin": "https://businessrag.vercel.app"},
     )
-
     assert response.status_code == 500
     assert response.headers.get("access-control-allow-origin")
     assert response.json()["code"] == "internal_error"

@@ -23,6 +23,7 @@ export const BUSINESSES = [
     legal_name: 'Acme Foods Pvt Ltd',
     entity_type: 'Private Limited (Pvt Ltd)',
     industry: 'Food & Beverage',
+    industry_code: 'food_beverage',
     state_code: 'MH',
     status: 'operating',
     metadata: { description: 'Food manufacturing workspace' },
@@ -35,11 +36,33 @@ export const BUSINESSES = [
     legal_name: 'Acme Courier Services',
     entity_type: 'Private Limited (Pvt Ltd)',
     industry: 'Technology/IT',
+    industry_code: 'technology_it',
     state_code: 'DL',
     status: 'operating',
     metadata: { description: 'Courier operations workspace' },
     created_at: '2026-08-02T10:00:00.000Z',
     updated_at: '2026-08-02T10:00:00.000Z',
+  },
+];
+
+export const COMPLIANCE_PROFILES = [
+  {
+    business_id: BUSINESSES[0].id,
+    owner_id: TEST_USER.id,
+    profile_version: 1,
+    regulated_activities: ['food_manufacturing'],
+    gst_registration_status: 'not_registered',
+    has_physical_establishment: true,
+    answers: {},
+  },
+  {
+    business_id: BUSINESSES[1].id,
+    owner_id: TEST_USER.id,
+    profile_version: 1,
+    regulated_activities: [],
+    gst_registration_status: null,
+    has_physical_establishment: true,
+    answers: {},
   },
 ];
 
@@ -69,6 +92,22 @@ export const WORKFLOW_OBLIGATIONS = [
     published: true,
     review_status: 'published',
     review_owner: 'food-safety-domain-review',
+    reviewed_at: '2026-08-12T10:00:00.000Z',
+    metadata: {},
+  },
+  {
+    id: '77777777-7777-4777-8777-777777777775',
+    jurisdiction: 'India',
+    title: 'GSTR-3B return (where applicable)',
+    description: 'Registered persons covered by the reviewed rule must furnish Form GSTR-3B.',
+    source_url: 'https://cbic-gst.gov.in/pdf/10112020_CGST-Rules-2017_Part-A_Rules.pdf',
+    source_version: 'Central Goods and Services Tax Rules, 2017, rule 61',
+    source_citation: 'Central Goods and Services Tax Act, 2017, section 39; CGST Rules, rule 61.',
+    effective_from: '2017-07-01',
+    effective_to: null,
+    published: true,
+    review_status: 'published',
+    review_owner: 'indirect-tax-domain-review',
     reviewed_at: '2026-08-12T10:00:00.000Z',
     metadata: {},
   },
@@ -170,6 +209,7 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
     obligations: WORKFLOW_OBLIGATIONS,
     documents: [],
     nextTaskNumber: 1,
+    complianceProfiles: COMPLIANCE_PROFILES.map(profile => ({ ...profile })),
   };
 
   await page.addInitScript(({ isAuthenticated, marker, authStorage }) => {
@@ -227,6 +267,18 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
       }
       const body = bodyFromRequest(request);
       await fulfillJson(route, Array.isArray(body) ? body : [body]);
+      return;
+    }
+    if (table === 'business_compliance_profiles') {
+      if (request.method() === 'GET') {
+        await fulfillJson(route, state.complianceProfiles);
+        return;
+      }
+      const body = bodyFromRequest(request);
+      const existing = state.complianceProfiles.find(profile => profile.business_id === body.business_id);
+      if (existing) Object.assign(existing, body);
+      else state.complianceProfiles.push(body);
+      await fulfillJson(route, [existing || body]);
       return;
     }
     if (table === 'conversations') {
@@ -328,12 +380,53 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
       return;
     }
 
-    if (path === '/api/workflow/obligations' && request.method() === 'GET') {
-      const jurisdiction = (url.searchParams.get('jurisdiction') || '').toLowerCase();
-      const obligations = state.obligations.filter(obligation => (
-        obligation.jurisdiction.toLowerCase() === jurisdiction || obligation.jurisdiction === 'India'
-      ));
-      await fulfillJson(route, obligations);
+    if (path === '/api/workflow/plan' && request.method() === 'GET') {
+      const businessId = url.searchParams.get('business_id');
+      const business = BUSINESSES.find(item => item.id === businessId);
+      const profile = state.complianceProfiles.find(item => item.business_id === businessId) || {};
+      const applicable = state.obligations.filter(obligation => {
+        if (obligation.review_status !== 'published' || obligation.effective_to) return false;
+        if (obligation.title.includes('Food business')) return business?.industry_code === 'food_beverage' || profile.regulated_activities?.some(value => value.startsWith('food_'));
+        if (obligation.title.includes('GSTR-3B')) return profile.gst_registration_status === 'registered';
+        if (obligation.jurisdiction === 'Delhi') return business?.state_code === 'DL' && profile.has_physical_establishment === true;
+        return false;
+      });
+      const questions = [];
+      if (profile.gst_registration_status == null) {
+        questions.push({
+          key: 'gst_registration_status',
+          label: 'Is this business registered for GST?',
+          description: 'GSTR obligations are not shown until registration is confirmed.',
+          answer_type: 'single_select',
+          options: [
+            { value: 'registered', label: 'Yes, registered' },
+            { value: 'not_registered', label: 'No, not registered' },
+            { value: 'not_applicable', label: 'Not applicable' },
+          ],
+          current_value: null,
+        });
+      }
+      await fulfillJson(route, {
+        business_id: businessId,
+        obligations: applicable,
+        questions,
+        coverage: {
+          central: { status: 'partial', message: 'Reviewed central coverage is partial.' },
+          state: {
+            status: business?.state_code === 'DL' ? 'partial' : 'in_review',
+            jurisdiction: business?.state_code === 'DL' ? 'Delhi' : 'Maharashtra',
+            message: 'No complete reviewed state catalog is available; no state requirement is guessed.',
+          },
+        },
+        profile_version: 1,
+      });
+      return;
+    }
+    if (path.includes('/api/workflow/businesses/') && path.endsWith('/compliance-profile') && request.method() === 'PATCH') {
+      const businessId = path.split('/')[4];
+      const profile = state.complianceProfiles.find(item => item.business_id === businessId);
+      Object.assign(profile, bodyFromRequest(request));
+      await fulfillJson(route, profile);
       return;
     }
     if (path === '/api/workflow/tasks' && request.method() === 'GET') {

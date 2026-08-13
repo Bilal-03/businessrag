@@ -4,10 +4,15 @@
 from __future__ import annotations
 
 import csv
+import json
 import sys
 from datetime import UTC, date, datetime
 from pathlib import Path
 from urllib.parse import urlparse
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
+
+from src.compliance.applicability import validate_rule  # noqa: E402
 
 
 REQUIRED = {
@@ -23,6 +28,8 @@ REQUIRED = {
     "review_owner",
     "reviewed_at",
     "published",
+    "applicability_version",
+    "applicability_rule",
 }
 OPTIONAL = {"effective_to", "reviewed_at"}
 REVIEW_STATES = {"draft", "reviewed", "published"}
@@ -83,6 +90,14 @@ def main(path: str) -> int:
                 errors.append(f"line {line}: published must be true or false")
             elif (values["published"].lower() == "true") != (review_status == "published"):
                 errors.append(f"line {line}: published must be true exactly when review_status is published")
+
+            if values["applicability_version"] != "1":
+                errors.append(f"line {line}: applicability_version must be 1")
+            try:
+                rule = json.loads(values["applicability_rule"])
+                validate_rule(rule)
+            except (json.JSONDecodeError, ValueError) as exc:
+                errors.append(f"line {line}: invalid applicability_rule: {exc}")
 
             if not values["source_citation"]:
                 errors.append(f"line {line}: source_citation is required")

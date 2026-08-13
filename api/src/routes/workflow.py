@@ -1,12 +1,26 @@
 from datetime import date, datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import ValidationError
 
 from src.auth.dependencies import get_current_user
+from src.compliance.applicability import (
+    ACTIVITY_LABELS,
+    APPROVED_ANSWER_KEYS,
+    INDUSTRY_LABELS,
+    PROFILE_VERSION,
+    Outcome,
+    evaluate_rule,
+    normalize_industry_code,
+    question_for,
+)
 from src.contracts.workflow import (
+    BusinessApplicabilityUpdate,
+    CompliancePlanResponse,
+    ComplianceProfileUpdate,
     ObligationRead,
     TaskCreate,
     TaskRead,
@@ -26,6 +40,13 @@ def _safe_identifier(value: str) -> str:
     return value
 
 
+def _uuid_identifier(value: str) -> str:
+    try:
+        return str(UUID(value))
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise HTTPException(status_code=422, detail="A valid business UUID is required.") from exc
+
+
 def _client(request: Request) -> SupabaseRestClient:
     token = getattr(request.state, "access_token", None)
     if not token:
@@ -42,7 +63,7 @@ def _storage_error(exc: SupabaseRestError, operation: str) -> HTTPException:
     # (PostgREST reports that as 400/404). Keep the response fail-closed and
     # actionable instead of presenting a schema mismatch as a user input
     # error. Mutation validation errors retain their 400 response.
-    if operation in {"list_obligations", "list_tasks", "summary"}:
+    if operation in {"list_obligations", "get_plan", "get_profile", "list_tasks", "summary"}:
         return HTTPException(
             status_code=503,
             detail="Compliance Plan data is not available yet. Apply the workflow schema before using this view.",
@@ -88,9 +109,9 @@ def _eligible_on(obligation: ObligationRead, as_of: date) -> bool:
 
 
 def _matches_jurisdiction(obligation: ObligationRead, normalized_jurisdiction: str | None) -> bool:
-    if not normalized_jurisdiction:
-        return True
     normalized_obligation = obligation.jurisdiction.casefold()
+    if not normalized_jurisdiction:
+        return normalized_obligation in {"india", "central", "all-india"}
     if normalized_obligation == normalized_jurisdiction:
         return True
     return normalized_jurisdiction != "india" and normalized_obligation in {"india", "central", "all-india"}
@@ -101,7 +122,7 @@ async def _list_obligation_rows(client: SupabaseRestClient) -> list[ObligationRe
         "GET",
         "obligations",
         params={
-            "select": "id,jurisdiction,title,description,source_url,source_version,effective_from,effective_to,published,review_status,source_citation,review_owner,reviewed_at,metadata",
+            "select": "id,jurisdiction,title,description,source_url,source_version,effective_from,effective_to,published,review_status,source_citation,review_owner,reviewed_at,applicability_version,applicability_rule,metadata",
             "published": "eq.true",
             "review_status": "eq.published",
             "source_citation": "not.is.null",
@@ -124,6 +145,140 @@ async def _list_obligation_rows(client: SupabaseRestClient) -> list[ObligationRe
     return obligations
 
 
+STATE_NAMES = {
+    "AP": "Andhra Pradesh",
+    "DL": "Delhi",
+    "GJ": "Gujarat",
+    "KA": "Karnataka",
+    "KL": "Kerala",
+    "MH": "Maharashtra",
+    "TN": "Tamil Nadu",
+    "TG": "Telangana",
+    "UP": "Uttar Pradesh",
+    "WB": "West Bengal",
+    "MULTI": "Other / Multi-state",
+}
+
+
+async def _load_business(client: SupabaseRestClient, business_id: str) -> dict[str, Any]:
+    rows = await client.request(
+        "GET",
+        "businesses",
+        params={
+            "select": "id,owner_id,legal_name,entity_type,industry,industry_code,state_code,status",
+            "id": f"eq.{business_id}",
+            "limit": 1,
+        },
+    )
+    if not rows:
+        # RLS intentionally makes a different user's business indistinguishable
+        # from a missing record.
+        raise HTTPException(status_code=404, detail="Business not found.")
+    return rows[0]
+
+
+async def _load_profile(client: SupabaseRestClient, business_id: str) -> dict[str, Any] | None:
+    rows = await client.request(
+        "GET",
+        "business_compliance_profiles",
+        params={"select": "*", "business_id": f"eq.{business_id}", "limit": 1},
+    )
+    return rows[0] if rows else None
+
+
+def _profile_context(business: dict[str, Any], profile: dict[str, Any] | None) -> dict[str, Any]:
+    profile = profile or {}
+    return {
+        "industry_code": normalize_industry_code(business.get("industry_code"), business.get("industry")),
+        "entity_type": business.get("entity_type"),
+        "business_status": business.get("status"),
+        "regulated_activities": profile.get("regulated_activities"),
+        "gst_registration_status": profile.get("gst_registration_status"),
+        "turnover_band": profile.get("turnover_band"),
+        "employee_count_band": profile.get("employee_count_band"),
+        "has_physical_establishment": profile.get("has_physical_establishment"),
+        "operates_multiple_states": profile.get("operates_multiple_states"),
+        "imports_goods_services": profile.get("imports_goods_services"),
+        "exports_goods_services": profile.get("exports_goods_services"),
+        "answers": profile.get("answers") if isinstance(profile.get("answers"), dict) else {},
+    }
+
+
+def _coverage_for(business: dict[str, Any], central_coverage: dict[str, Any] | None = None) -> dict[str, Any]:
+    industry_code = normalize_industry_code(business.get("industry_code"), business.get("industry"))
+    industry_label = INDUSTRY_LABELS[industry_code]
+    state_code = (business.get("state_code") or "").upper()
+    state_name = STATE_NAMES.get(state_code, state_code or "Not provided")
+    if state_code == "DL":
+        state_status = "partial"
+        state_message = "A reviewed Delhi slice is available, but it is not a complete state-law catalog."
+    elif state_code == "MH":
+        state_status = "in_review"
+        state_message = "Maharashtra catalog entries are still under review and remain unpublished."
+    else:
+        state_status = "unsupported"
+        state_message = "No complete reviewed state catalog is available for this jurisdiction; no state requirement is guessed."
+    return {
+        "central": {
+            "status": central_coverage.get("status", "partial") if central_coverage else "partial",
+            "message": central_coverage.get("notes") if central_coverage else f"Reviewed central records are routed for {industry_label}, but catalog coverage is not yet exhaustive.",
+        },
+        "state": {"status": state_status, "jurisdiction": state_name, "message": state_message},
+    }
+
+
+async def _build_plan(client: SupabaseRestClient, business_id: str, effective_date: date) -> CompliancePlanResponse:
+    business = await _load_business(client, business_id)
+    profile = await _load_profile(client, business_id)
+    obligations = await _list_obligation_rows(client)
+    context = _profile_context(business, profile)
+    coverage_rows = await client.request(
+        "GET",
+        "compliance_catalog_coverage",
+        params={
+            "select": "industry_code,jurisdiction,status,notes",
+            "industry_code": f"eq.{context['industry_code']}",
+            "jurisdiction": "eq.India",
+            "limit": 1,
+        },
+    )
+    jurisdiction = STATE_NAMES.get((business.get("state_code") or "").upper(), business.get("state_code") or "")
+    normalized_jurisdiction = jurisdiction.casefold() if jurisdiction else None
+    applicable: list[ObligationRead] = []
+    unknown_fields: set[str] = set()
+    for obligation in obligations:
+        if not _eligible_on(obligation, effective_date):
+            continue
+        if not _matches_jurisdiction(obligation, normalized_jurisdiction):
+            continue
+        if obligation.applicability_version != PROFILE_VERSION or not obligation.applicability_rule:
+            logger.warning("workflow_obligation_rule_rejected", extra={"event": "workflow_obligation_rule_rejected"})
+            continue
+        try:
+            result = evaluate_rule(obligation.applicability_rule, context)
+        except ValueError:
+            logger.warning("workflow_obligation_rule_rejected", extra={"event": "workflow_obligation_rule_rejected"})
+            continue
+        if result.outcome == Outcome.APPLICABLE:
+            applicable.append(obligation)
+        elif result.outcome == Outcome.UNKNOWN:
+            unknown_fields.update(result.unknown_fields)
+
+    questions = []
+    for field in sorted(unknown_fields):
+        current_value = context.get(field) if not field.startswith("answers.") else context["answers"].get(field.removeprefix("answers."))
+        question = question_for(field, current_value)
+        if question:
+            questions.append(question)
+    return CompliancePlanResponse(
+        business_id=business_id,
+        obligations=applicable,
+        questions=questions,
+        coverage=_coverage_for(business, coverage_rows[0] if coverage_rows else None),
+        profile_version=PROFILE_VERSION,
+    )
+
+
 async def _list_task_rows(client: SupabaseRestClient, business_id: str) -> list[TaskRead]:
     rows = await client.request(
         "GET",
@@ -137,27 +292,133 @@ async def _list_task_rows(client: SupabaseRestClient, business_id: str) -> list[
     return [TaskRead.model_validate(row) for row in rows]
 
 
-@router.get("/obligations", response_model=list[ObligationRead])
-async def list_obligations(
+@router.get("/plan", response_model=CompliancePlanResponse)
+async def get_plan(
     request: Request,
-    jurisdiction: str | None = Query(default=None, min_length=2, max_length=120),
+    business_id: str = Query(...),
     as_of: date | None = None,
     _user_id: str = Depends(get_current_user),
 ):
-    """Return only reviewed, published obligations active on the requested date."""
+    """Build a fail-closed plan from the authenticated user's stored business."""
+    business_id = _uuid_identifier(business_id)
     try:
-        obligations = await _list_obligation_rows(_client(request))
+        return await _build_plan(_client(request), business_id, as_of or date.today())
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "get_plan") from exc
+
+
+@router.get("/obligations", response_model=list[ObligationRead])
+async def list_obligations(
+    request: Request,
+    business_id: str = Query(...),
+    as_of: date | None = None,
+    _user_id: str = Depends(get_current_user),
+):
+    """Compatibility route; unscoped jurisdiction-only requests are rejected."""
+    business_id = _uuid_identifier(business_id)
+    try:
+        plan = await _build_plan(_client(request), business_id, as_of or date.today())
     except SupabaseRestError as exc:
         raise _storage_error(exc, "list_obligations") from exc
+    return plan.obligations
 
-    effective_date = as_of or date.today()
-    normalized_jurisdiction = jurisdiction.strip().casefold() if jurisdiction else None
-    return [
-        obligation
-        for obligation in obligations
-        if _eligible_on(obligation, effective_date)
-        and _matches_jurisdiction(obligation, normalized_jurisdiction)
-    ]
+
+@router.patch("/businesses/{business_id}/compliance-profile")
+async def update_compliance_profile(
+    request: Request,
+    business_id: str,
+    body: ComplianceProfileUpdate,
+    user_id: str = Depends(get_current_user),
+):
+    business_id = _uuid_identifier(business_id)
+    payload = body.model_dump(mode="json", exclude_unset=True)
+    if not payload:
+        raise HTTPException(status_code=422, detail="Provide at least one compliance profile answer.")
+    activities = payload.get("regulated_activities")
+    if activities is not None:
+        unknown_activities = sorted(set(activities) - set(ACTIVITY_LABELS))
+        if unknown_activities:
+            raise HTTPException(status_code=422, detail="The compliance profile contains an unknown regulated activity.")
+        payload["regulated_activities"] = sorted(set(activities))
+    answers = payload.get("answers")
+    if answers is not None and set(answers) - APPROVED_ANSWER_KEYS:
+        raise HTTPException(status_code=422, detail="The compliance profile contains an unknown answer key.")
+    if answers is not None and any(value is not None and not isinstance(value, bool) for value in answers.values()):
+        raise HTTPException(status_code=422, detail="Industry-specific compliance answers must be yes or no.")
+    payload["profile_version"] = PROFILE_VERSION
+    try:
+        client = _client(request)
+        await _load_business(client, business_id)
+        existing = await _load_profile(client, business_id)
+        if existing and answers is not None:
+            payload["answers"] = {**(existing.get("answers") or {}), **answers}
+        if existing:
+            rows = await client.request(
+                "PATCH",
+                "business_compliance_profiles",
+                params={"business_id": f"eq.{business_id}"},
+                payload=payload,
+            )
+        else:
+            rows = await client.request(
+                "POST",
+                "business_compliance_profiles",
+                payload={"business_id": business_id, "owner_id": user_id, **payload},
+            )
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "update_profile") from exc
+    if not rows:
+        raise HTTPException(status_code=404, detail="Business compliance profile not found.")
+    return rows[0]
+
+
+@router.patch("/businesses/{business_id}/applicability")
+async def update_business_applicability(
+    request: Request,
+    business_id: str,
+    body: BusinessApplicabilityUpdate,
+    user_id: str = Depends(get_current_user),
+):
+    """Atomically validate the primary industry and regulated activities."""
+    business_id = _uuid_identifier(business_id)
+    payload = body.model_dump(mode="json", exclude_unset=True)
+    if not payload:
+        raise HTTPException(status_code=422, detail="Provide an industry or regulated activities.")
+    activities = payload.pop("regulated_activities", None)
+    if activities is not None and set(activities) - set(ACTIVITY_LABELS):
+        raise HTTPException(status_code=422, detail="The business contains an unknown regulated activity.")
+    try:
+        client = _client(request)
+        business = await _load_business(client, business_id)
+        industry_code = payload.get("industry_code")
+        if industry_code:
+            business_rows = await client.request(
+                "PATCH",
+                "businesses",
+                params={"id": f"eq.{business_id}"},
+                payload={"industry_code": industry_code, "industry": INDUSTRY_LABELS[industry_code]},
+            )
+            business = business_rows[0] if business_rows else business
+        profile = await _load_profile(client, business_id)
+        if activities is not None:
+            profile_payload = {"profile_version": PROFILE_VERSION, "regulated_activities": sorted(set(activities))}
+            if profile:
+                profile_rows = await client.request(
+                    "PATCH",
+                    "business_compliance_profiles",
+                    params={"business_id": f"eq.{business_id}"},
+                    payload=profile_payload,
+                )
+            else:
+                profile_rows = await client.request(
+                    "POST",
+                    "business_compliance_profiles",
+                    payload={"business_id": business_id, "owner_id": user_id, **profile_payload},
+                )
+            profile = profile_rows[0] if profile_rows else profile
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "update_profile") from exc
+    return {"business": business, "compliance_profile": profile}
 
 
 @router.get("/tasks", response_model=list[TaskRead])
@@ -241,14 +502,14 @@ async def workflow_summary(
     business_id: str = Query(..., min_length=1, max_length=120),
     _user_id: str = Depends(get_current_user),
 ):
-    business_id = _safe_identifier(business_id)
+    business_id = _uuid_identifier(business_id)
     try:
         client = _client(request)
-        obligations = await _list_obligation_rows(client)
+        plan = await _build_plan(client, business_id, date.today())
         tasks = await _list_task_rows(client, business_id)
     except SupabaseRestError as exc:
         raise _storage_error(exc, "summary") from exc
-    active_obligations = sum(_eligible_on(obligation, date.today()) for obligation in obligations)
+    active_obligations = len(plan.obligations)
     return WorkflowSummary(
         business_id=business_id,
         obligations_count=active_obligations,

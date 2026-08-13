@@ -354,6 +354,23 @@ function App() {
     });
   }, [activeBusinessId, businesses, handleSelectBusiness, session?.user?.id]);
 
+  const handleComplianceProfileUpdated = useCallback((businessId, profile) => {
+    const patch = {
+      regulatedActivities: profile.regulated_activities ?? null,
+      gstRegistrationStatus: profile.gst_registration_status ?? null,
+      turnoverBand: profile.turnover_band ?? null,
+      employeeCountBand: profile.employee_count_band ?? null,
+      hasPhysicalEstablishment: profile.has_physical_establishment ?? null,
+      operatesMultipleStates: profile.operates_multiple_states ?? null,
+      importsGoodsServices: profile.imports_goods_services ?? null,
+      exportsGoodsServices: profile.exports_goods_services ?? null,
+      complianceAnswers: profile.answers || {},
+      complianceProfileVersion: profile.profile_version || 1,
+    };
+    setBusinesses(current => current.map(business => business.id === businessId ? { ...business, ...patch } : business));
+    setActiveBusinessProfile(current => current?.id === businessId ? { ...current, ...patch } : current);
+  }, []);
+
   // Save current messages to the active conversation
   const persistCurrentConv = useCallback((msgs, convId) => {
     if (!convId || msgs.length === 0) return;
@@ -895,9 +912,9 @@ function App() {
                   apiUrl={apiUrl}
                   businesses={businesses}
                   activeBusinessId={activeBusinessId}
-                  businessJurisdiction={activeBusinessProfile?.state || ''}
                   onSelectBusiness={handleSelectBusiness}
                   onGoToBusinesses={() => setCurrentView('businesses')}
+                  onComplianceProfileUpdated={handleComplianceProfileUpdated}
                 />
               </Suspense>
             </motion.div>

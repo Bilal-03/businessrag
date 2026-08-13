@@ -1,4 +1,5 @@
 import { supabase, getUserData } from './supabase';
+import { INDUSTRY_CODE_BY_LABEL, INDUSTRY_LABEL_BY_CODE } from './complianceCatalog';
 
 /**
  * Normalized persistence for the post-cutover schema.
@@ -68,7 +69,7 @@ function parseJson(value, fallback) {
   }
 }
 
-export function businessRowToProfile(row) {
+export function businessRowToProfile(row, complianceProfile = null) {
   if (!row) return null;
   const state = STATE_NAMES[row.state_code] || row.state_code || '';
   const statusMap = { planning: 'Planning', registered: 'Registered', operating: 'Operating', on_hold: 'On Hold' };
@@ -76,12 +77,23 @@ export function businessRowToProfile(row) {
     id: row.id,
     name: row.legal_name,
     type: row.entity_type,
-    industry: row.industry || 'Other',
+    industryCode: row.industry_code || INDUSTRY_CODE_BY_LABEL[row.industry] || 'other',
+    industry: row.industry || INDUSTRY_LABEL_BY_CODE[row.industry_code] || 'Other',
     state,
     status: statusMap[row.status] || 'Planning',
     description: row.metadata?.description || '',
     createdAt: row.created_at ? new Date(row.created_at).toLocaleDateString('en-IN') : '',
     updatedAt: row.updated_at,
+    regulatedActivities: complianceProfile?.regulated_activities ?? null,
+    gstRegistrationStatus: complianceProfile?.gst_registration_status ?? null,
+    turnoverBand: complianceProfile?.turnover_band ?? null,
+    employeeCountBand: complianceProfile?.employee_count_band ?? null,
+    hasPhysicalEstablishment: complianceProfile?.has_physical_establishment ?? null,
+    operatesMultipleStates: complianceProfile?.operates_multiple_states ?? null,
+    importsGoodsServices: complianceProfile?.imports_goods_services ?? null,
+    exportsGoodsServices: complianceProfile?.exports_goods_services ?? null,
+    complianceAnswers: complianceProfile?.answers || {},
+    complianceProfileVersion: complianceProfile?.profile_version || 1,
   };
 }
 
@@ -94,6 +106,7 @@ export function businessProfileToRow(profile, ownerId) {
     legal_name: String(profile.name || '').trim().slice(0, 200),
     entity_type: String(profile.type || 'Other').trim().slice(0, 80),
     industry: String(profile.industry || '').trim().slice(0, 120) || null,
+    industry_code: profile.industryCode || INDUSTRY_CODE_BY_LABEL[profile.industry] || 'other',
     state_code: (STATE_CODES[state] || state).slice(0, 120) || null,
     status: statusMap[profile.status] || 'planning',
     metadata: { description: String(profile.description || '').trim().slice(0, 2000) },
@@ -101,9 +114,14 @@ export function businessProfileToRow(profile, ownerId) {
 }
 
 export async function listBusinesses() {
-  const { data, error } = await supabase.from('businesses').select('*').order('updated_at', { ascending: false });
+  const [{ data, error }, { data: profiles, error: profileError }] = await Promise.all([
+    supabase.from('businesses').select('*').order('updated_at', { ascending: false }),
+    supabase.from('business_compliance_profiles').select('*'),
+  ]);
   if (error) throwPersistenceError(error, 'Business profiles are unavailable until the core schema is applied.');
-  return (data || []).map(businessRowToProfile);
+  if (profileError) throwPersistenceError(profileError, 'Compliance profiles are unavailable until migration 0006 is applied.');
+  const profileMap = new Map((profiles || []).map(profile => [profile.business_id, profile]));
+  return (data || []).map(row => businessRowToProfile(row, profileMap.get(row.id)));
 }
 
 export async function saveBusiness(profile, ownerId) {
@@ -111,7 +129,27 @@ export async function saveBusiness(profile, ownerId) {
   if (!payload.legal_name) throw new CorePersistenceError('Business name is required.');
   const { data, error } = await supabase.from('businesses').upsert(payload, { onConflict: 'id' }).select('*').single();
   if (error) throwPersistenceError(error, 'The business profile could not be saved.');
-  return businessRowToProfile(data);
+  const compliancePayload = {
+    business_id: data.id,
+    owner_id: ownerId,
+    profile_version: 1,
+    regulated_activities: profile.regulatedActivities ?? null,
+    gst_registration_status: profile.gstRegistrationStatus ?? null,
+    turnover_band: profile.turnoverBand ?? null,
+    employee_count_band: profile.employeeCountBand ?? null,
+    has_physical_establishment: profile.hasPhysicalEstablishment ?? null,
+    operates_multiple_states: profile.operatesMultipleStates ?? null,
+    imports_goods_services: profile.importsGoodsServices ?? null,
+    exports_goods_services: profile.exportsGoodsServices ?? null,
+    answers: profile.complianceAnswers || {},
+  };
+  const { data: complianceData, error: complianceError } = await supabase
+    .from('business_compliance_profiles')
+    .upsert(compliancePayload, { onConflict: 'business_id' })
+    .select('*')
+    .single();
+  if (complianceError) throwPersistenceError(complianceError, 'The business compliance profile could not be saved.');
+  return businessRowToProfile(data, complianceData);
 }
 
 export async function deleteBusiness(id) {

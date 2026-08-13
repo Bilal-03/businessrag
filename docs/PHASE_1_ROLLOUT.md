@@ -5,7 +5,7 @@ Phase 1 code is not production-complete until these external steps are done. The
 ## 1. Supabase staging
 
 1. Create a staging Supabase project or a point-in-time backup of production.
-2. Apply `supabase/migrations/0001_core_workflow_schema.sql`, `0002_publish_gate_and_catalog_checks.sql`, `0003_async_document_jobs.sql` when enabling asynchronous ingestion, `0004_reviewed_obligation_catalog.sql`, and finally `0005_seed_reviewed_obligations.sql`.
+2. Apply `supabase/migrations/0001_core_workflow_schema.sql`, `0002_publish_gate_and_catalog_checks.sql`, `0003_async_document_jobs.sql` when enabling asynchronous ingestion, `0004_reviewed_obligation_catalog.sql`, `0005_seed_reviewed_obligations.sql`, `0006_business_scoped_applicability.sql`, and finally `0007_industry_catalog_coverage.sql`.
 3. Confirm RLS is enabled on every table and test with two separate authenticated users: each user must see only their own businesses, documents, conversations, messages, and tasks.
 4. Run `python scripts/validate_source_catalog.py supabase/seed/obligations.csv` after every catalog change. The validator requires official URLs, citations, review ownership, lifecycle state, and effective dates.
 5. Publish only rows with `review_status=published` and `published=true`; verify the UI returns only current reviewed records and includes central `India` rows plus the selected state scope.
@@ -27,7 +27,7 @@ Set these server-only variables on Render (never `VITE_*`):
 - `DOCUMENT_JOB_LEASE_SECONDS=900`
 - `METRICS_ENABLED=true`
 
-Deploy the backend first. Verify `/health`, `/ready`, and `/metrics`; then verify `POST /api/chat/stream`, `GET /api/documents`, `GET /api/documents/{document_id}/status`, and `GET /api/workflow/obligations` with a real authenticated staging user. Run a separate worker with `cd api && python -m src.ingestion.worker` when the Render deployment uses a dedicated worker service.
+Deploy the backend first. Verify `/health`, `/ready`, and `/metrics`; then verify `POST /api/chat/stream`, `GET /api/documents`, `GET /api/documents/{document_id}/status`, and `GET /api/workflow/plan?business_id=<uuid>` with a real authenticated staging user. Run a separate worker with `cd api && python -m src.ingestion.worker` when the Render deployment uses a dedicated worker service.
 
 ## 3. Frontend configuration
 

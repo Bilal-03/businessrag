@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Building2, Trash2, Edit2, ChevronRight, X, Check, ChevronDown } from 'lucide-react';
 import { captureEvent } from '../lib/observability';
+import { INDUSTRY_CODE_BY_LABEL, INDUSTRY_OPTIONS, activityOptionsFor } from '../lib/complianceCatalog';
 
 const BUSINESS_TYPES = ['Private Limited (Pvt Ltd)', 'Limited Liability Partnership (LLP)', 'One Person Company (OPC)', 'Sole Proprietorship', 'Partnership Firm', 'Public Limited'];
-const INDUSTRIES = ['Food & Beverage', 'Technology/IT', 'Healthcare', 'Education', 'Manufacturing', 'Retail & E-Commerce', 'Consulting/Services', 'Real Estate', 'Finance', 'Other'];
+const INDUSTRIES = INDUSTRY_OPTIONS.map(option => option.label);
 const STATUS_OPTIONS = ['Planning', 'Registered', 'Operating', 'On Hold'];
 const STATE_OPTIONS = ['Andhra Pradesh', 'Delhi', 'Gujarat', 'Karnataka', 'Kerala', 'Maharashtra', 'Tamil Nadu', 'Telangana', 'Uttar Pradesh', 'West Bengal', 'Other / Multi-state'];
 
@@ -136,7 +137,16 @@ const QUICK_ACTIONS = [
   { label: 'Licenses', query: 'What licenses do I need for my business?' },
 ];
 
-const defaultForm = { name: '', type: BUSINESS_TYPES[0], industry: INDUSTRIES[0], state: '', status: STATUS_OPTIONS[0], description: '' };
+const defaultForm = {
+  name: '',
+  type: BUSINESS_TYPES[0],
+  industry: INDUSTRIES[0],
+  industryCode: INDUSTRY_OPTIONS[0].code,
+  regulatedActivities: [],
+  state: '',
+  status: STATUS_OPTIONS[0],
+  description: '',
+};
 
 const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, activeBusinessId, onSelectBusiness }) => {
   const [showForm, setShowForm] = useState(false);
@@ -171,7 +181,16 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
   };
 
   const handleEdit = (b) => {
-    setForm({ name: b.name, type: b.type, industry: b.industry, state: b.state || '', status: b.status, description: b.description || '' });
+    setForm({
+      name: b.name,
+      type: b.type,
+      industry: b.industry,
+      industryCode: b.industryCode || INDUSTRY_CODE_BY_LABEL[b.industry] || 'other',
+      regulatedActivities: b.regulatedActivities || [],
+      state: b.state || '',
+      status: b.status,
+      description: b.description || '',
+    });
     setEditingId(b.id);
     setShowForm(true);
   };
@@ -287,8 +306,35 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
                 </div>
                 <div className="form-group">
                   <label htmlFor="business-industry">Industry</label>
-                  <CustomSelect id="business-industry" ariaLabel="Industry" value={form.industry} onChange={v => setForm({ ...form, industry: v })} options={INDUSTRIES} />
+                  <CustomSelect
+                    id="business-industry"
+                    ariaLabel="Industry"
+                    value={form.industry}
+                    onChange={v => setForm({ ...form, industry: v, industryCode: INDUSTRY_CODE_BY_LABEL[v] || 'other' })}
+                    options={INDUSTRIES}
+                  />
                 </div>
+                <fieldset className="form-group full activity-fieldset">
+                  <legend>Regulated activities</legend>
+                  <p>Choose every activity this business actually performs. Industry alone does not prove that a requirement applies.</p>
+                  <div className="activity-option-grid">
+                    {activityOptionsFor(form.industryCode, form.regulatedActivities).map(option => (
+                      <label className="activity-option" key={option.value}>
+                        <input
+                          type="checkbox"
+                          checked={form.regulatedActivities.includes(option.value)}
+                          onChange={event => setForm(current => ({
+                            ...current,
+                            regulatedActivities: event.target.checked
+                              ? [...new Set([...current.regulatedActivities, option.value])]
+                              : current.regulatedActivities.filter(value => value !== option.value),
+                          }))}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
                 <div className="form-group">
                   <label htmlFor="business-state">Primary state / jurisdiction</label>
                   <CustomSelect id="business-state" ariaLabel="Primary state or jurisdiction" value={form.state} onChange={v => setForm({ ...form, state: v })} options={STATE_OPTIONS} placeholder="Choose a state" />

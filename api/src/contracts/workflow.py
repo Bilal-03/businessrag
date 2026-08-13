@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -7,6 +7,18 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 Identifier = str
 TaskStatus = Literal["todo", "in_progress", "blocked", "done", "dismissed"]
 ReviewStatus = Literal["draft", "reviewed", "published"]
+IndustryCode = Literal[
+    "food_beverage",
+    "technology_it",
+    "healthcare",
+    "education",
+    "manufacturing",
+    "retail_ecommerce",
+    "consulting_services",
+    "real_estate",
+    "finance",
+    "other",
+]
 
 
 def _validate_identifier(value: str | None) -> str | None:
@@ -33,7 +45,64 @@ class ObligationRead(BaseModel):
     source_citation: str | None = Field(default=None, max_length=2000)
     review_owner: str | None = Field(default=None, max_length=160)
     reviewed_at: datetime | None = None
+    applicability_version: int | None = Field(default=None, ge=1)
+    applicability_rule: dict[str, Any] | None = None
     metadata: dict = Field(default_factory=dict)
+
+
+class ComplianceQuestionOption(BaseModel):
+    value: str | bool
+    label: str
+
+
+class ComplianceQuestion(BaseModel):
+    key: str
+    label: str
+    description: str
+    answer_type: Literal["single_select", "multi_select", "boolean"]
+    options: list[ComplianceQuestionOption]
+    current_value: Any = None
+
+
+class CoverageDetail(BaseModel):
+    status: Literal["available", "partial", "in_review", "unsupported"]
+    message: str
+    jurisdiction: str | None = None
+
+
+class ComplianceCoverage(BaseModel):
+    central: CoverageDetail
+    state: CoverageDetail
+
+
+class CompliancePlanResponse(BaseModel):
+    business_id: Identifier
+    obligations: list[ObligationRead]
+    questions: list[ComplianceQuestion]
+    coverage: ComplianceCoverage
+    profile_version: int = Field(ge=1)
+
+
+class ComplianceProfileUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    profile_version: Literal[1] | None = None
+    regulated_activities: list[str] | None = Field(default=None, max_length=32)
+    gst_registration_status: Literal["registered", "not_registered", "not_applicable"] | None = None
+    turnover_band: Literal["under_20_lakh", "20_lakh_to_1_crore", "1_to_5_crore", "over_5_crore"] | None = None
+    employee_count_band: Literal["0", "1_to_9", "10_to_19", "20_to_49", "50_to_99", "100_plus"] | None = None
+    has_physical_establishment: bool | None = None
+    operates_multiple_states: bool | None = None
+    imports_goods_services: bool | None = None
+    exports_goods_services: bool | None = None
+    answers: dict[str, str | bool | int | float | list[str] | None] | None = None
+
+
+class BusinessApplicabilityUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    industry_code: IndustryCode | None = None
+    regulated_activities: list[str] | None = Field(default=None, max_length=32)
 
 
 class TaskCreate(BaseModel):

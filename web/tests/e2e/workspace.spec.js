@@ -13,6 +13,28 @@ test('shows only current reviewed source obligations with citations', async ({ p
   await expect(page.getByText('Expired source must stay hidden')).not.toBeVisible();
 });
 
+test('does not leak food obligations when switching to a Technology/IT business', async ({ page }) => {
+  await openAuthenticatedApp(page);
+  await page.getByRole('button', { name: 'Compliance Plan' }).click();
+  const businessSelect = page.getByLabel('Select business workspace');
+  await businessSelect.selectOption(BUSINESSES[0].id);
+  await expect(page.getByText('Food business registration or licence (FSSAI)')).toBeVisible();
+  await businessSelect.selectOption(BUSINESSES[1].id);
+  await expect(page.getByText('Food business registration or licence (FSSAI)')).not.toBeVisible();
+  await expect(page.getByText('Delhi Shops and Establishments employment requirements')).toBeVisible();
+});
+
+test('keeps unknown GST hidden until the questionnaire is answered', async ({ page }) => {
+  await openAuthenticatedApp(page);
+  await page.getByRole('button', { name: 'Compliance Plan' }).click();
+  await page.getByLabel('Select business workspace').selectOption(BUSINESSES[1].id);
+  await expect(page.getByRole('heading', { name: 'Needs your input' })).toBeVisible();
+  await expect(page.getByText('GSTR-3B return (where applicable)')).not.toBeVisible();
+  await page.getByLabel('Is this business registered for GST?').selectOption('registered');
+  await expect(page.getByText('GSTR-3B return (where applicable)')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Needs your input' })).not.toBeVisible();
+});
+
 test('switches business context and manages a compliance task safely', async ({ page }) => {
   await openAuthenticatedApp(page);
   await page.getByRole('button', { name: 'Compliance Plan' }).click();
