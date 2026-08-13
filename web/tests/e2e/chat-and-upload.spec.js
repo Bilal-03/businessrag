@@ -8,7 +8,7 @@ test('streams a source-aware answer with citation metadata', async ({ page }) =>
   await page.getByRole('button', { name: 'Send message' }).click();
 
   await expect(page.getByText('Grounded answer from your document.')).toBeVisible();
-  await expect(page.getByText('Sources from your documents')).toBeVisible();
+  await expect(page.getByText(/Sources from your documents/)).toBeVisible();
   await expect(page.getByText('employee-handbook.pdf')).toBeVisible();
   await expect(page.getByText('page 2')).toBeVisible();
 });

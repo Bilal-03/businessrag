@@ -8,6 +8,15 @@ const BUSINESS_TYPES = ['Private Limited (Pvt Ltd)', 'Limited Liability Partners
 const INDUSTRIES = INDUSTRY_OPTIONS.map(option => option.label);
 const STATUS_OPTIONS = ['Planning', 'Registered', 'Operating', 'On Hold'];
 const STATE_OPTIONS = ['Andhra Pradesh', 'Delhi', 'Gujarat', 'Karnataka', 'Kerala', 'Maharashtra', 'Tamil Nadu', 'Telangana', 'Uttar Pradesh', 'West Bengal', 'Other / Multi-state'];
+const GST_OPTIONS = ['Unknown', 'Registered', 'Not registered', 'Not applicable'];
+const GST_VALUE = { Unknown: null, Registered: 'registered', 'Not registered': 'not_registered', 'Not applicable': 'not_applicable' };
+const GST_LABEL = Object.fromEntries(Object.entries(GST_VALUE).map(([label, value]) => [value, label]));
+const WORKFORCE_OPTIONS = ['Unknown', '0', '1–9', '10–19', '20–49', '50–99', '100+'];
+const WORKFORCE_VALUE = { Unknown: null, '0': '0', '1–9': '1_to_9', '10–19': '10_to_19', '20–49': '20_to_49', '50–99': '50_to_99', '100+': '100_plus' };
+const WORKFORCE_LABEL = Object.fromEntries(Object.entries(WORKFORCE_VALUE).map(([label, value]) => [value, label]));
+const TURNOVER_OPTIONS = ['Unknown', 'Under ₹20 lakh', '₹20 lakh–₹1 crore', '₹1–₹5 crore', 'Over ₹5 crore'];
+const TURNOVER_VALUE = { Unknown: null, 'Under ₹20 lakh': 'under_20_lakh', '₹20 lakh–₹1 crore': '20_lakh_to_1_crore', '₹1–₹5 crore': '1_to_5_crore', 'Over ₹5 crore': 'over_5_crore' };
+const TURNOVER_LABEL = Object.fromEntries(Object.entries(TURNOVER_VALUE).map(([label, value]) => [value, label]));
 
 /* ── Custom styled dropdown ── */
 const CustomSelect = ({ id, value, onChange, options, placeholder, ariaLabel }) => {
@@ -143,6 +152,12 @@ const defaultForm = {
   industry: INDUSTRIES[0],
   industryCode: INDUSTRY_OPTIONS[0].code,
   regulatedActivities: [],
+  gstRegistrationStatus: null,
+  employeeCountBand: null,
+  turnoverBand: null,
+  hasPhysicalEstablishment: null,
+  usesContractors: null,
+  handlesPersonalData: null,
   state: '',
   status: STATUS_OPTIONS[0],
   description: '',
@@ -187,6 +202,12 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
       industry: b.industry,
       industryCode: b.industryCode || INDUSTRY_CODE_BY_LABEL[b.industry] || 'other',
       regulatedActivities: b.regulatedActivities || [],
+      gstRegistrationStatus: b.gstRegistrationStatus ?? null,
+      employeeCountBand: b.employeeCountBand ?? null,
+      turnoverBand: b.turnoverBand ?? null,
+      hasPhysicalEstablishment: b.hasPhysicalEstablishment ?? null,
+      usesContractors: b.usesContractors ?? null,
+      handlesPersonalData: b.handlesPersonalData ?? null,
       state: b.state || '',
       status: b.status,
       description: b.description || '',
@@ -343,6 +364,32 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
                   <label htmlFor="business-status">Status</label>
                   <CustomSelect id="business-status" ariaLabel="Business status" value={form.status} onChange={v => setForm({ ...form, status: v })} options={STATUS_OPTIONS} />
                 </div>
+                <div className="form-group">
+                  <label htmlFor="business-gst-status">GST registration</label>
+                  <CustomSelect id="business-gst-status" ariaLabel="GST registration status" value={GST_LABEL[form.gstRegistrationStatus] || 'Unknown'} onChange={v => setForm({ ...form, gstRegistrationStatus: GST_VALUE[v] })} options={GST_OPTIONS} />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="business-turnover">Annual turnover band</label>
+                  <CustomSelect id="business-turnover" ariaLabel="Annual turnover band" value={TURNOVER_LABEL[form.turnoverBand] || 'Unknown'} onChange={v => setForm({ ...form, turnoverBand: TURNOVER_VALUE[v] })} options={TURNOVER_OPTIONS} />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="business-workforce">Employee-count band</label>
+                  <CustomSelect id="business-workforce" ariaLabel="Employee count band" value={WORKFORCE_LABEL[form.employeeCountBand] || 'Unknown'} onChange={v => setForm({ ...form, employeeCountBand: WORKFORCE_VALUE[v] })} options={WORKFORCE_OPTIONS} />
+                </div>
+                <fieldset className="form-group profile-facts">
+                  <legend>Confirmed operating facts</legend>
+                  {[
+                    ['hasPhysicalEstablishment', 'Uses a physical establishment'],
+                    ['usesContractors', 'Engages contractors or contract workers'],
+                    ['handlesPersonalData', 'Processes personal data'],
+                  ].map(([key, label]) => (
+                    <label key={key} className="activity-option">
+                      <input type="checkbox" checked={form[key] === true} onChange={event => setForm(current => ({ ...current, [key]: event.target.checked ? true : null }))} />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                  <p>Unchecked means unknown, not “no”; confirm negative answers in Compliance Plan when a reviewed rule asks.</p>
+                </fieldset>
                 <div className="form-group full">
                   <label htmlFor="business-description">Description (optional)</label>
                   <textarea id="business-description" className="form-input" rows={3} placeholder="Brief description of your business..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />

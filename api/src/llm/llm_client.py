@@ -92,6 +92,26 @@ def agent_generate_with_sources(
         raise
 
 
+def generate_from_retrieved_sources(
+    query: str,
+    agent_type: str,
+    sources: Sequence[RetrievedSource],
+    history: Optional[Sequence[ConversationMessage]] = None,
+) -> str:
+    """Generate from an already scoped retrieval set without querying again."""
+    final_prompt = build_agent_prompt(agent_type, build_context_text(list(sources)))
+    try:
+        res = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=_build_generation_messages(query, final_prompt, history),
+            temperature=0.2,
+        )
+        return res.choices[0].message.content
+    except Exception as exc:
+        logger.error("Generation from scoped sources failed: %s", str(exc))
+        raise
+
+
 def stream_agent_with_sources(
     query: str,
     agent_type: str,

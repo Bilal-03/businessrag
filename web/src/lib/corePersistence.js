@@ -86,14 +86,21 @@ export function businessRowToProfile(row, complianceProfile = null) {
     updatedAt: row.updated_at,
     regulatedActivities: complianceProfile?.regulated_activities ?? null,
     gstRegistrationStatus: complianceProfile?.gst_registration_status ?? null,
+    gstScheme: complianceProfile?.gst_scheme ?? null,
+    incorporationStage: complianceProfile?.incorporation_stage ?? null,
     turnoverBand: complianceProfile?.turnover_band ?? null,
     employeeCountBand: complianceProfile?.employee_count_band ?? null,
     hasPhysicalEstablishment: complianceProfile?.has_physical_establishment ?? null,
+    premisesStatus: complianceProfile?.premises_status ?? null,
+    usesContractors: complianceProfile?.uses_contractors ?? null,
+    handlesPersonalData: complianceProfile?.handles_personal_data ?? null,
+    operatingStateCodes: complianceProfile?.operating_state_codes ?? null,
     operatesMultipleStates: complianceProfile?.operates_multiple_states ?? null,
     importsGoodsServices: complianceProfile?.imports_goods_services ?? null,
     exportsGoodsServices: complianceProfile?.exports_goods_services ?? null,
     complianceAnswers: complianceProfile?.answers || {},
-    complianceProfileVersion: complianceProfile?.profile_version || 1,
+    complianceDateAnswers: complianceProfile?.date_answers || {},
+    complianceProfileVersion: complianceProfile?.profile_version || 2,
   };
 }
 
@@ -132,23 +139,46 @@ export async function saveBusiness(profile, ownerId) {
   const compliancePayload = {
     business_id: data.id,
     owner_id: ownerId,
-    profile_version: 1,
+    profile_version: 2,
     regulated_activities: profile.regulatedActivities ?? null,
     gst_registration_status: profile.gstRegistrationStatus ?? null,
+    gst_scheme: profile.gstScheme ?? null,
+    incorporation_stage: profile.incorporationStage ?? null,
     turnover_band: profile.turnoverBand ?? null,
     employee_count_band: profile.employeeCountBand ?? null,
     has_physical_establishment: profile.hasPhysicalEstablishment ?? null,
+    premises_status: profile.premisesStatus ?? null,
+    uses_contractors: profile.usesContractors ?? null,
+    handles_personal_data: profile.handlesPersonalData ?? null,
+    operating_state_codes: profile.operatingStateCodes ?? null,
     operates_multiple_states: profile.operatesMultipleStates ?? null,
     imports_goods_services: profile.importsGoodsServices ?? null,
     exports_goods_services: profile.exportsGoodsServices ?? null,
     answers: profile.complianceAnswers || {},
+    date_answers: profile.complianceDateAnswers || {},
   };
   const { data: complianceData, error: complianceError } = await supabase
     .from('business_compliance_profiles')
     .upsert(compliancePayload, { onConflict: 'business_id' })
     .select('*')
     .single();
-  if (complianceError) throwPersistenceError(complianceError, 'The business compliance profile could not be saved.');
+  if (complianceError) {
+    const legacyPayload = {
+      business_id: data.id, owner_id: ownerId, profile_version: 1,
+      regulated_activities: profile.regulatedActivities ?? null,
+      gst_registration_status: profile.gstRegistrationStatus ?? null,
+      turnover_band: profile.turnoverBand ?? null,
+      employee_count_band: profile.employeeCountBand ?? null,
+      has_physical_establishment: profile.hasPhysicalEstablishment ?? null,
+      operates_multiple_states: profile.operatesMultipleStates ?? null,
+      imports_goods_services: profile.importsGoodsServices ?? null,
+      exports_goods_services: profile.exportsGoodsServices ?? null,
+      answers: profile.complianceAnswers || {},
+    };
+    const { data: legacyData, error: legacyError } = await supabase.from('business_compliance_profiles').upsert(legacyPayload, { onConflict: 'business_id' }).select('*').single();
+    if (legacyError) throwPersistenceError(legacyError, 'The business compliance profile could not be saved.');
+    return businessRowToProfile(data, legacyData);
+  }
   return businessRowToProfile(data, complianceData);
 }
 
@@ -168,6 +198,19 @@ function messageToRow(message, conversationId, ownerId, index) {
     content: String(message.content || '').slice(0, 30000),
     agent_type: message.agentType || null,
     grounding: ['document', 'mixed', 'general', 'insufficient'].includes(message.grounding) ? message.grounding : 'general',
+    schema_version: message.schemaVersion || 1,
+    answer_mode: message.answerMode || null,
+    evidence_status: message.evidenceStatus || null,
+    trust_metadata: {
+      language: message.language || 'en',
+      assumptions: message.assumptions || [],
+      missing_inputs: message.missingInputs || [],
+      coverage: message.coverage || {},
+      effective_date: message.effectiveDate || null,
+      profile_version: message.profileVersion || null,
+      escalation: message.escalation || null,
+      official_citations: (message.citations || []).filter(citation => citation.source_kind === 'official'),
+    },
     client_message_id: message.clientMessageId || `${conversationId}:${index}:${message.role}`,
   };
 }
@@ -187,7 +230,17 @@ function messageRowToUi(row, sourceMap) {
     content: row.content,
     agentType: row.agent_type || 'General Agent',
     grounding: row.grounding || 'general',
-    citations,
+    schemaVersion: row.schema_version || 1,
+    answerMode: row.answer_mode || null,
+    evidenceStatus: row.evidence_status || null,
+    language: row.trust_metadata?.language || 'en',
+    assumptions: row.trust_metadata?.assumptions || [],
+    missingInputs: row.trust_metadata?.missing_inputs || [],
+    coverage: row.trust_metadata?.coverage || {},
+    effectiveDate: row.trust_metadata?.effective_date || null,
+    profileVersion: row.trust_metadata?.profile_version || null,
+    escalation: row.trust_metadata?.escalation || null,
+    citations: [...(row.trust_metadata?.official_citations || []), ...citations],
   };
 }
 
@@ -241,7 +294,22 @@ export async function saveConversation(conversation, ownerId) {
   const { error: clearMessageError } = await supabase.from('messages').delete().eq('conversation_id', conversationId);
   if (clearMessageError) throwPersistenceError(clearMessageError, 'The conversation messages could not be replaced.');
   if (rows.length) {
-    const { data: insertedMessages, error: messageError } = await supabase.from('messages').insert(rows).select('*');
+    let { data: insertedMessages, error: messageError } = await supabase.from('messages').insert(rows).select('*');
+    if (messageError) {
+      const legacyRows = rows.map(row => ({
+        id: row.id,
+        owner_id: row.owner_id,
+        conversation_id: row.conversation_id,
+        role: row.role,
+        content: row.content,
+        agent_type: row.agent_type,
+        grounding: row.grounding,
+        client_message_id: row.client_message_id,
+      }));
+      const fallback = await supabase.from('messages').insert(legacyRows).select('*');
+      insertedMessages = fallback.data;
+      messageError = fallback.error;
+    }
     if (messageError) throwPersistenceError(messageError, 'The conversation messages could not be saved.');
     const sourceRows = [];
     (conversation.messages || []).forEach((message, index) => {

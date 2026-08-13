@@ -4,8 +4,8 @@ import jwt
 from fastapi.testclient import TestClient
 from config import get_settings
 from main import app
+from src.contracts.chat import ChatResponse
 from src.routes import chat as chat_routes
-from src.retrieval.retriever import RetrievedSource
 from src.utils.rate_limit import InMemoryRateLimiter
 
 client = TestClient(app)
@@ -135,23 +135,18 @@ def test_rate_limiter_returns_retry_after_when_limit_is_reached():
     assert retry_after >= 1
 
 
-def test_chat_stream_emits_metadata_tokens_and_done_event(monkeypatch):
-    monkeypatch.setattr(chat_routes, "route_query", lambda query: "General Agent")
-    monkeypatch.setattr(chat_routes, "retrieve_sources", lambda *args, **kwargs: [
-        RetrievedSource(
-            content="The source says to verify the filing date against the official notice.",
-            document_id="doc-1",
-            file_name="notice.pdf",
-            page_number=2,
-            score=0.9,
+def test_chat_stream_emits_progress_verified_result_and_done_event(monkeypatch):
+    async def fake_build(*args, **kwargs):
+        return ChatResponse(
+            answer="Grounded answer from reviewed evidence.",
+            answer_mode="reviewed_compliance",
+            evidence_status="verified",
+            effective_date="2026-08-13",
+            agent_type="Legal Agent",
+            grounding="document",
         )
-    ])
 
-    def fake_stream(*args, **kwargs):
-        yield "Grounded"
-        yield " answer"
-
-    monkeypatch.setattr(chat_routes, "stream_agent_with_sources", fake_stream)
+    monkeypatch.setattr(chat_routes, "build_chat_response", fake_build)
     response = client.post(
         "/api/chat/stream",
         headers=auth_headers(),
@@ -159,7 +154,8 @@ def test_chat_stream_emits_metadata_tokens_and_done_event(monkeypatch):
     )
 
     assert response.status_code == 200
-    assert "event: meta" in response.text
-    assert '"document_id": "doc-1"' in response.text
-    assert '"text": "Grounded"' in response.text
+    assert "event: status" in response.text
+    assert "event: result" in response.text
+    assert '"evidence_status": "verified"' in response.text
+    assert "Grounded answer from reviewed evidence" in response.text
     assert "event: done" in response.text

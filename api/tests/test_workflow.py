@@ -54,8 +54,13 @@ def obligation(
         "source_citation": "Official notice, section 1.",
         "review_owner": "domain-review",
         "reviewed_at": "2026-01-01T00:00:00Z",
-        "applicability_version": 1,
+        "applicability_version": 2,
         "applicability_rule": rule or {"field": "industry_code", "op": "eq", "value": "other"},
+        "revalidate_by": "2026-11-01",
+        "kill_switch": False,
+        "due_date_rule": None,
+        "evidence_requirements": [],
+        "risk_level": "medium",
         "metadata": {},
     }
 
@@ -64,7 +69,7 @@ def plan_store(*, industry_code="technology_it", state_code="DL", profile=None, 
     profile_row = {
         "business_id": BUSINESS_ID,
         "owner_id": "test-user-id",
-        "profile_version": 1,
+        "profile_version": 2,
         "regulated_activities": [],
         "gst_registration_status": "not_registered",
         "turnover_band": None,
@@ -111,6 +116,8 @@ def plan_store(*, industry_code="technology_it", state_code="DL", profile=None, 
             return obligations
         if table == "compliance_catalog_coverage":
             return [{"industry_code": industry_code, "jurisdiction": "India", "status": "partial", "notes": "Reviewed central coverage is partial."}]
+        if table == "compliance_coverage_cells":
+            return []
         raise AssertionError(f"unexpected table: {table}")
 
     return fake_request

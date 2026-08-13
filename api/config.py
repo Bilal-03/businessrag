@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     metrics_enabled: bool = True
     async_document_ingestion_enabled: bool = False
     document_storage_bucket: str = "documents"
+    source_snapshot_storage_bucket: str = "compliance-sources"
     document_worker_poll_seconds: float = 2.0
     document_job_max_attempts: int = 3
     document_job_lease_seconds: int = 900

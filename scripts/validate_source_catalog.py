@@ -91,8 +91,8 @@ def main(path: str) -> int:
             elif (values["published"].lower() == "true") != (review_status == "published"):
                 errors.append(f"line {line}: published must be true exactly when review_status is published")
 
-            if values["applicability_version"] != "1":
-                errors.append(f"line {line}: applicability_version must be 1")
+            if values["applicability_version"] not in {"1", "2"}:
+                errors.append(f"line {line}: applicability_version must be 1 or 2")
             try:
                 rule = json.loads(values["applicability_rule"])
                 validate_rule(rule)

@@ -49,7 +49,7 @@ export const COMPLIANCE_PROFILES = [
   {
     business_id: BUSINESSES[0].id,
     owner_id: TEST_USER.id,
-    profile_version: 1,
+    profile_version: 2,
     regulated_activities: ['food_manufacturing'],
     gst_registration_status: 'not_registered',
     has_physical_establishment: true,
@@ -58,7 +58,7 @@ export const COMPLIANCE_PROFILES = [
   {
     business_id: BUSINESSES[1].id,
     owner_id: TEST_USER.id,
-    profile_version: 1,
+    profile_version: 2,
     regulated_activities: [],
     gst_registration_status: null,
     has_physical_establishment: true,
@@ -418,7 +418,7 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
             message: 'No complete reviewed state catalog is available; no state requirement is guessed.',
           },
         },
-        profile_version: 1,
+        profile_version: 2,
       });
       return;
     }
@@ -432,6 +432,14 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
     if (path === '/api/workflow/tasks' && request.method() === 'GET') {
       const businessId = url.searchParams.get('business_id');
       await fulfillJson(route, state.tasks.filter(task => task.business_id === businessId));
+      return;
+    }
+    if (path === '/api/workflow/reminders' && request.method() === 'GET') {
+      await fulfillJson(route, []);
+      return;
+    }
+    if (path === '/api/review/me' && request.method() === 'GET') {
+      await fulfillJson(route, { is_reviewer: false, roles: [] });
       return;
     }
     if (path === '/api/workflow/tasks' && request.method() === 'POST') {

@@ -20,6 +20,7 @@ import './App.css';
 const MyBusinesses = lazy(() => import('./components/MyBusinesses.jsx'));
 const UploadDocuments = lazy(() => import('./components/UploadDocuments.jsx'));
 const WorkflowDashboard = lazy(() => import('./components/WorkflowDashboard.jsx'));
+const ReviewerConsole = lazy(() => import('./components/ReviewerConsole.jsx'));
 const Settings = lazy(() => import('./components/Settings.jsx'));
 const Auth = lazy(() => import('./components/Auth.jsx'));
 const MarkdownMessage = lazy(() => import('./components/MarkdownMessage.jsx'));
@@ -78,8 +79,9 @@ async function readChatStream(response, onUpdate) {
     if (!data) return;
     let payload = {};
     try { payload = JSON.parse(data); } catch { return; }
-    if (eventName === 'meta') {
+    if (eventName === 'meta' || eventName === 'result') {
       Object.assign(result, payload);
+      if (eventName === 'result') onUpdate({ ...result });
     } else if (eventName === 'token') {
       result.answer += payload.text || '';
       onUpdate({ ...result });
@@ -123,6 +125,7 @@ function App() {
   const [currentView, setCurrentView]     = useState('home');
   const [messages, setMessages]           = useState([]);
   const [input, setInput]                 = useState('');
+  const [answerLanguage, setAnswerLanguage] = useState('en');
   const [isTyping, setIsTyping]           = useState(false);
   const [isUploading, setIsUploading]     = useState(false);
   const [conversations, setConversations] = useState([]);
@@ -140,6 +143,7 @@ function App() {
   const [persistenceStatus, setPersistenceStatus] = useState('loading');
   const [persistenceMessage, setPersistenceMessage] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [reviewerRoles, setReviewerRoles] = useState([]);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const currentConvIdRef = useRef(null);
@@ -275,6 +279,16 @@ function App() {
   }, [session?.user?.id]);
 
   useEffect(() => {
+    if (!session?.access_token) { setReviewerRoles([]); return; }
+    let cancelled = false;
+    fetch(`${apiUrl}/api/review/me`, { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then(readApiResponse)
+      .then(data => { if (!cancelled) setReviewerRoles(Array.isArray(data.roles) ? data.roles : []); })
+      .catch(() => { if (!cancelled) setReviewerRoles([]); });
+    return () => { cancelled = true; };
+  }, [apiUrl, session?.access_token]);
+
+  useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) {
       setActiveBusinessId(null);
@@ -358,14 +372,21 @@ function App() {
     const patch = {
       regulatedActivities: profile.regulated_activities ?? null,
       gstRegistrationStatus: profile.gst_registration_status ?? null,
+      gstScheme: profile.gst_scheme ?? null,
+      incorporationStage: profile.incorporation_stage ?? null,
       turnoverBand: profile.turnover_band ?? null,
       employeeCountBand: profile.employee_count_band ?? null,
       hasPhysicalEstablishment: profile.has_physical_establishment ?? null,
+      premisesStatus: profile.premises_status ?? null,
+      usesContractors: profile.uses_contractors ?? null,
+      handlesPersonalData: profile.handles_personal_data ?? null,
+      operatingStateCodes: profile.operating_state_codes ?? null,
       operatesMultipleStates: profile.operates_multiple_states ?? null,
       importsGoodsServices: profile.imports_goods_services ?? null,
       exportsGoodsServices: profile.exports_goods_services ?? null,
       complianceAnswers: profile.answers || {},
-      complianceProfileVersion: profile.profile_version || 1,
+      complianceDateAnswers: profile.date_answers || {},
+      complianceProfileVersion: profile.profile_version || 2,
     };
     setBusinesses(current => current.map(business => business.id === businessId ? { ...business, ...patch } : business));
     setActiveBusinessProfile(current => current?.id === businessId ? { ...current, ...patch } : current);
@@ -443,6 +464,7 @@ function App() {
         query,
         conversation_id: currentConvIdRef.current,
         business_id: activeBusinessId,
+        language: answerLanguage,
         history,
       });
       let response = await fetch(`${apiUrl}/api/chat/stream`, {
@@ -476,6 +498,16 @@ function App() {
             citations: streamed.citations || [],
             grounding: streamed.grounding || 'general',
             agentType: streamed.agent_type || 'General Agent',
+            schemaVersion: streamed.schema_version || 1,
+            answerMode: streamed.answer_mode,
+            evidenceStatus: streamed.evidence_status,
+            language: streamed.language || answerLanguage,
+            assumptions: streamed.assumptions || [],
+            missingInputs: streamed.missing_inputs || [],
+            coverage: streamed.coverage || {},
+            effectiveDate: streamed.effective_date,
+            profileVersion: streamed.profile_version,
+            escalation: streamed.escalation,
           }]);
         });
       } else {
@@ -495,6 +527,16 @@ function App() {
         citations: Array.isArray(data.citations) ? data.citations : [],
         grounding: data.grounding || 'general',
         agentType: data.agent_type || 'General Agent',
+        schemaVersion: data.schema_version || 1,
+        answerMode: data.answer_mode,
+        evidenceStatus: data.evidence_status,
+        language: data.language || answerLanguage,
+        assumptions: data.assumptions || [],
+        missingInputs: data.missing_inputs || [],
+        coverage: data.coverage || {},
+        effectiveDate: data.effective_date,
+        profileVersion: data.profile_version,
+        escalation: data.escalation,
       };
       const finalMessages = [...updatedMessages, aiMsg];
       setMessages(finalMessages);
@@ -674,6 +716,7 @@ function App() {
         onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
         session={session}
         onSignOut={handleSignOut}
+        isReviewer={reviewerRoles.length > 0}
       />
 
       <main id="main-content" className="main-content" tabIndex="-1">
@@ -772,20 +815,39 @@ function App() {
                               <Suspense fallback={<div className="markdown-fallback">{msg.content}</div>}>
                                 <MarkdownMessage content={msg.content} />
                               </Suspense>
+                              {msg.evidenceStatus && (
+                                <div className={`evidence-status status-${msg.evidenceStatus.replaceAll('_', '-')}`} role="status">
+                                  {msg.evidenceStatus === 'verified' ? 'Verified from reviewed official evidence' : msg.evidenceStatus === 'cannot_verify' ? 'Cannot verify from the reviewed catalog' : msg.evidenceStatus.replaceAll('_', ' ')}
+                                  {msg.effectiveDate && <span> · as of {msg.effectiveDate}</span>}
+                                </div>
+                              )}
+                              {msg.missingInputs?.length > 0 && (
+                                <div className="grounding-warning" role="status"><strong>Missing inputs:</strong> {msg.missingInputs.join(', ')}</div>
+                              )}
                               {msg.citations?.length > 0 && (
-                                <div className="citation-list" aria-label="Document sources">
-                                  <div className="citation-heading">Sources from your documents</div>
+                                <div className="citation-list" aria-label="Answer evidence">
+                                  <div className="citation-heading">{msg.citations.some(citation => citation.source_kind === 'official') ? 'Reviewed official evidence' : 'Sources from your documents (private evidence)'}</div>
                                   <ol>
                                     {msg.citations.map((citation, citationIndex) => (
-                                      <li key={`${citation.document_id}-${citation.page_number || citationIndex}`}>
+                                      <li key={`${citation.evidence_id || citation.document_id || citationIndex}-${citation.page_number || citationIndex}`}>
                                         <div className="citation-meta">
-                                          <span>{citation.file_name || 'Uploaded document'}</span>
+                                          {citation.url ? <a href={citation.url} target="_blank" rel="noreferrer">{citation.title || citation.authority || 'Official source'}</a> : <span>{citation.file_name || 'Uploaded document'}</span>}
+                                          {citation.authority && citation.title !== citation.authority && <span> · {citation.authority}</span>}
+                                          {citation.anchor && <span> · {citation.anchor}</span>}
                                           {citation.page_number && <span> · page {citation.page_number}</span>}
                                         </div>
                                         <div className="citation-snippet">“{citation.snippet}”</div>
+                                        {citation.last_checked_at && <div className="citation-freshness">Last checked {new Date(citation.last_checked_at).toLocaleDateString('en-IN')} · tier {citation.source_tier}</div>}
                                       </li>
                                     ))}
                                   </ol>
+                                </div>
+                              )}
+                              {msg.escalation && (
+                                <div className="escalation-brief">
+                                  <strong>Professional brief: {msg.escalation.recommended_role}</strong>
+                                  <p>{msg.escalation.reason}</p>
+                                  {msg.escalation.briefing?.length > 0 && <ul>{msg.escalation.briefing.map(item => <li key={item}>{item}</li>)}</ul>}
                                 </div>
                               )}
                               {msg.grounding === 'insufficient' && (
@@ -798,9 +860,7 @@ function App() {
                                   Try again
                                 </button>
                               )}
-                              <p className="answer-disclaimer">
-                                BizGuide AI can make mistakes. Verify important legal and tax information with a professional.
-                              </p>
+                              <p className="answer-disclaimer">{msg.evidenceStatus === 'verified' ? 'The answer is limited to the cited evidence, effective date, confirmed profile facts, and disclosed coverage.' : 'This answer is not a verified legal or tax conclusion. Coverage limits and missing evidence are shown above.'}</p>
                             </>
                           ) : (
                             <span>{msg.content}</span>
@@ -833,6 +893,10 @@ function App() {
 
               {/* Input Area */}
               <div className="input-container">
+                <div className="language-switch" aria-label="Answer language">
+                  <button type="button" className={answerLanguage === 'en' ? 'active' : ''} onClick={() => setAnswerLanguage('en')}>English</button>
+                  <button type="button" className={answerLanguage === 'hi' ? 'active' : ''} onClick={() => setAnswerLanguage('hi')}>हिन्दी</button>
+                </div>
                 <div className="chat-input-wrapper">
                   <button
                     className="upload-button"
@@ -917,6 +981,10 @@ function App() {
                   onComplianceProfileUpdated={handleComplianceProfileUpdated}
                 />
               </Suspense>
+            </motion.div>
+          ) : currentView === 'review' && reviewerRoles.length > 0 ? (
+            <motion.div key="review" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <Suspense fallback={<PanelFallback />}><ReviewerConsole session={session} apiUrl={apiUrl} reviewerRoles={reviewerRoles} /></Suspense>
             </motion.div>
           ) : currentView === 'settings' ? (
             <motion.div key="settings" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>

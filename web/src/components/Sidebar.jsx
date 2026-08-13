@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Folder, UploadCloud, ClipboardCheck, Settings, Plus, MessageSquare, Trash2, Menu, X, LogOut } from 'lucide-react';
+import { Home, Folder, UploadCloud, ClipboardCheck, Settings, Plus, MessageSquare, Trash2, Menu, X, LogOut, ShieldCheck } from 'lucide-react';
 import Logo from './Logo';
 
 const NAV_ITEMS = [
@@ -22,7 +22,9 @@ const Sidebar = ({
   onToggleCollapse,
   session,
   onSignOut,
+  isReviewer = false,
 }) => {
+  const navItems = isReviewer ? [...NAV_ITEMS, { id: 'review', label: 'Review Console', icon: ShieldCheck }] : NAV_ITEMS;
   const recentConvos = (conversations || []).slice(0, 8);
   const conversationActivationRef = useRef(false);
   const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
@@ -68,7 +70,7 @@ const Sidebar = ({
 
             {/* Main Nav */}
             <nav className="sidebar-nav" aria-label="Primary navigation">
-              {NAV_ITEMS.map(item => (
+              {navItems.map(item => (
                 <motion.button
                   key={item.id}
                   whileHover={{ x: 2 }}
@@ -172,7 +174,7 @@ const Sidebar = ({
           </button>
           <div className="mobile-sidebar-logo"><Logo size={32} showText={false} /></div>
           <div style={{ flex: 1 }} />
-          {NAV_ITEMS.map(item => (
+          {navItems.map(item => (
             <button
               key={item.id}
               className={`icon-strip-btn ${currentView === item.id ? 'active' : ''}`}

@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any
 
 
-PROFILE_VERSION = 1
+PROFILE_VERSION = 2
 
 INDUSTRY_LABELS = {
     "food_beverage": "Food & Beverage",
@@ -62,9 +62,15 @@ APPROVED_PROFILE_FIELDS = {
     "business_status",
     "regulated_activities",
     "gst_registration_status",
+    "gst_scheme",
+    "incorporation_stage",
     "turnover_band",
     "employee_count_band",
     "has_physical_establishment",
+    "premises_status",
+    "uses_contractors",
+    "handles_personal_data",
+    "operating_state_codes",
     "operates_multiple_states",
     "imports_goods_services",
     "exports_goods_services",
@@ -75,6 +81,14 @@ APPROVED_ANSWER_KEYS = {
     "uses_contract_labour",
     "handles_hazardous_materials",
     "sells_prepackaged_goods",
+}
+APPROVED_DATE_KEYS = {
+    "incorporation_date",
+    "operations_start_date",
+    "gst_registration_date",
+    "filing_period_end",
+    "financial_year_end",
+    "event_date",
 }
 APPROVED_OPERATORS = {"eq", "neq", "in", "contains_any", "contains_all"}
 
@@ -96,6 +110,27 @@ QUESTION_CATALOG: dict[str, dict[str, Any]] = {
             {"value": "not_applicable", "label": "Not applicable"},
         ],
     },
+    "gst_scheme": {
+        "label": "Which GST scheme or filing arrangement applies?",
+        "description": "Choose only what is confirmed from the GST registration and current tax advice.",
+        "answer_type": "single_select",
+        "options": [
+            {"value": "regular", "label": "Regular"}, {"value": "composition", "label": "Composition"},
+            {"value": "qrmp", "label": "QRMP"}, {"value": "not_known", "label": "Not known"},
+            {"value": "not_applicable", "label": "Not applicable"},
+        ],
+    },
+    "incorporation_stage": {
+        "label": "What stage is the business in?",
+        "description": "Lifecycle requirements depend on whether incorporation and operations have begun.",
+        "answer_type": "single_select",
+        "options": [
+            {"value": "pre_incorporation", "label": "Before incorporation"},
+            {"value": "incorporated", "label": "Incorporated, not operating"},
+            {"value": "operating", "label": "Operating"},
+            {"value": "winding_down", "label": "Winding down"},
+        ],
+    },
     "has_physical_establishment": {
         "label": "Does this business operate a physical office, shop, or establishment?",
         "description": "This helps evaluate state establishment requirements.",
@@ -104,6 +139,28 @@ QUESTION_CATALOG: dict[str, dict[str, Any]] = {
             {"value": True, "label": "Yes"},
             {"value": False, "label": "No"},
         ],
+    },
+    "premises_status": {
+        "label": "What kind of premises does the business use?",
+        "description": "Premises-specific requirements remain hidden until this fact is confirmed.",
+        "answer_type": "single_select",
+        "options": [
+            {"value": "none", "label": "No physical premises"}, {"value": "owned", "label": "Owned"},
+            {"value": "leased", "label": "Leased"}, {"value": "shared", "label": "Shared"},
+            {"value": "virtual", "label": "Virtual office"},
+        ],
+    },
+    "uses_contractors": {
+        "label": "Does this business engage contractors or contract workers?",
+        "description": "Contract-worker requirements are not inferred from employee count.",
+        "answer_type": "boolean",
+        "options": [{"value": True, "label": "Yes"}, {"value": False, "label": "No"}],
+    },
+    "handles_personal_data": {
+        "label": "Does this business process personal data?",
+        "description": "Data-related requirements are evaluated only after the activity is confirmed.",
+        "answer_type": "boolean",
+        "options": [{"value": True, "label": "Yes"}, {"value": False, "label": "No"}],
     },
     "turnover_band": {
         "label": "What is the business's annual turnover band?",

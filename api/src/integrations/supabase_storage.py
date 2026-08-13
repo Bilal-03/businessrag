@@ -11,7 +11,7 @@ from src.integrations.supabase_rest import SupabaseRestError
 class SupabaseStorageClient:
     """Small Supabase Storage adapter for private document objects."""
 
-    def __init__(self, token: str | None = None, *, service_role: bool = False):
+    def __init__(self, token: str | None = None, *, service_role: bool = False, bucket: str | None = None):
         settings = get_settings()
         if service_role:
             if not settings.supabase_service_role_key:
@@ -22,11 +22,11 @@ class SupabaseStorageClient:
             self.api_key = settings.supabase_anon_key
             self.token = token or ""
         self.base_url = f"{settings.supabase_url.rstrip('/')}/storage/v1/object"
-        self.bucket = settings.document_storage_bucket
+        self.bucket = bucket or settings.document_storage_bucket
 
     @classmethod
-    def admin(cls) -> "SupabaseStorageClient":
-        return cls(service_role=True)
+    def admin(cls, *, bucket: str | None = None) -> "SupabaseStorageClient":
+        return cls(service_role=True, bucket=bucket)
 
     def _url(self, path: str) -> str:
         safe_path = quote(path.strip('/'), safe='/')

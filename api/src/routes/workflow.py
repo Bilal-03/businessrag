@@ -10,6 +10,7 @@ from src.auth.dependencies import get_current_user
 from src.compliance.applicability import (
     ACTIVITY_LABELS,
     APPROVED_ANSWER_KEYS,
+    APPROVED_DATE_KEYS,
     INDUSTRY_LABELS,
     PROFILE_VERSION,
     Outcome,
@@ -17,11 +18,17 @@ from src.compliance.applicability import (
     normalize_industry_code,
     question_for,
 )
+from src.compliance.due_dates import DueDateRuleError, evaluate_due_date
 from src.contracts.workflow import (
     BusinessApplicabilityUpdate,
     CompliancePlanResponse,
     ComplianceProfileUpdate,
     ObligationRead,
+    ReminderCreate,
+    ReminderRead,
+    ReminderUpdate,
+    TaskEvidenceCreate,
+    TaskEvidenceRead,
     TaskCreate,
     TaskRead,
     TaskUpdate,
@@ -101,7 +108,45 @@ def _has_review_evidence(obligation: ObligationRead, as_of: date) -> bool:
         return False
     if not obligation.reviewed_at or obligation.reviewed_at.date() > as_of:
         return False
+    if obligation.kill_switch or not obligation.revalidate_by or obligation.revalidate_by < as_of:
+        return False
     return True
+
+
+def _applicability_reasons(rule: dict[str, Any], context: dict[str, Any]) -> list[str]:
+    reasons: list[str] = []
+    labels = {
+        "industry_code": "Primary industry",
+        "entity_type": "Entity type",
+        "business_status": "Business status",
+        "regulated_activities": "Confirmed regulated activities",
+        "gst_registration_status": "GST registration status",
+        "turnover_band": "Turnover band",
+        "employee_count_band": "Employee-count band",
+        "has_physical_establishment": "Physical establishment",
+        "operates_multiple_states": "Multi-state operation",
+        "imports_goods_services": "Imports",
+        "exports_goods_services": "Exports",
+    }
+
+    def visit(node: dict[str, Any]) -> None:
+        if "all" in node or "any" in node:
+            for child in node.get("all") or node.get("any") or []:
+                visit(child)
+            return
+        if "not" in node:
+            return
+        field = node.get("field")
+        if not field:
+            return
+        actual = context.get(field)
+        if field.startswith("answers."):
+            actual = context.get("answers", {}).get(field.removeprefix("answers."))
+        rendered = ", ".join(actual) if isinstance(actual, list) else "Yes" if actual is True else "No" if actual is False else str(actual)
+        reasons.append(f"{labels.get(field, field.replace('_', ' ').title())}: {rendered}")
+
+    visit(rule)
+    return reasons[:12]
 
 
 def _eligible_on(obligation: ObligationRead, as_of: date) -> bool:
@@ -118,19 +163,25 @@ def _matches_jurisdiction(obligation: ObligationRead, normalized_jurisdiction: s
 
 
 async def _list_obligation_rows(client: SupabaseRestClient) -> list[ObligationRead]:
-    rows = await client.request(
-        "GET",
-        "obligations",
-        params={
-            "select": "id,jurisdiction,title,description,source_url,source_version,effective_from,effective_to,published,review_status,source_citation,review_owner,reviewed_at,applicability_version,applicability_rule,metadata",
-            "published": "eq.true",
-            "review_status": "eq.published",
-            "source_citation": "not.is.null",
-            "review_owner": "not.is.null",
-            "reviewed_at": "not.is.null",
-            "order": "effective_from.asc",
-        },
-    )
+    base_params = {
+        "published": "eq.true", "review_status": "eq.published",
+        "source_citation": "not.is.null", "review_owner": "not.is.null",
+        "reviewed_at": "not.is.null", "order": "effective_from.asc",
+    }
+    try:
+        rows = await client.request(
+            "GET", "obligations",
+            params={**base_params, "select": "id,jurisdiction,title,description,source_url,source_version,effective_from,effective_to,published,review_status,source_citation,review_owner,reviewed_at,applicability_version,applicability_rule,due_date_rule,evidence_requirements,risk_level,revalidate_by,kill_switch,metadata"},
+        )
+    except SupabaseRestError as exc:
+        if exc.status_code not in {400, 404}:
+            raise
+        # Safe rolling-deploy adapter. Legacy rows lack qualified-review
+        # freshness fields and therefore remain hidden by _has_review_evidence.
+        rows = await client.request(
+            "GET", "obligations",
+            params={**base_params, "select": "id,jurisdiction,title,description,source_url,source_version,effective_from,effective_to,published,review_status,source_citation,review_owner,reviewed_at,applicability_version,applicability_rule,metadata"},
+        )
     obligations = []
     for row in rows:
         try:
@@ -194,36 +245,66 @@ def _profile_context(business: dict[str, Any], profile: dict[str, Any] | None) -
         "business_status": business.get("status"),
         "regulated_activities": profile.get("regulated_activities"),
         "gst_registration_status": profile.get("gst_registration_status"),
+        "gst_scheme": profile.get("gst_scheme"),
+        "incorporation_stage": profile.get("incorporation_stage"),
         "turnover_band": profile.get("turnover_band"),
         "employee_count_band": profile.get("employee_count_band"),
         "has_physical_establishment": profile.get("has_physical_establishment"),
+        "premises_status": profile.get("premises_status"),
+        "uses_contractors": profile.get("uses_contractors"),
+        "handles_personal_data": profile.get("handles_personal_data"),
+        "operating_state_codes": profile.get("operating_state_codes"),
         "operates_multiple_states": profile.get("operates_multiple_states"),
         "imports_goods_services": profile.get("imports_goods_services"),
         "exports_goods_services": profile.get("exports_goods_services"),
         "answers": profile.get("answers") if isinstance(profile.get("answers"), dict) else {},
+        "date_answers": profile.get("date_answers") if isinstance(profile.get("date_answers"), dict) else {},
     }
 
 
-def _coverage_for(business: dict[str, Any], central_coverage: dict[str, Any] | None = None) -> dict[str, Any]:
+def _coverage_for(
+    business: dict[str, Any],
+    central_coverage: dict[str, Any] | None = None,
+    coverage_cells: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     industry_code = normalize_industry_code(business.get("industry_code"), business.get("industry"))
     industry_label = INDUSTRY_LABELS[industry_code]
     state_code = (business.get("state_code") or "").upper()
     state_name = STATE_NAMES.get(state_code, state_code or "Not provided")
+    cells = coverage_cells or []
+
+    def summarize(jurisdiction: str, fallback_status: str, fallback_message: str) -> tuple[str, str, list[str]]:
+        matching = [cell for cell in cells if cell.get("jurisdiction") == jurisdiction]
+        if not matching:
+            return fallback_status, fallback_message, []
+        blocked = sorted({cell["module_code"] for cell in matching if cell.get("status") in {"blocked", "in_review"}})
+        approved = [cell for cell in matching if cell.get("status") in {"covered", "not_applicable"}]
+        if matching and len(approved) == len(matching):
+            return "available", "Every declared launch module has a qualified reviewer-approved coverage status.", []
+        if approved:
+            return "partial", "Some launch modules are reviewed; blocked modules are explicitly excluded from completeness.", blocked
+        return "in_review", "No launch module is reviewer-approved yet; no requirement is inferred for blocked modules.", blocked
+
+    central_status, central_message, central_blocked = summarize(
+        "India",
+        central_coverage.get("status", "partial") if central_coverage else "partial",
+        central_coverage.get("notes") if central_coverage else f"Reviewed central records are routed for {industry_label}, but catalog coverage is not yet exhaustive.",
+    )
     if state_code == "DL":
-        state_status = "partial"
-        state_message = "A reviewed Delhi slice is available, but it is not a complete state-law catalog."
+        state_status, state_message, state_blocked = summarize("Delhi", "partial", "A reviewed Delhi slice is available, but it is not a complete state-law catalog.")
     elif state_code == "MH":
-        state_status = "in_review"
-        state_message = "Maharashtra catalog entries are still under review and remain unpublished."
+        state_status, state_message, state_blocked = summarize("Maharashtra", "in_review", "Maharashtra catalog entries are still under review and remain unpublished.")
     else:
         state_status = "unsupported"
         state_message = "No complete reviewed state catalog is available for this jurisdiction; no state requirement is guessed."
+        state_blocked = []
     return {
         "central": {
-            "status": central_coverage.get("status", "partial") if central_coverage else "partial",
-            "message": central_coverage.get("notes") if central_coverage else f"Reviewed central records are routed for {industry_label}, but catalog coverage is not yet exhaustive.",
+            "status": central_status,
+            "message": central_message,
+            "blocked_modules": central_blocked,
         },
-        "state": {"status": state_status, "jurisdiction": state_name, "message": state_message},
+        "state": {"status": state_status, "jurisdiction": state_name, "message": state_message, "blocked_modules": state_blocked},
     }
 
 
@@ -242,6 +323,18 @@ async def _build_plan(client: SupabaseRestClient, business_id: str, effective_da
             "limit": 1,
         },
     )
+    try:
+        coverage_cells = await client.request(
+            "GET", "compliance_coverage_cells",
+            params={
+                "select": "jurisdiction,industry_code,module_code,activity_code,status,notes,reviewed_at",
+                "industry_code": f"eq.{context['industry_code']}", "limit": 250,
+            },
+        )
+    except SupabaseRestError as exc:
+        if exc.status_code not in {400, 404}:
+            raise
+        coverage_cells = []
     jurisdiction = STATE_NAMES.get((business.get("state_code") or "").upper(), business.get("state_code") or "")
     normalized_jurisdiction = jurisdiction.casefold() if jurisdiction else None
     applicable: list[ObligationRead] = []
@@ -260,7 +353,18 @@ async def _build_plan(client: SupabaseRestClient, business_id: str, effective_da
             logger.warning("workflow_obligation_rule_rejected", extra={"event": "workflow_obligation_rule_rejected"})
             continue
         if result.outcome == Outcome.APPLICABLE:
-            applicable.append(obligation)
+            try:
+                due_date, due_basis = evaluate_due_date(obligation.due_date_rule, context["date_answers"], effective_date)
+            except DueDateRuleError:
+                # Malformed or unsupported formulas fail closed exactly like an
+                # invalid applicability rule.
+                due_date, due_basis = None, "Published due-date formula failed validation; deadline not determined."
+            applicable.append(obligation.model_copy(update={
+                "applicability_reason": _applicability_reasons(obligation.applicability_rule, context),
+                "due_date": due_date,
+                "deadline_status": "determined" if due_date else "not_determined",
+                "due_date_basis": due_basis,
+            }))
         elif result.outcome == Outcome.UNKNOWN:
             unknown_fields.update(result.unknown_fields)
 
@@ -274,7 +378,7 @@ async def _build_plan(client: SupabaseRestClient, business_id: str, effective_da
         business_id=business_id,
         obligations=applicable,
         questions=questions,
-        coverage=_coverage_for(business, coverage_rows[0] if coverage_rows else None),
+        coverage=_coverage_for(business, coverage_rows[0] if coverage_rows else None, coverage_cells),
         profile_version=PROFILE_VERSION,
     )
 
@@ -290,6 +394,17 @@ async def _list_task_rows(client: SupabaseRestClient, business_id: str) -> list[
         },
     )
     return [TaskRead.model_validate(row) for row in rows]
+
+
+async def _list_reminder_rows(client: SupabaseRestClient, business_id: str) -> list[ReminderRead]:
+    rows = await client.request(
+        "GET", "reminders",
+        params={
+            "select": "id,business_id,task_id,title,remind_at,timezone,status,alert_offsets_days,recurrence_rule,snoozed_until,created_at,updated_at",
+            "business_id": f"eq.{business_id}", "order": "remind_at.asc",
+        },
+    )
+    return [ReminderRead.model_validate(row) for row in rows]
 
 
 @router.get("/plan", response_model=CompliancePlanResponse)
@@ -345,6 +460,9 @@ async def update_compliance_profile(
         raise HTTPException(status_code=422, detail="The compliance profile contains an unknown answer key.")
     if answers is not None and any(value is not None and not isinstance(value, bool) for value in answers.values()):
         raise HTTPException(status_code=422, detail="Industry-specific compliance answers must be yes or no.")
+    date_answers = payload.get("date_answers")
+    if date_answers is not None and set(date_answers) - APPROVED_DATE_KEYS:
+        raise HTTPException(status_code=422, detail="The compliance profile contains an unknown date answer key.")
     payload["profile_version"] = PROFILE_VERSION
     try:
         client = _client(request)
@@ -352,6 +470,8 @@ async def update_compliance_profile(
         existing = await _load_profile(client, business_id)
         if existing and answers is not None:
             payload["answers"] = {**(existing.get("answers") or {}), **answers}
+        if existing and date_answers is not None:
+            payload["date_answers"] = {**(existing.get("date_answers") or {}), **date_answers}
         if existing:
             rows = await client.request(
                 "PATCH",
@@ -494,6 +614,125 @@ async def delete_task(
     except SupabaseRestError as exc:
         raise _storage_error(exc, "delete_task") from exc
     return None
+
+
+@router.get("/reminders", response_model=list[ReminderRead])
+async def list_reminders(
+    request: Request,
+    business_id: str = Query(...),
+    _user_id: str = Depends(get_current_user),
+):
+    business_id = _uuid_identifier(business_id)
+    try:
+        client = _client(request)
+        await _load_business(client, business_id)
+        return await _list_reminder_rows(client, business_id)
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "list_reminders") from exc
+
+
+@router.post("/reminders", response_model=ReminderRead, status_code=status.HTTP_201_CREATED)
+async def create_reminder(
+    request: Request,
+    body: ReminderCreate,
+    user_id: str = Depends(get_current_user),
+):
+    business_id = _uuid_identifier(body.business_id)
+    offsets = sorted(set(body.alert_offsets_days), reverse=True)
+    if any(offset < 0 or offset > 365 for offset in offsets):
+        raise HTTPException(status_code=422, detail="Reminder offsets must be between 0 and 365 days.")
+    try:
+        client = _client(request)
+        await _load_business(client, business_id)
+        payload = body.model_dump(mode="json", exclude_none=True)
+        payload.update({"owner_id": user_id, "business_id": business_id, "alert_offsets_days": offsets})
+        rows = await client.request("POST", "reminders", payload=payload)
+        if rows:
+            await client.request("POST", "reminder_events", payload={
+                "reminder_id": rows[0]["id"], "owner_id": user_id, "event_type": "created",
+                "metadata": {"timezone": body.timezone, "alert_offsets_days": offsets},
+            })
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "create_reminder") from exc
+    return ReminderRead.model_validate(rows[0])
+
+
+@router.patch("/reminders/{reminder_id}", response_model=ReminderRead)
+async def update_reminder(
+    request: Request,
+    reminder_id: str,
+    body: ReminderUpdate,
+    user_id: str = Depends(get_current_user),
+):
+    reminder_id = _uuid_identifier(reminder_id)
+    payload = body.model_dump(mode="json", exclude_unset=True)
+    if not payload:
+        raise HTTPException(status_code=422, detail="Provide at least one reminder field to update.")
+    if body.status == "snoozed" and not body.snoozed_until:
+        raise HTTPException(status_code=422, detail="A snoozed reminder requires snoozed_until.")
+    try:
+        client = _client(request)
+        rows = await client.request("PATCH", "reminders", params={"id": f"eq.{reminder_id}"}, payload=payload)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Reminder not found.")
+        event = "snoozed" if body.status == "snoozed" else "dismissed" if body.status == "dismissed" else "rescheduled"
+        await client.request("POST", "reminder_events", payload={
+            "reminder_id": reminder_id, "owner_id": user_id, "event_type": event,
+            "metadata": {"status": body.status} if body.status else {},
+        })
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "update_reminder") from exc
+    return ReminderRead.model_validate(rows[0])
+
+
+@router.delete("/reminders/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_reminder(request: Request, reminder_id: str, _user_id: str = Depends(get_current_user)):
+    reminder_id = _uuid_identifier(reminder_id)
+    try:
+        await _client(request).request("DELETE", "reminders", params={"id": f"eq.{reminder_id}"})
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "delete_reminder") from exc
+    return None
+
+
+@router.get("/tasks/{task_id}/evidence", response_model=list[TaskEvidenceRead])
+async def list_task_evidence(request: Request, task_id: str, _user_id: str = Depends(get_current_user)):
+    task_id = _uuid_identifier(task_id)
+    try:
+        rows = await _client(request).request(
+            "GET", "task_evidence",
+            params={"select": "id,business_id,task_id,evidence_type,title,document_id,reference_url,note,created_at", "task_id": f"eq.{task_id}", "order": "created_at.desc"},
+        )
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "list_task_evidence") from exc
+    return [TaskEvidenceRead.model_validate(row) for row in rows]
+
+
+@router.post("/tasks/{task_id}/evidence", response_model=TaskEvidenceRead, status_code=status.HTTP_201_CREATED)
+async def add_task_evidence(
+    request: Request,
+    task_id: str,
+    body: TaskEvidenceCreate,
+    user_id: str = Depends(get_current_user),
+):
+    task_id = _uuid_identifier(task_id)
+    business_id = _uuid_identifier(body.business_id)
+    if body.evidence_type == "document" and not body.document_id:
+        raise HTTPException(status_code=422, detail="Document evidence requires document_id.")
+    if body.evidence_type == "reference" and not body.reference_url:
+        raise HTTPException(status_code=422, detail="Reference evidence requires an HTTPS URL.")
+    if body.evidence_type == "note" and not body.note:
+        raise HTTPException(status_code=422, detail="Note evidence requires note text.")
+    try:
+        client = _client(request)
+        await _load_business(client, business_id)
+        payload = body.model_dump(mode="json", exclude_none=True) | {
+            "owner_id": user_id, "business_id": business_id, "task_id": task_id,
+        }
+        rows = await client.request("POST", "task_evidence", payload=payload)
+    except SupabaseRestError as exc:
+        raise _storage_error(exc, "add_task_evidence") from exc
+    return TaskEvidenceRead.model_validate(rows[0])
 
 
 @router.get("/summary", response_model=WorkflowSummary)

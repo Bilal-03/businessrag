@@ -21,7 +21,7 @@
 
 ## 🌟 What is BizGuide AI?
 
-BizGuide AI is an educational beta RAG (Retrieval-Augmented Generation) application for exploring Indian business-compliance information. It can classify questions by topic and retrieve context from uploaded PDFs. It is not a compliance system of record, does not guarantee completeness or legal accuracy, and must not replace a qualified legal or tax professional. Important decisions should be verified against original authoritative sources.
+BizGuide AI is an evidence-first beta for Indian SME business-compliance workflows. Legal and tax answers are blocked unless active, professionally reviewed claim evidence supports them; uploaded documents remain private business evidence and are never treated as superior legal authority. The product is not launch-complete until the explicit India/Delhi/Maharashtra coverage matrix and human review gates pass.
 
 Unlike generic AI, BizGuide:
 - **Classifies your query** into lightweight Legal, Tax, or General response guidance
@@ -34,11 +34,13 @@ Unlike generic AI, BizGuide:
 
 | Feature | Description |
 |---|---|
-| 🤖 **Topic routing** | Queries are routed to Legal, Tax, or General response guidance |
+| 🛡️ **Fail-closed legal/tax** | Unsupported legal or tax questions return missing facts, coverage limits, and a professional brief—not model-memory claims |
 | 🔍 **RAG Architecture** | Pinecone vector DB + Gemini Embeddings for document-grounded answers |
 | 📎 **Document Upload** | Upload your business PDFs; AI answers questions based on your actual documents |
 | 🏢 **My Businesses** | Manage your business profiles with quick-ask shortcuts |
-| 🚧 **Compliance Plan** | Source-backed obligations and planning tasks are implemented behind the staged schema; the previous hard-coded checklist surface remains hidden until migration/catalog validation |
+| 🚧 **Compliance Plan** | Business-scoped obligations, applicability reasons, evidence needs, safe due dates, tasks, and in-app reminders with explicit coverage gaps |
+| 👩‍⚖️ **Review governance** | Source snapshots, passages, atomic claims, qualified approvals, audit history, change quarantine, and kill switches |
+| 🌐 **English/Hindi** | Both language modes share the same verified claim objects; unavailable reviewed Hindi text is disclosed instead of improvised as law |
 | 💬 **Conversation History** | Signed-in conversations and citations use normalized RLS-protected tables; legacy checklist state is intentionally not imported |
 | 🗃️ **Document Inventory** | Uploaded PDFs have owner-scoped server records with queued/processing/indexed/failed/deleted status and progress tracking |
 | ⚙️ **Settings** | Accent color themes, API URL config, profile management |
@@ -222,7 +224,14 @@ POST /api/chat
 ### Chat Response
 ```json
 {
-  "answer": "**Legal Agent Response:**\n\n## Company Registration Steps\n\n1. Obtain DSC for all directors..."
+  "schema_version": 2,
+  "answer": "I cannot verify a personalised answer from the active reviewed catalog.",
+  "answer_mode": "professional_escalation",
+  "evidence_status": "cannot_verify",
+  "claims": [],
+  "citations": [],
+  "missing_inputs": ["reviewed source catalog availability"],
+  "effective_date": "2026-08-13"
 }
 ```
 
@@ -250,8 +259,8 @@ businessrag/
 │   │   │   ├── Logo.jsx          # Logo component
 │   │   │   ├── MyBusinesses.jsx  # Business profile manager
 │   │   │   ├── UploadDocuments.jsx # Drag-drop PDF upload
-│   │   │   ├── Checklists.jsx    # Legacy checklist UI, hidden pending source-backed rebuild
 │   │   │   ├── WorkflowDashboard.jsx # Source-backed obligations and planning tasks
+│   │   │   ├── ReviewerConsole.jsx # Qualified-review queue and audit history
 │   │   │   └── Settings.jsx      # App settings
 │   │   ├── App.jsx          # Root — view routing, chat logic
 │   │   ├── App.css          # All component styles
@@ -267,17 +276,7 @@ businessrag/
 
 ## 🚧 Compliance workflows
 
-The legacy hard-coded checklists are intentionally hidden from the product while source-backed obligations, effective dates, jurisdiction rules, and audit history are rebuilt. Do not rely on the old checklist content for a filing or compliance decision.
-
-The replacement workflow is planned to cover:
-
-1. **Private Limited Company Registration** — DSC, DIN, SPICe+ form, COI
-2. **GST Registration** — REG-01, Aadhaar auth, GSTIN
-3. **FSSAI Food License** — Basic/State/Central, FoSCoS portal
-4. **Startup India (DPIIT)** — Recognition, 80-IAC tax exemption
-5. **Shop & Establishment Act** — State-wise registration
-
-Progress will be persisted against a verified business profile and source version rather than browser-only local state.
+The legacy hard-coded checklists are intentionally hidden. The replacement workflow evaluates only reviewed, published, current records against a stored business profile and discloses missing facts and coverage gaps. Applying the schema does not make the catalog complete; follow the [trusted-release controls](docs/TRUSTED_BIZGUIDE_RELEASE.md).
 
 ---
 
@@ -299,17 +298,19 @@ The FastAPI backend is deployed on **Render** (free tier).
 
 The frontend deployment includes a restrictive Content Security Policy, HSTS, clickjacking and MIME-sniffing protections, a referrer policy, and a permissions policy through `web/vercel.json`. Keep server keys (Groq, Gemini, Pinecone, and JWT secrets) in the backend environment only; `VITE_*` variables are public client configuration.
 
-The source-backed workflow schema is defined in `supabase/migrations/0001_core_workflow_schema.sql`, `0002_publish_gate_and_catalog_checks.sql`, the reviewed-catalog migrations `0004_reviewed_obligation_catalog.sql` and `0005_seed_reviewed_obligations.sql`, and the business-scoped applicability migrations `0006_business_scoped_applicability.sql` and `0007_industry_catalog_coverage.sql`. The controlled manifest is `supabase/seed/obligations.csv`; review it with `scripts/validate_source_catalog.py` before applying a catalog change. Follow [`docs/PHASE_1_ROLLOUT.md`](docs/PHASE_1_ROLLOUT.md), [`docs/P2_04_SOURCE_CATALOG.md`](docs/P2_04_SOURCE_CATALOG.md), and [`docs/P2_05_BUSINESS_SCOPED_COMPLIANCE.md`](docs/P2_05_BUSINESS_SCOPED_COMPLIANCE.md) before production promotion.
+The source-backed workflow schema culminates in `supabase/migrations/0008_trusted_knowledge_platform.sql` and `0009_source_registry_candidates.sql`. The controlled obligation manifest is `supabase/seed/obligations.csv`; review it with `scripts/validate_source_catalog.py`. Follow [`docs/TRUSTED_BIZGUIDE_RELEASE.md`](docs/TRUSTED_BIZGUIDE_RELEASE.md) before production promotion.
 
 ---
 
 ## 🛣️ Roadmap
 
-- [ ] User authentication (Supabase)
-- [ ] Multi-language support (Hindi, Telugu, Tamil)
-- [ ] Real-time government notification scraper
+- [x] User authentication and RLS (Supabase)
+- [x] English/Hindi trust-contract rendering (reviewed bilingual claim content remains a launch gate)
+- [x] Source fetch/hash/change monitoring worker
+- [ ] Complete qualified-review coverage for India, Delhi, and Maharashtra
+- [ ] Telugu and Tamil support
 - [ ] Business document templates (MOA, AOA, MoU)
-- [ ] Chartered Accountant referral network integration
+- [x] Professional escalation briefs without provider endorsement
 - [ ] Mobile app (React Native)
 
 ---

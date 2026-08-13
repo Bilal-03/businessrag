@@ -5,7 +5,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from src.routes import chat, documents, health, workflow
+from src.routes import chat, documents, health, knowledge, workflow
 from src.utils.exceptions import global_exception_handler, http_exception_handler, validation_exception_handler
 from fastapi.exceptions import HTTPException, RequestValidationError
 from src.utils.logger import get_logger
@@ -25,6 +25,10 @@ async def lifespan(app: FastAPI):
         "errors_total": 0,
         "latency_ms_total": 0.0,
         "status_counts": {},
+        "chat_evidence_status_counts": {},
+        "chat_mode_counts": {},
+        "legal_zero_citation_total": 0,
+        "verifier_non_verified_total": 0,
     }
     document_queue = None
     if settings.async_document_ingestion_enabled:
@@ -46,6 +50,10 @@ def create_app() -> FastAPI:
         "errors_total": 0,
         "latency_ms_total": 0.0,
         "status_counts": {},
+        "chat_evidence_status_counts": {},
+        "chat_mode_counts": {},
+        "legal_zero_citation_total": 0,
+        "verifier_non_verified_total": 0,
     }
 
     # CORS — lock down to actual frontend origin in production
@@ -144,6 +152,7 @@ def create_app() -> FastAPI:
     app.include_router(chat.router)
     app.include_router(documents.router)
     app.include_router(workflow.router)
+    app.include_router(knowledge.router)
 
     @app.get("/metrics", tags=["health"])
     async def metrics_endpoint(request: Request):
@@ -159,6 +168,10 @@ def create_app() -> FastAPI:
             "errors_total": metrics["errors_total"],
             "average_latency_ms": round(metrics["latency_ms_total"] / max(1, metrics["requests_total"]), 1),
             "status_counts": metrics["status_counts"],
+            "chat_evidence_status_counts": metrics["chat_evidence_status_counts"],
+            "chat_mode_counts": metrics["chat_mode_counts"],
+            "legal_zero_citation_total": metrics["legal_zero_citation_total"],
+            "verifier_non_verified_total": metrics["verifier_non_verified_total"],
         }
 
     # Wrap the complete application so CORS headers are also present on

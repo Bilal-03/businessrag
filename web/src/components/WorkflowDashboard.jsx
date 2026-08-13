@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, ClipboardCheck, ExternalLink, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
+import { AlertTriangle, Bell, CheckCircle2, ClipboardCheck, ExternalLink, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
 import { captureEvent, captureException } from '../lib/observability';
 
 const TASK_STATUSES = [
@@ -25,6 +25,12 @@ function formatDate(value) {
   if (!value) return 'No due date';
   const parsed = new Date(`${value}T00:00:00`);
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatDateTime(value) {
+  if (!value) return 'No reminder time';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 function sourceHref(value) {
@@ -64,6 +70,7 @@ const WorkflowDashboard = ({
 }) => {
   const [obligations, setObligations] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [reminders, setReminders] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [coverage, setCoverage] = useState(null);
   const [profileVersion, setProfileVersion] = useState(null);
@@ -73,6 +80,9 @@ const WorkflowDashboard = ({
   const [sourceStatus, setSourceStatus] = useState('unavailable');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
+  const [newReminderTitle, setNewReminderTitle] = useState('');
+  const [newReminderAt, setNewReminderAt] = useState('');
+  const [newReminderTaskId, setNewReminderTaskId] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [answeringKey, setAnsweringKey] = useState(null);
   const [answerDrafts, setAnswerDrafts] = useState({});
@@ -109,8 +119,17 @@ const WorkflowDashboard = ({
         const tasksResponse = await fetch(`${apiUrl}/api/workflow/tasks?business_id=${encodeURIComponent(activeBusinessId)}`, { headers });
         const nextTasks = await parseResponse(tasksResponse);
         setTasks(Array.isArray(nextTasks) ? nextTasks : []);
+        try {
+          const remindersResponse = await fetch(`${apiUrl}/api/workflow/reminders?business_id=${encodeURIComponent(activeBusinessId)}`, { headers });
+          const nextReminders = await parseResponse(remindersResponse);
+          setReminders(Array.isArray(nextReminders) ? nextReminders : []);
+        } catch {
+          // Reminder migrations may trail the API during a rolling deploy.
+          setReminders([]);
+        }
       } else {
         setTasks([]);
+        setReminders([]);
       }
     } catch (requestError) {
       setError(requestError.message || 'Compliance Plan data is unavailable.');
@@ -220,6 +239,50 @@ const WorkflowDashboard = ({
     }
   };
 
+  const createReminder = async (event) => {
+    event.preventDefault();
+    if (!activeBusinessId || !newReminderTitle.trim() || !newReminderAt || saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      const remindAt = new Date(newReminderAt);
+      const response = await fetch(`${apiUrl}/api/workflow/reminders`, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          business_id: activeBusinessId,
+          task_id: newReminderTaskId || null,
+          title: newReminderTitle.trim(),
+          remind_at: remindAt.toISOString(),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata',
+          alert_offsets_days: [30, 14, 7, 1],
+        }),
+      });
+      const reminder = await parseResponse(response);
+      setReminders(current => [...current, reminder].sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at)));
+      setNewReminderTitle('');
+      setNewReminderAt('');
+      setNewReminderTaskId('');
+      captureEvent('workflow_reminder_created');
+    } catch (requestError) {
+      setError(requestError.message || 'The reminder could not be created.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateReminder = async (reminderId, changes) => {
+    setError('');
+    try {
+      const response = await fetch(`${apiUrl}/api/workflow/reminders/${encodeURIComponent(reminderId)}`, {
+        method: 'PATCH', headers, body: JSON.stringify(changes),
+      });
+      const reminder = await parseResponse(response);
+      setReminders(current => current.map(item => item.id === reminderId ? reminder : item));
+    } catch (requestError) {
+      setError(requestError.message || 'The reminder could not be updated.');
+    }
+  };
+
   const doneCount = tasks.filter(task => task.status === 'done').length;
   const selectedBusinessId = businesses.some(business => business.id === activeBusinessId)
     ? activeBusinessId
@@ -324,8 +387,8 @@ const WorkflowDashboard = ({
             <div className="workflow-gated glass-panel" role="status">
               <ShieldAlert size={22} />
               <div>
-                <h3>No current reviewed obligations</h3>
-                <p>The database is reachable, but no reviewed and published source record is active for this jurisdiction. Add planning tasks only; do not treat this as a complete compliance list.</p>
+                <h3>No confirmed applicable obligations</h3>
+                <p>No active, qualified-review-backed record is confirmed for this business and date. This is not a complete compliance list; check missing inputs and coverage limitations below.</p>
               </div>
             </div>
           )}
@@ -336,7 +399,15 @@ const WorkflowDashboard = ({
               <div>
                 <h3>{coverage.state.jurisdiction || 'State'} catalog coverage: {coverage.state.status.replace('_', ' ')}</h3>
                 <p>{coverage.state.message}</p>
+                {coverage.state.blocked_modules?.length > 0 && <p><strong>Blocked modules:</strong> {coverage.state.blocked_modules.join(', ').replaceAll('_', ' ')}</p>}
               </div>
+            </div>
+          )}
+
+          {coverage?.central && coverage.central.status !== 'available' && (
+            <div className="workflow-coverage glass-panel" role="status">
+              <ShieldAlert size={20} />
+              <div><h3>Central catalog coverage: {coverage.central.status.replace('_', ' ')}</h3><p>{coverage.central.message}</p>{coverage.central.blocked_modules?.length > 0 && <p><strong>Blocked modules:</strong> {coverage.central.blocked_modules.join(', ').replaceAll('_', ' ')}</p>}</div>
             </div>
           )}
 
@@ -420,6 +491,12 @@ const WorkflowDashboard = ({
                       </div>
                       <h4>{obligation.title}</h4>
                       <p>{obligation.description}</p>
+                      {obligation.applicability_reason?.length > 0 && (
+                        <div className="obligation-applicability">
+                          <span>Why this applies</span>
+                          <ul>{obligation.applicability_reason.map(reason => <li key={reason}>{reason}</li>)}</ul>
+                        </div>
+                      )}
                       <div className="obligation-citation">
                         <span>Source citation</span>
                         <p>{obligation.source_citation}</p>
@@ -427,6 +504,8 @@ const WorkflowDashboard = ({
                       <div className="obligation-review">
                         Reviewed by {obligation.review_owner} · {formatDate(obligation.reviewed_at?.slice(0, 10))}
                       </div>
+                      <div className="obligation-deadline"><strong>Deadline:</strong> {obligation.deadline_status === 'determined' ? formatDate(obligation.due_date) : 'Not determined'} · {obligation.due_date_basis || 'No reviewed formula is available.'}</div>
+                      {obligation.evidence_requirements?.length > 0 && <div className="obligation-evidence"><strong>Evidence checklist:</strong> {obligation.evidence_requirements.map(item => typeof item === 'string' ? item : item.label || item.type).join(', ')}</div>}
                       <div className="obligation-card-footer">
                         <span>Effective {formatDate(obligation.effective_from)}{obligation.effective_to ? ` – ${formatDate(obligation.effective_to)}` : ''}</span>
                         {href && <a href={href} target="_blank" rel="noreferrer">Open source <ExternalLink size={13} /></a>}
@@ -475,6 +554,34 @@ const WorkflowDashboard = ({
                       <Trash2 size={16} />
                       {pendingDeleteId === task.id && <span>Confirm delete</span>}
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="workflow-section" aria-labelledby="reminders-title">
+            <div className="workflow-section-heading">
+              <div><h3 id="reminders-title">In-app reminders</h3><p>Default alerts are scheduled 30, 14, 7, and 1 day before the reminder date in your timezone.</p></div>
+            </div>
+            <form className="workflow-reminder-form glass-panel" onSubmit={createReminder}>
+              <input className="form-input" value={newReminderTitle} onChange={event => setNewReminderTitle(event.target.value)} placeholder="Reminder title" maxLength={240} />
+              <select className="form-input" value={newReminderTaskId} onChange={event => setNewReminderTaskId(event.target.value)}>
+                <option value="">General business reminder</option>
+                {tasks.filter(task => task.status !== 'dismissed').map((task, index) => <option key={task.id} value={task.id}>Task {index + 1}</option>)}
+              </select>
+              <input className="form-input" type="datetime-local" value={newReminderAt} onChange={event => setNewReminderAt(event.target.value)} />
+              <button type="submit" className="btn-primary" disabled={saving || !newReminderTitle.trim() || !newReminderAt}><Bell size={16} /> Add reminder</button>
+            </form>
+            {reminders.filter(reminder => reminder.status !== 'dismissed').length === 0 ? (
+              <div className="workflow-task-empty"><Bell size={18} /> No scheduled reminders.</div>
+            ) : (
+              <div className="workflow-task-list">
+                {reminders.filter(reminder => reminder.status !== 'dismissed').map(reminder => (
+                  <div className="workflow-task-row glass-panel" key={reminder.id}>
+                    <div className="workflow-task-main"><div className="workflow-task-title">{reminder.title}</div><div className="workflow-task-meta">{formatDateTime(reminder.snoozed_until || reminder.remind_at)} · {reminder.timezone}</div></div>
+                    <button type="button" className="btn-ghost" onClick={() => updateReminder(reminder.id, { status: 'snoozed', snoozed_until: new Date(Date.now() + 86400000).toISOString() })}>Snooze 1 day</button>
+                    <button type="button" className="icon-btn task-delete-button" onClick={() => updateReminder(reminder.id, { status: 'dismissed' })} aria-label={`Dismiss reminder ${reminder.title}`}><Trash2 size={16} /></button>
                   </div>
                 ))}
               </div>
