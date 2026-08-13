@@ -43,9 +43,15 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
         updateHistoryEntry(documentId, { status: 'error', message, stage: 'failed', progress: 0 });
         setUploadStatus(message);
         captureEvent('document_processing_failed');
-      } else {
+      } else if (result.document?.status === 'indexed') {
         setUploadStatus('Document processing finished.');
+        // Queued uploads emit `upload_queued` at submission time. Emit the
+        // terminal outcome as well so PostHog can measure the queued → indexed
+        // conversion for the background-worker path.
+        captureEvent('upload_indexed');
         captureEvent('document_processing_completed');
+      } else {
+        setUploadStatus('Document processing finished with an unexpected status.');
       }
     } catch (error) {
       if (error.name === 'AbortError') return;
