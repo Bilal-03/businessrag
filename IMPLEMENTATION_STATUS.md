@@ -79,8 +79,9 @@ Status legend: `[x]` implementation verified in the repository; `[ ]` blocked on
 
 - [ ] **P2-03 — Product intelligence, accessibility, and design-system upgrade**
   - Observability implementation is complete in P2-03a. The repository now includes the first product/design-system slice plus a visible product-surface redesign: a clearer source-first hero, workspace context signal, workflow-oriented quick actions, refreshed navigation shell, stronger chat composer, premium panel/card surfaces, responsive tablet/mobile treatment, documented CSS tokens, stronger focus/forced-colors behavior, skip-link/main landmark, semantic business expanders, keyboard-operable custom selects, 44px touch targets, and privacy-safe workspace/auth funnel events.
+  - The secondary-screen slice is now implemented: business and source-library context badges, explicit upload empty states, two-step document deletion confirmation, visible confirmation guidance, and Settings sections exposed as keyboard-operable ARIA tabs.
   - The visible redesign is intentionally presentation-only; existing API contracts, upload behavior, business switching, task CRUD, and observability behavior remain unchanged.
-  - Remaining work is event dashboards, real-device WCAG 2.2 AA checks, visual regression review, and final token/component extraction across every secondary screen.
+  - Remaining work is event dashboards, real-device WCAG 2.2 AA checks, visual regression review, and final token/component extraction across any remaining tertiary states.
   - Run real-device WCAG 2.2 AA checks across iOS Safari, Android Chrome, tablet, keyboard-only, screen-reader, contrast, focus, and reduced-motion flows.
   - Replace the MVP visual layer with a documented token-based design system, premium responsive components, and measured performance budgets.
   - **External gate:** validate analytics events without leaking document contents or tokens, complete the device matrix, and approve the visual regression baseline.

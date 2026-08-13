@@ -254,6 +254,8 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
       return;
     }
     if (path.startsWith('/api/documents/') && request.method() === 'DELETE') {
+      const documentId = path.split('/').pop();
+      state.documents = state.documents.filter(document => document.id !== documentId);
       await fulfillJson(route, {} , 204);
       return;
     }

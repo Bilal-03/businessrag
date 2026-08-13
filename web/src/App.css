@@ -713,6 +713,49 @@
   margin-bottom: 36px;
   flex-wrap: wrap;
 }
+.panel-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #a5b4fc;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+.panel-context-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  max-width: 300px;
+  padding: 8px 12px;
+  border: 1px solid rgba(129, 140, 248, 0.24);
+  border-radius: 999px;
+  background: rgba(20, 29, 48, 0.68);
+  color: #b9c2d7;
+  font-size: 12px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel-context-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-positive);
+  box-shadow: 0 0 0 3px rgba(69, 212, 131, 0.12);
+}
 .panel-title {
   font-size: 32px;
   font-weight: 780;
@@ -732,6 +775,25 @@
   letter-spacing: 1.2px;
   color: var(--text-secondary);
   margin-bottom: 14px;
+}
+.section-heading-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.section-heading-row .section-label { margin-bottom: 3px; }
+.section-helper {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.section-count {
+  color: #a5b4fc;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 .empty-state {
   display: flex;
@@ -1036,6 +1098,8 @@
 .biz-info { flex: 1; min-width: 0; }
 .biz-name { font-weight: 700; font-size: 16px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .biz-meta { font-size: 12px; color: var(--text-secondary); }
+.biz-card-status { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.biz-chevron { display: inline-flex; color: var(--text-secondary); }
 .status-badge {
   font-size: 11px;
   font-weight: 700;
@@ -1085,6 +1149,7 @@
 }
 .chip-btn:hover { background: rgba(99,102,241,0.22); border-color: rgba(99,102,241,0.4); color: white; }
 .biz-card-actions { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--glass-border); }
+.destructive-hint { margin-top: 10px; color: #fecaca; font-size: 12px; line-height: 1.45; }
 
 /* =============================================
    UPLOAD DOCUMENTS
@@ -1161,6 +1226,26 @@
 .info-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
 
 .upload-history { display: flex; flex-direction: column; gap: 2px; }
+.upload-empty {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-color: rgba(129, 140, 248, 0.22);
+  background: linear-gradient(135deg, rgba(113, 104, 246, 0.08), rgba(20, 29, 48, 0.52));
+}
+.upload-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  color: #a5b4fc;
+  background: rgba(113, 104, 246, 0.16);
+}
+.upload-empty h3 { font-size: 15px; margin-bottom: 4px; }
+.upload-empty p { color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
 .upload-history-item {
   display: flex;
   align-items: center;
@@ -1171,6 +1256,17 @@
   background: rgba(20,29,48,0.58);
   margin-bottom: 8px;
 }
+.document-delete-button { gap: 5px; }
+.document-delete-button.confirming {
+  min-width: 86px;
+  border: 1px solid rgba(248, 113, 113, 0.44);
+  border-radius: 9px;
+  background: rgba(239, 68, 68, 0.14);
+  color: #fecaca;
+  font-size: 12px;
+  font-weight: 700;
+}
+.document-delete-button.confirming:hover { background: rgba(239, 68, 68, 0.24); color: #fff1f2; }
 .upload-file-icon { flex-shrink: 0; }
 .upload-file-info { flex: 1; min-width: 0; }
 .upload-file-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1669,7 +1765,13 @@
   .panel-header { margin-bottom: 24px; gap: 14px; }
   .panel-title { font-size: 24px; }
   .panel-subtitle { font-size: 14px; }
-  .panel-header > .btn-primary { width: 100%; justify-content: center; }
+  .panel-header-actions { width: 100%; margin-left: 0; justify-content: stretch; flex-wrap: wrap; }
+  .panel-header-actions > .panel-context-badge { flex: 1 1 100%; max-width: none; justify-content: center; }
+  .panel-header-actions > .btn-primary { width: 100%; justify-content: center; }
+  .panel-context-badge { max-width: 100%; }
+  .section-heading-row { align-items: flex-start; }
+  .section-count { padding-top: 2px; }
+  .upload-empty { align-items: flex-start; padding: 16px; }
   .workflow-header-controls { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; margin-left: 0; }
   .workflow-business-field { min-width: 0; width: 100%; }
   .workflow-header-controls .workflow-business-select { width: 100%; }

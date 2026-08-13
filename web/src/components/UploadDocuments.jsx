@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, XCircle, Clock, Trash2, LoaderCircle } from 'lucide-react';
+import { UploadCloud, CheckCircle2, XCircle, Clock, Trash2, LoaderCircle, FileText, Building2 } from 'lucide-react';
 import { documentHistoryEntry, pollDocumentStatus } from '../lib/documentJobs';
 import { captureEvent, captureException, sizeBucket } from '../lib/observability';
 
@@ -11,6 +11,7 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
   const [currentFileName, setCurrentFileName] = useState('');
   const [uploadStatus, setUploadStatus] = useState('');
   const [inventoryLoading, setInventoryLoading] = useState(true);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const fileInputRef = useRef(null);
   const pollControllersRef = useRef(new Map());
 
@@ -182,6 +183,12 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
 
   const handleDeleteHistory = async (id) => {
     if (!id) return;
+    if (pendingDeleteId !== id) {
+      setPendingDeleteId(id);
+      window.setTimeout(() => setPendingDeleteId(current => current === id ? null : current), 4000);
+      return;
+    }
+    setPendingDeleteId(null);
     try {
       const response = await fetch(`${apiUrl}/api/documents/${encodeURIComponent(id)}`, {
         method: 'DELETE',
@@ -201,8 +208,13 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
     <div className="panel-container">
       <div className="panel-header">
         <div>
+          <div className="panel-kicker"><FileText size={14} /> Source library</div>
           <h2 className="panel-title">Upload Documents</h2>
           <p className="panel-subtitle">Upload PDFs to ground answers in your source documents. {businessId ? 'Showing documents for the selected business.' : 'Select a business to keep documents scoped to one workspace.'}</p>
+        </div>
+        <div className="panel-context-badge" role="status">
+          <Building2 size={14} />
+          {businessId ? 'Business-scoped uploads' : 'Personal workspace'}
         </div>
       </div>
 
@@ -283,9 +295,24 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
 
       {/* Upload History */}
       {inventoryLoading && <div className="upload-status-message" role="status">Loading your document inventory…</div>}
-      {!inventoryLoading && uploadHistory.length > 0 && (
-        <div className="upload-history">
-          <div className="section-label">Upload History</div>
+      {!inventoryLoading && (
+        <div className="upload-history" aria-live="polite">
+          <div className="section-heading-row">
+            <div>
+              <div className="section-label">Upload History</div>
+              <p className="section-helper">Only documents in the selected workspace appear here.</p>
+            </div>
+            {uploadHistory.length > 0 && <span className="section-count">{uploadHistory.length} {uploadHistory.length === 1 ? 'document' : 'documents'}</span>}
+          </div>
+          {uploadHistory.length === 0 && (
+            <div className="upload-empty glass-panel">
+              <div className="upload-empty-icon"><FileText size={24} /></div>
+              <div>
+                <h3>No source documents yet</h3>
+                <p>Upload a PDF to ground answers in your own policies, notices, or business records.</p>
+              </div>
+            </div>
+          )}
           <AnimatePresence>
             {uploadHistory.map((item, idx) => (
               <motion.div
@@ -315,8 +342,9 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
                   )}
                   {item.message && <div className="upload-message">{item.message}</div>}
                 </div>
-                <button className="icon-btn" onClick={() => handleDeleteHistory(item.id)} title="Remove document" aria-label={`Remove document ${item.name}`}>
-                  <Trash2 size={16} />
+                <button className={`icon-btn document-delete-button ${pendingDeleteId === item.id ? 'confirming' : ''}`} onClick={() => handleDeleteHistory(item.id)} title={pendingDeleteId === item.id ? 'Click again to confirm removal' : 'Remove document'} aria-label={`${pendingDeleteId === item.id ? 'Confirm removal of' : 'Remove document'} ${item.name}`}>
+                  {pendingDeleteId === item.id ? <CheckCircle2 size={16} /> : <Trash2 size={16} />}
+                  {pendingDeleteId === item.id && <span>Confirm</span>}
                 </button>
               </motion.div>
             ))}

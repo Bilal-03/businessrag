@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Globe, Trash2, Info, Check, Palette, Shield, Bell, Bot, Search, FileText, MapPin } from 'lucide-react';
+import { User, Globe, Trash2, Info, Check, Palette, Shield, Bell, Bot, Search, FileText, MapPin, Settings as SettingsIcon } from 'lucide-react';
 import Logo from './Logo';
 
 const APP_VERSION = '1.0.0';
@@ -111,6 +111,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
     <div className="panel-container">
       <div className="panel-header">
         <div>
+          <div className="panel-kicker"><SettingsIcon size={14} /> Workspace preferences</div>
           <h2 className="panel-title">Settings</h2>
           <p className="panel-subtitle">Customize your BizGuide experience.</p>
         </div>
@@ -118,13 +119,30 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
 
       <div className="settings-layout">
         {/* Settings Nav */}
-        <div className="settings-nav">
+        <div className="settings-nav" role="tablist" aria-label="Settings sections">
           {SECTIONS.map(s => (
             <button
               key={s.id}
+              id={`settings-tab-${s.id}`}
               className={`settings-nav-item ${activeSection === s.id ? 'active' : ''}`}
               onClick={() => setActiveSection(s.id)}
-              aria-current={activeSection === s.id ? 'page' : undefined}
+              role="tab"
+              aria-selected={activeSection === s.id}
+              aria-controls={`settings-panel-${s.id}`}
+              tabIndex={activeSection === s.id ? 0 : -1}
+              onKeyDown={event => {
+                if (!['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+                event.preventDefault();
+                const currentIndex = SECTIONS.findIndex(section => section.id === s.id);
+                const nextIndex = event.key === 'Home'
+                  ? 0
+                  : event.key === 'End'
+                    ? SECTIONS.length - 1
+                    : (currentIndex + (event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : -1) + SECTIONS.length) % SECTIONS.length;
+                const nextSection = SECTIONS[nextIndex];
+                setActiveSection(nextSection.id);
+                window.requestAnimationFrame(() => document.getElementById(`settings-tab-${nextSection.id}`)?.focus());
+              }}
             >
               <s.icon size={18} /> {s.label}
             </button>
@@ -132,7 +150,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
         </div>
 
         {/* Settings Content */}
-        <div className="settings-content">
+        <div className="settings-content" role="tabpanel" id={`settings-panel-${activeSection}`} aria-labelledby={`settings-tab-${activeSection}`} tabIndex="0">
           <AnimatePresence mode="wait">
             {activeSection === 'profile' && (
               <motion.div key="profile" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>

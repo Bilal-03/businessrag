@@ -35,4 +35,10 @@ test('rejects non-PDF files and records a successful PDF upload', async ({ page 
   await fileInput.setInputFiles({ name: 'uploaded-guide.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7 test') });
   await expect(page.getByText('Upload complete.')).toBeVisible();
   await expect(page.getByText('uploaded-guide.pdf', { exact: true })).toBeVisible();
+
+  const removeButton = page.getByRole('button', { name: 'Remove document uploaded-guide.pdf' });
+  await removeButton.click();
+  await expect(page.getByRole('button', { name: 'Confirm removal of uploaded-guide.pdf' })).toBeVisible();
+  await page.getByRole('button', { name: 'Confirm removal of uploaded-guide.pdf' }).click();
+  await expect(page.getByText('uploaded-guide.pdf', { exact: true })).not.toBeVisible();
 });

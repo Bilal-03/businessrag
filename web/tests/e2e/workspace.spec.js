@@ -33,3 +33,17 @@ test('keeps navigation usable on a mobile viewport', async ({ page }) => {
   await page.getByRole('button', { name: 'My Businesses' }).click();
   await expect(page.getByRole('heading', { name: 'My Businesses' })).toBeVisible();
 });
+
+test('exposes settings sections as keyboard-operable tabs', async ({ page }) => {
+  await openAuthenticatedApp(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+
+  const profileTab = page.getByRole('tab', { name: 'Profile' });
+  const appearanceTab = page.getByRole('tab', { name: 'Appearance' });
+  await expect(profileTab).toHaveAttribute('aria-selected', 'true');
+  await expect(appearanceTab).toHaveAttribute('aria-selected', 'false');
+
+  await profileTab.press('ArrowRight');
+  await expect(appearanceTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tabpanel')).toBeVisible();
+});

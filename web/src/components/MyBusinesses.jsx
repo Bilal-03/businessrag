@@ -144,6 +144,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
   const [form, setForm] = useState(defaultForm);
   const [expandedId, setExpandedId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const activeBusiness = businesses.find(business => business.id === activeBusinessId);
 
   const save = (updated) => {
     onBusinessesChange?.(updated);
@@ -229,17 +230,26 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
     <div className="panel-container">
       <div className="panel-header">
         <div>
+          <div className="panel-kicker"><Building2 size={14} /> Workspace directory</div>
           <h2 className="panel-title">My Businesses</h2>
           <p className="panel-subtitle">Manage your registered business profiles and get tailored compliance guidance.</p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
-          className="btn-primary"
-          onClick={() => { setShowForm(true); setEditingId(null); setForm(defaultForm); }}
-        >
-          <Plus size={18} /> Add Business
-        </motion.button>
+        <div className="panel-header-actions">
+          {activeBusiness && (
+            <div className="panel-context-badge" role="status">
+              <span className="panel-context-dot" aria-hidden="true" />
+              Active: {activeBusiness.name}
+            </div>
+          )}
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            className="btn-primary"
+            onClick={() => { setShowForm(true); setEditingId(null); setForm(defaultForm); }}
+          >
+            <Plus size={18} /> Add Business
+          </motion.button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -342,9 +352,9 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
                       <div className="biz-name">{b.name}</div>
                       <div className="biz-meta">{b.type} · {b.industry}{b.state ? ` · ${b.state}` : ''}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+                    <div className="biz-card-status">
                       <span className="status-badge" style={{ background: statusColor.bg, color: statusColor.text, border: `1px solid ${statusColor.border}` }}>{b.status}</span>
-                      <motion.span animate={{ rotate: isExpanded ? 90 : 0 }} style={{ color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                      <motion.span animate={{ rotate: isExpanded ? 90 : 0 }} className="biz-chevron" aria-hidden="true">
                         <ChevronRight size={18} />
                       </motion.span>
                     </div>
@@ -395,6 +405,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
                             <button className="icon-btn-text" onClick={() => handleEdit(b)}><Edit2 size={15} /> Edit</button>
                             <button className="icon-btn-text danger" onClick={() => handleDelete(b.id)} aria-label={`${pendingDeleteId === b.id ? 'Confirm deletion of' : 'Delete'} ${b.name}`}><Trash2 size={15} /> {pendingDeleteId === b.id ? 'Confirm delete' : 'Delete'}</button>
                           </div>
+                          {pendingDeleteId === b.id && <div className="destructive-hint" role="status">Click Confirm delete again to permanently remove this business.</div>}
                         </div>
                       </motion.div>
                     )}
