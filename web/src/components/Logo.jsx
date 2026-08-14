@@ -1,20 +1,21 @@
 import React from 'react';
 
-const Logo = ({ size = 40, showText = false, textSize = 24 }) => {
+const Logo = ({ size = 40, showText = false, tone = 'light' }) => {
+  const source = showText
+    ? `/brand/bizguide-ai-logo-${tone === 'dark' ? 'dark' : 'light'}.svg`
+    : tone === 'dark'
+      ? '/brand/bizguide-ai-app-icon.svg'
+      : '/brand/bizguide-ai-mark.svg';
+
   return (
-    <div className="brand-lockup">
-      <span
-        className="brand-mark"
-        style={{ width: size, height: size, fontSize: `${size * 0.48}px` }}
-        aria-hidden="true"
-      >
-        <img className="brand-mark-image" src="/brand/bizguide-ai-mark.svg" alt="" />
-      </span>
-      {showText && (
-        <span className="brand-name" style={{ fontSize: `${textSize}px` }}>
-          <span>BizGuide</span><span className="brand-name-accent"> AI</span>
-        </span>
-      )}
+    <div className={`brand-lockup ${showText ? 'brand-lockup-full' : 'brand-lockup-mark'}`}>
+      <img
+        className={showText ? 'brand-logo-image' : 'brand-mark-image'}
+        src={source}
+        alt={showText ? 'BizGuide AI' : ''}
+        aria-hidden={showText ? undefined : true}
+        style={showText ? { maxHeight: `${size}px` } : { width: size, height: size }}
+      />
     </div>
   );
 };

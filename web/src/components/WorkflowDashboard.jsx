@@ -325,7 +325,7 @@ const WorkflowDashboard = ({
         const due = await parseResponse(response);
         for (const reminder of Array.isArray(due) ? due : []) {
           if (cancelled) return;
-          try { new Notification('BizGuide reminder', { body: reminder.title, icon: '/brand/bizguide-ai-mark.svg', badge: '/brand/bizguide-ai-mark.svg' }); } catch {}
+          try { new Notification('BizGuide reminder', { body: reminder.title, icon: '/brand/bizguide-ai-app-icon.svg', badge: '/brand/bizguide-ai-app-icon.svg' }); } catch {}
           const delivered = await fetch(`${apiUrl}/api/workflow/reminders/${encodeURIComponent(reminder.id)}/delivered`, {
             method: 'POST', headers, body: JSON.stringify({
               delivered_at: new Date().toISOString(), alert_offset_days: reminder.alert_offset_days,

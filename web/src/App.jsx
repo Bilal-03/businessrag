@@ -189,7 +189,7 @@ function fireNotification(title, body) {
   if (Notification.permission !== 'granted') return;
   if (document.visibilityState === 'visible' && document.hasFocus()) return;
   try {
-    new Notification(title, { body, icon: '/brand/bizguide-ai-mark.svg', badge: '/brand/bizguide-ai-mark.svg' });
+    new Notification(title, { body, icon: '/brand/bizguide-ai-app-icon.svg', badge: '/brand/bizguide-ai-app-icon.svg' });
   } catch {}
 }
 

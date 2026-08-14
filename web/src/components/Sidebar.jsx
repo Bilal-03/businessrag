@@ -51,7 +51,7 @@ const Sidebar = ({
           <aside className="sidebar" aria-label="Workspace navigation">
             {/* Logo */}
             <div className="sidebar-logo">
-              <Logo size={36} showText={!collapsed} textSize={20} />
+              <Logo size={36} showText={!collapsed} tone="dark" />
               <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Collapse sidebar" aria-label="Collapse sidebar" aria-expanded="true">
                 <X size={18} />
               </button>
@@ -172,7 +172,7 @@ const Sidebar = ({
           <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Expand sidebar" aria-label="Expand sidebar" aria-expanded="false">
             <Menu size={20} />
           </button>
-          <div className="mobile-sidebar-logo"><Logo size={32} showText={false} /></div>
+          <div className="mobile-sidebar-logo"><Logo size={32} showText={false} tone="dark" /></div>
           <div style={{ flex: 1 }} />
           {navItems.map(item => (
             <button

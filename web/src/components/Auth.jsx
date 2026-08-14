@@ -53,7 +53,7 @@ export default function Auth() {
   return (
     <div className="auth-container">
       <section className="auth-story" aria-label="About BizGuide">
-        <Logo size={46} showText textSize={24} />
+        <Logo size={46} showText tone="dark" />
         <div className="auth-story-copy">
           <span className="auth-eyebrow">India-focused compliance workspace</span>
           <h1>Compliance work deserves a clearer starting point.</h1>

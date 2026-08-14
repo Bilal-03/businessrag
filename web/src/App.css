@@ -1917,7 +1917,14 @@
   .workflow-header-controls { width: 100%; justify-content: flex-start; margin-left: 0; }
   .workflow-business-field { min-width: 0; flex: 1; }
   .workflow-header-controls .workflow-business-select { width: 100%; }
-  .settings-layout { grid-template-columns: 180px minmax(0, 1fr); gap: 20px; }
+  .settings-layout { grid-template-columns: 1fr; gap: 18px; }
+  .settings-nav {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .settings-nav-item { min-width: max-content; }
 }
 
 @keyframes input-marquee-scroll {
@@ -1949,6 +1956,10 @@
   gap: 11px;
 }
 
+.brand-lockup-full {
+  line-height: 0;
+}
+
 .brand-mark {
   display: inline-block;
   flex: 0 0 auto;
@@ -1960,21 +1971,15 @@
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: contain;
 }
 
-.brand-name {
-  display: inline-flex;
-  align-items: baseline;
-  color: #fffaf3;
-  font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-  font-weight: 750;
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.brand-name-accent {
-  color: #d8896c;
-  letter-spacing: -0.02em;
+.brand-logo-image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .sidebar {
@@ -3227,20 +3232,38 @@
   box-shadow: none;
 }
 
-.brand-board-preview {
+.brand-primary-preview {
   margin: 0 0 16px;
+  min-height: 168px;
+  display: grid;
+  place-items: center;
+  padding: 26px clamp(18px, 4vw, 48px);
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
-  background: var(--color-canvas);
+  background: #f8f2e9;
 }
 
-.brand-board-preview img {
+.brand-primary-preview .brand-lockup-full {
+  width: min(100%, 720px);
+  justify-content: center;
+}
+
+.brand-primary-preview .brand-logo-image {
+  width: 100%;
+  max-height: none;
+}
+
+.about-card .brand-lockup-mark {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(32, 35, 31, 0.08);
+}
+
+.about-card .brand-mark-image {
   display: block;
   width: 100%;
-  max-height: 220px;
-  object-fit: cover;
-  object-position: center top;
+  height: 100%;
 }
 
 .credits-card::before {

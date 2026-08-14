@@ -236,7 +236,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                           // Fire a test notification so they can see it works
                           new Notification('BizGuide AI', {
                             body: 'Notifications are enabled! You\'ll be notified when AI responds.',
-                            icon: '/brand/bizguide-ai-mark.svg',
+                            icon: '/brand/bizguide-ai-app-icon.svg',
                           });
                         } else {
                           setNotifications(false);
@@ -308,11 +308,11 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
             {activeSection === 'about' && (
               <motion.div key="about" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
                 <div className="settings-section-title">About BizGuide AI</div>
-                <div className="brand-board-preview">
-                  <img src="/brand/bizguide-ai-brand-board.png" alt="BizGuide AI logo system showing light, dark, monochrome, and application icon variations" />
+                <div className="brand-primary-preview">
+                  <Logo size={156} showText tone="light" />
                 </div>
                 <div className="about-card glass-panel">
-                  <Logo size={56} showText={false} />
+                  <Logo size={56} showText={false} tone="light" />
                   <div className="about-info">
                     <div className="about-name">BizGuide AI</div>
                     <div className="about-tagline">Business-compliance information for India</div>
