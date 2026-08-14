@@ -6,6 +6,11 @@ test('authenticated home workspace visual baseline', async ({ page }) => {
   await openAuthenticatedApp(page);
   await expect(page.locator('main#main-content')).toBeVisible();
   await expect(page.getByRole('heading', { name: /What do you need to verify today/ })).toBeVisible();
+  const sidebarLogo = page.locator('.sidebar-logo img[alt="BizGuide AI"]');
+  if (await sidebarLogo.count()) {
+    await expect(sidebarLogo).toHaveAttribute('src', '/brand/bizguide-ai-logo-light.svg');
+    await expect(sidebarLogo).toBeVisible();
+  }
   await expect(page).toHaveScreenshot('home-workspace.png', { fullPage: true });
 });
 

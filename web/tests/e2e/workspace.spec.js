@@ -65,6 +65,9 @@ test('keeps navigation usable on a mobile viewport', async ({ page }) => {
   await page.getByRole('button', { name: 'Open navigation' }).click();
   const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
   await expect(primaryNavigation).toBeVisible();
+  const sidebarLogo = page.locator('.sidebar-logo img[alt="BizGuide AI"]');
+  await expect(sidebarLogo).toHaveAttribute('src', '/brand/bizguide-ai-logo-light.svg');
+  await expect(sidebarLogo).toBeVisible();
   await primaryNavigation.getByRole('button', { name: 'Businesses', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'My Businesses' })).toBeVisible();
 });

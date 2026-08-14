@@ -2000,6 +2000,20 @@
   border-bottom: 1px solid rgba(255, 250, 243, 0.13);
 }
 
+.sidebar-logo .brand-lockup-full {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-canvas);
+}
+
+.sidebar-logo .brand-logo-image {
+  width: min(156px, 100%);
+  max-width: 100%;
+  max-height: none;
+}
+
 .sidebar-collapse-btn,
 .mobile-menu-button {
   min-width: 44px;
