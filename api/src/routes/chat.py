@@ -66,7 +66,14 @@ async def chat_stream_endpoint(request: Request, req: ChatRequest, user_id: str 
                 exc_info=True,
                 extra={"event": "chat_stream_failed", "request_id": request_id, "path": request.url.path},
             )
-            yield _sse_event("error", {"detail": error.detail, "request_id": request_id})
+            yield _sse_event(
+                "error",
+                {
+                    "detail": error.detail,
+                    "request_id": request_id,
+                    "status_code": error.status_code,
+                },
+            )
 
     return StreamingResponse(
         event_stream(),

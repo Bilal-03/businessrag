@@ -2415,6 +2415,14 @@
   box-shadow: none;
 }
 
+.composer-status-dot.independent {
+  background: var(--color-content-muted);
+}
+
+.composer-status-dot.included {
+  background: var(--color-sage);
+}
+
 .language-switch {
   position: static;
   grid-column: 2;

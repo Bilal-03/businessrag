@@ -22,7 +22,7 @@ def test_general_question_ignores_active_business_without_selected_context(monke
     monkeypatch.setattr(chat_engine, "retrieve_sources", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("documents were not selected")))
     response = asyncio.run(
         chat_engine.build_chat_response(
-            ChatRequest(query="How do I register GST for my business in India?", business_id=BUSINESS_ID),
+            ChatRequest(query="How do I register GST for my business in India?", business_id=BUSINESS_ID, language="hi"),
             "test-user-id",
             "token",
             "request-id",
@@ -33,6 +33,7 @@ def test_general_question_ignores_active_business_without_selected_context(monke
     assert response.context_used == []
     assert captured["business_context_text"] == ""
     assert captured["sources"] == []
+    assert captured["language"] == "hi"
 
 
 def test_selected_business_context_is_sent_to_gemini_even_without_reviewed_claims(monkeypatch):

@@ -25,9 +25,17 @@ def build_agent_prompt(
     context_text: str = "",
     business_context_text: str = "",
     official_context_text: str = "",
+    language: str = "en",
 ) -> str:
     """Build the Gemini prompt with only the context explicitly selected by the user."""
     base_prompt = AGENT_SYSTEM_PROMPTS.get(agent_type, AGENT_SYSTEM_PROMPTS["General Agent"])
+    language_instruction = (
+        "Write the final answer entirely in Hindi using Devanagari. Keep product names, URLs, "
+        "official source names, and unavoidable technical terms as-is, but explain them in Hindi. "
+        "Do not answer in English just because the selected context is written in English."
+        if language == "hi"
+        else "Write the final answer in English."
+    )
 
     sections: list[str] = []
     if business_context_text:
@@ -54,10 +62,11 @@ def build_agent_prompt(
         )
 
     if not sections:
-        return base_prompt
+        return f"{base_prompt}\n\n{language_instruction}"
     return (
         f"{base_prompt}\n\n"
         "Use the selected reference sections below only when relevant to the user's question. "
         "Keep the answer independent of any business or document data that is not included here.\n\n"
         + "\n\n".join(sections)
+        + f"\n\n{language_instruction}"
     )

@@ -490,6 +490,7 @@ async def build_chat_response(
         sources=sources,
         business_context_text=business_context_text,
         official_context_text=official_context_text,
+        language=req.language,
     )
 
     document_citations = _document_citations(sources)

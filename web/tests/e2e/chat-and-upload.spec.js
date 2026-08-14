@@ -26,6 +26,7 @@ test('streams a source-aware answer with citation metadata', async ({ page }) =>
 
 test('answers independently by default without workspace context', async ({ page }) => {
   await openAuthenticatedApp(page, { chatMode: 'stream' });
+  await expect(page.getByText('Personal workspace', { exact: true }).first()).toBeVisible();
   const input = page.getByLabel('Ask BizGuide a question');
   const requestPromise = page.waitForRequest(request => request.url().endsWith('/api/chat/stream') && request.method() === 'POST');
   await input.fill('What is a good customer onboarding checklist?');
@@ -46,6 +47,8 @@ test('sends business and document context only when both toggles are enabled', a
   const businessToggle = page.getByRole('button', { name: 'Business', exact: true });
   const documentsToggle = page.getByRole('button', { name: 'Documents', exact: true });
   await expect(businessToggle).toBeEnabled();
+  await expect(businessToggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByText('Personal workspace', { exact: true }).first()).toBeVisible();
   await businessToggle.click();
   await documentsToggle.click();
 
@@ -60,6 +63,19 @@ test('sends business and document context only when both toggles are enabled', a
     use_document_context: true,
   });
   await expect(page.getByText('Context used: business profile + uploaded documents')).toBeVisible();
+});
+
+test('sends the selected answer language and renders Hindi output', async ({ page }) => {
+  await openAuthenticatedApp(page, { chatMode: 'stream' });
+  await page.getByRole('button', { name: 'हिन्दी', exact: true }).click();
+
+  const input = page.getByLabel('Ask BizGuide a question');
+  const requestPromise = page.waitForRequest(request => request.url().endsWith('/api/chat/stream') && request.method() === 'POST');
+  await input.fill('मुझे एक सामान्य व्यवसाय सुझाव दें');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  const request = await requestPromise;
+  expect(request.postDataJSON()).toMatchObject({ language: 'hi' });
+  await expect(page.getByText('जेमिनी ने स्वतंत्र रूप से उत्तर दिया।')).toBeVisible();
 });
 
 test('supports multiline questions and sends with Enter', async ({ page }) => {
@@ -82,6 +98,16 @@ test('offers a retry action when the AI request fails', async ({ page }) => {
 
   await expect(page.getByText('AI is temporarily unavailable.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
+});
+
+test('retries a transient backend failure once', async ({ page }) => {
+  await openAuthenticatedApp(page, { chatMode: 'transient-error' });
+  const input = page.getByLabel('Ask BizGuide a question');
+  await input.fill('This request should recover after a cold start');
+  await page.getByRole('button', { name: 'Send message' }).click();
+
+  await expect(page.getByText('Independent Gemini answer.')).toBeVisible();
+  await expect(page.getByText('Retrying the chat service…')).not.toBeVisible();
 });
 
 test('rejects non-PDF files and records a successful PDF upload', async ({ page }) => {

@@ -88,6 +88,7 @@ async function readChatStream(response, onUpdate) {
     } else if (eventName === 'error') {
       const error = new Error(payload.detail || 'We could not generate an answer.');
       error.requestId = payload.request_id;
+      error.status = payload.status_code;
       throw error;
     }
   };
@@ -111,6 +112,72 @@ function getApiError(data, response, fallback) {
   return { detail, requestId };
 }
 
+const RETRYABLE_CHAT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+function isTransientChatError(error) {
+  if (Number.isFinite(error?.status)) return RETRYABLE_CHAT_STATUSES.has(error.status);
+  return /load failed|failed to fetch|network|timeout|response stream/i.test(String(error?.message || '').toLowerCase());
+}
+
+function userFacingChatError(error) {
+  const message = String(error?.message || '');
+  if (!error?.status && /load failed|failed to fetch|network|timeout/i.test(message.toLowerCase())) {
+    return 'The chat service was temporarily unreachable. We retried once; please try again.';
+  }
+  return message || 'We could not generate an answer. Please try again.';
+}
+
+async function requestChatResponse({ apiUrl, accessToken, requestBody, onStreamUpdate, onRetry }) {
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      let response = await fetch(`${apiUrl}/api/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: requestBody,
+      });
+      let data;
+      let usedStreaming = false;
+
+      if (response.status === 404 || response.status === 405) {
+        // Keep the public beta compatible with an older backend during rollout.
+        response = await fetch(`${apiUrl}/api/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: requestBody,
+        });
+        data = await readApiResponse(response);
+      } else if (response.ok) {
+        usedStreaming = true;
+        data = await readChatStream(response, onStreamUpdate);
+      } else {
+        data = await readApiResponse(response);
+      }
+
+      if (!response.ok) {
+        const { detail, requestId } = getApiError(data, response, 'We could not generate an answer.');
+        const error = new Error(detail);
+        error.requestId = requestId;
+        error.status = response.status;
+        throw error;
+      }
+      return { data, usedStreaming };
+    } catch (error) {
+      lastError = error;
+      if (attempt === 1 || !isTransientChatError(error)) throw error;
+      onRetry?.(attempt + 1, error);
+      await new Promise(resolve => window.setTimeout(resolve, 800));
+    }
+  }
+  throw lastError || new Error('We could not generate an answer.');
+}
+
 /** Fire a real browser notification if permission granted and page is not focused */
 function fireNotification(title, body) {
   if (typeof Notification === 'undefined') return;
@@ -129,6 +196,7 @@ function App() {
   const [useBusinessContext, setUseBusinessContext] = useState(false);
   const [useDocumentContext, setUseDocumentContext] = useState(false);
   const [isTyping, setIsTyping]           = useState(false);
+  const [isRetrying, setIsRetrying]       = useState(false);
   const [isUploading, setIsUploading]     = useState(false);
   const [conversations, setConversations] = useState([]);
   const [activeConvId, setActiveConvId]   = useState(null);
@@ -168,6 +236,7 @@ function App() {
     setInput('');
     setUseBusinessContext(false);
     setUseDocumentContext(false);
+    setIsRetrying(false);
     setActiveConvId(null);
     currentConvIdRef.current = null;
     setCurrentView('home');
@@ -484,31 +553,15 @@ function App() {
         language: answerLanguage,
         history,
       });
-      let response = await fetch(`${apiUrl}/api/chat/stream`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+      const { data, usedStreaming } = await requestChatResponse({
+        apiUrl,
+        accessToken: session.access_token,
+        requestBody,
+        onRetry: () => {
+          setIsRetrying(true);
+          captureEvent('chat_retry');
         },
-        body: requestBody,
-      });
-      let data;
-      let usedStreaming = false;
-
-      if (response.status === 404 || response.status === 405) {
-        // Keep the public beta compatible with an older backend during rollout.
-        response = await fetch(`${apiUrl}/api/chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: requestBody,
-        });
-        data = await readApiResponse(response);
-      } else if (response.ok) {
-        usedStreaming = true;
-        data = await readChatStream(response, streamed => {
+        onStreamUpdate: streamed => {
           setMessages([...updatedMessages, {
             role: 'ai',
             content: streamed.answer,
@@ -528,17 +581,8 @@ function App() {
             profileVersion: streamed.profile_version,
             escalation: streamed.escalation,
           }]);
-        });
-      } else {
-        data = await readApiResponse(response);
-      }
-      
-      if (!response.ok) {
-        const { detail, requestId } = getApiError(data, response, 'We could not generate an answer.');
-        const error = new Error(detail);
-        error.requestId = requestId;
-        throw error;
-      }
+        },
+      });
       
       const aiMsg = {
         role: 'ai',
@@ -576,7 +620,7 @@ function App() {
       const requestId = error.requestId ? `\n\nReference: \`${error.requestId}\`` : '';
       const errMsg = {
         role: 'ai',
-        content: `⚠️ ${error.message || 'We could not generate an answer. Please try again.'}${requestId}`,
+        content: `⚠️ ${userFacingChatError(error)}${requestId}`,
         retryQuery: query,
       };
       const finalMessages = [...updatedMessages, errMsg];
@@ -584,6 +628,7 @@ function App() {
       persistCurrentConv(finalMessages, currentConvIdRef.current);
     } finally {
       setIsTyping(false);
+      setIsRetrying(false);
     }
   };
 
@@ -741,6 +786,14 @@ function App() {
     await supabase.auth.signOut();
   };
 
+  const chatBusinessIncluded = useBusinessContext && Boolean(activeBusinessId);
+  const chatWorkspaceLabel = chatBusinessIncluded && activeBusinessProfile?.name
+    ? activeBusinessProfile.name
+    : 'Personal workspace';
+  const chatWorkspaceTitle = chatBusinessIncluded
+    ? 'Business context is included for this question'
+    : 'Business context is off; this question uses Gemini independently';
+
   if (isAuthLoading) {
     return <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', color: 'white' }}>Loading...</div>;
   }
@@ -797,7 +850,7 @@ function App() {
                         <span className="hero-status-dot" aria-hidden="true" />
                         <span>Source-first workspace</span>
                         <span className="hero-topline-divider" aria-hidden="true" />
-                        <span className="hero-topline-context">{activeBusinessProfile?.name || 'Personal workspace'}</span>
+                        <span className="hero-topline-context">{chatWorkspaceLabel}</span>
                       </div>
                       <div className="hero-copy">
                         <div className="hero-badge">Guided by your business context and sources</div>
@@ -949,7 +1002,7 @@ function App() {
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }} className="typing-dot" />
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.4 }} className="typing-dot" />
                             <span className="typing-text">
-                              {isUploading ? 'Processing document and creating embeddings…' : 'Preparing your response…'}
+                              {isUploading ? 'Processing document and creating embeddings…' : isRetrying ? 'Retrying the chat service…' : 'Preparing your response…'}
                             </span>
                           </div>
                         </motion.div>
@@ -963,9 +1016,9 @@ function App() {
               {/* Input Area */}
               <div className="input-container">
                   <div className="composer-context">
-                    <div className="composer-workspace" title={activeBusinessProfile?.name || 'Personal workspace'}>
-                      <span className="composer-status-dot" aria-hidden="true" />
-                      <span>{activeBusinessProfile?.name || 'Personal workspace'}</span>
+                    <div className="composer-workspace" title={chatWorkspaceTitle}>
+                      <span className={`composer-status-dot ${chatBusinessIncluded ? 'included' : 'independent'}`} aria-hidden="true" />
+                      <span>{chatWorkspaceLabel}</span>
                     </div>
                     <div className="language-switch" aria-label="Answer language">
                       <button type="button" className={answerLanguage === 'en' ? 'active' : ''} onClick={() => setAnswerLanguage('en')}>English</button>

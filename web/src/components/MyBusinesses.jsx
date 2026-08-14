@@ -278,7 +278,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
           {activeBusiness && (
             <div className="panel-context-badge" role="status">
               <span className="panel-context-dot" aria-hidden="true" />
-              Active: {activeBusiness.name}
+              Selected: {activeBusiness.name}
             </div>
           )}
           <motion.button
@@ -469,7 +469,7 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
                             onClick={() => onSelectBusiness?.(activeBusinessId === b.id ? null : b.id, activeBusinessId === b.id ? null : b)}
                             aria-pressed={activeBusinessId === b.id}
                           >
-                            {activeBusinessId === b.id ? 'Active context for chat' : 'Use this business for chat'}
+                            {activeBusinessId === b.id ? 'Selected business' : 'Select for chat'}
                           </button>
                           {b.description && <p className="biz-description">{b.description}</p>}
                           {!b.state && <p className="business-context-warning" role="status">Add a primary state so future obligation guidance can be jurisdiction-aware.</p>}
