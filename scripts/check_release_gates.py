@@ -25,7 +25,7 @@ async def main() -> int:
     open_changes = await client.request("GET", "source_change_events", params={"select": "id", "resolution_status": "eq.open", "severity": "in.(high,critical)"})
     stale_claims = await client.request("GET", "reviewed_claims", params={"select": "id", "lifecycle": "eq.published", "revalidate_by": f"lt.{datetime.now(UTC).date().isoformat()}"})
     gates = {
-        "approved_evaluation_scenarios": {"required": 2000, "actual": approved_scenarios},
+        "approved_evaluation_scenarios": {"required": 1000, "actual": approved_scenarios},
         "coverage_cells_reviewed": {"required": len(coverage), "actual": sum(row["status"] in {"covered", "not_applicable"} and row["reviewer_user_id"] and row["reviewed_at"] for row in coverage)},
         "open_high_or_critical_source_changes": {"required": 0, "actual": len(open_changes)},
         "stale_published_claims": {"required": 0, "actual": len(stale_claims)},

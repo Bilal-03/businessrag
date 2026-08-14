@@ -81,4 +81,4 @@ Run the gate from a trusted operator machine with the production Supabase URL an
 PYTHONPATH=api .venv/bin/python scripts/check_release_gates.py
 ```
 
-It is expected to fail until the 2,000 evaluation scenarios, coverage cells, source-change queue, and published-record freshness gates are approved. Do not bypass a failed gate; resolve the named review or coverage blocker first.
+It is expected to fail until the 1,000 English-only evaluation scenarios, coverage cells, source-change queue, and published-record freshness gates are approved. Do not bypass a failed gate; resolve the named review or coverage blocker first.

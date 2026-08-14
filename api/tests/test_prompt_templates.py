@@ -5,3 +5,4 @@ def test_prompt_requests_english_output():
     prompt = build_agent_prompt("General Agent")
 
     assert "Write the final answer in English." in prompt
+    assert "Do not mention the underlying model, provider, or internal implementation" in prompt

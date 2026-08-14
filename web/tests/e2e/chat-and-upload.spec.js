@@ -39,8 +39,9 @@ test('answers independently by default without workspace context', async ({ page
   });
   expect(request.postDataJSON()).not.toHaveProperty('language');
 
-  await expect(page.getByText('Independent Gemini answer.')).toBeVisible();
-  await expect(page.getByText('Answered independently by Gemini — no business or document context used')).toBeVisible();
+  await expect(page.getByText('Independent answer.')).toBeVisible();
+  await expect(page.getByText('Answered independently — no business or document context used')).toBeVisible();
+  await expect(page.locator('body')).not.toContainText('Gemini');
 });
 
 test('sends business and document context only when both toggles are enabled', async ({ page }) => {
@@ -113,7 +114,7 @@ test('retries a transient backend failure once', async ({ page }) => {
   await input.fill('This request should recover after a cold start');
   await page.getByRole('button', { name: 'Send message' }).click();
 
-  await expect(page.getByText('Independent Gemini answer.')).toBeVisible();
+  await expect(page.getByText('Independent answer.')).toBeVisible();
   await expect(page.getByText('Retrying the chat service…')).not.toBeVisible();
 });
 

@@ -796,12 +796,12 @@ function App() {
     : 'Personal workspace';
   const chatWorkspaceTitle = chatBusinessIncluded
     ? 'Business context is included for this question'
-    : 'Business context is off; this question uses Gemini independently';
+    : 'Business context is off; this question is answered independently';
   const chatComposerLabel = chatBusinessIncluded && activeBusinessProfile?.name
     ? activeBusinessProfile.name
     : useDocumentContext
       ? 'Selected documents'
-      : 'Gemini by default';
+      : 'Independent by default';
 
   if (isAuthLoading) {
     return <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', color: 'white' }}>Loading...</div>;
@@ -869,7 +869,7 @@ function App() {
                         </h1>
                         <p className="hero-subtitle">
                           <span className="hero-subtitle-desktop">Ask a question, review an obligation, or work from your own documents. BizGuide will show the evidence and coverage limits behind each answer.</span>
-                          <span className="hero-subtitle-mobile">Ask anything with Gemini. Turn on Business or Documents below when you want context included.</span>
+                          <span className="hero-subtitle-mobile">Ask anything. Turn on Business or Documents below when you want context included.</span>
                           <span className="hero-mobile-disclaimer">Verify important decisions against the original source.</span>
                         </p>
                         <div className="hero-privacy-note">
@@ -936,7 +936,7 @@ function App() {
                                 <div className="answer-context" role="status">
                                   {msg.contextUsed.length > 0
                                     ? `Context used: ${msg.contextUsed.map(context => context === 'business' ? 'business profile' : 'uploaded documents').join(' + ')}`
-                                    : 'Answered independently by Gemini — no business or document context used'}
+                                    : 'Answered independently — no business or document context used'}
                                 </div>
                               )}
                               {msg.missingInputs?.length > 0 && (
@@ -981,7 +981,7 @@ function App() {
                                   Try again
                                 </button>
                               )}
-                              <p className="answer-disclaimer">{msg.evidenceStatus === 'verified' ? 'The answer is limited to the cited evidence, effective date, confirmed profile facts, and disclosed coverage.' : msg.evidenceStatus === 'general_guidance' ? 'This is general Gemini guidance. Verify current legal or tax specifics against an official source or qualified professional.' : 'This answer is not a verified legal or tax conclusion. Coverage limits and missing evidence are shown above.'}</p>
+                              <p className="answer-disclaimer">{msg.evidenceStatus === 'verified' ? 'The answer is limited to the cited evidence, effective date, confirmed profile facts, and disclosed coverage.' : msg.evidenceStatus === 'general_guidance' ? 'This is general guidance. Verify current legal or tax specifics against an official source or qualified professional.' : 'This answer is not a verified legal or tax conclusion. Coverage limits and missing evidence are shown above.'}</p>
                               {msg.evidenceStatus && (() => {
                                 const feedbackKey = msg.id || `${activeConvId || 'current'}:${idx}`;
                                 const feedbackStatus = feedbackState[feedbackKey];

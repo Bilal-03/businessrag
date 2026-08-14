@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the 2,000-case trust evaluation manifest.
+"""Generate the 1,000-case English-only trust evaluation manifest.
 
 The output cases are scenarios, not reviewer approvals. A qualified reviewer
 must set `review_status=approved` before a case counts toward the launch gate.

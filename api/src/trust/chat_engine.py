@@ -494,9 +494,9 @@ async def build_chat_response(
         context_used.append("documents")
         assumptions.append("Selected uploaded documents are private reference material and do not establish current law.")
     elif req.use_document_context:
-        assumptions.append("No relevant uploaded document was found, so this answer was generated independently by Gemini.")
+        assumptions.append("No relevant uploaded document was found, so this answer was generated independently.")
     if not context_used:
-        assumptions.append("Answered independently by Gemini without business or uploaded-document context.")
+        assumptions.append("Answered independently without business or uploaded-document context.")
     if not claims and missing:
         assumptions.append("The reviewed catalog did not provide a verified claim for this question; current specifics should be checked against an official source.")
 

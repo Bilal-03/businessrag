@@ -51,7 +51,7 @@ jobs:
 
       - name: Verify trust evaluation manifest
         run: |
-          test "$(wc -l < ../evals/trust_scenarios.jsonl)" -eq 2000
+          test "$(wc -l < ../evals/trust_scenarios.jsonl)" -eq 1000
           python ../scripts/generate_trust_evaluations.py
           git diff --exit-code -- ../evals/trust_scenarios.jsonl
 

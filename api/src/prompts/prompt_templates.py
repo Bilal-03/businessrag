@@ -28,7 +28,10 @@ def build_agent_prompt(
 ) -> str:
     """Build the Gemini prompt with only the context explicitly selected by the user."""
     base_prompt = AGENT_SYSTEM_PROMPTS.get(agent_type, AGENT_SYSTEM_PROMPTS["General Agent"])
-    language_instruction = "Write the final answer in English."
+    response_instruction = (
+        "Write the final answer in English. Present it as BizGuide guidance. "
+        "Do not mention the underlying model, provider, or internal implementation unless the user explicitly asks."
+    )
 
     sections: list[str] = []
     if business_context_text:
@@ -55,11 +58,11 @@ def build_agent_prompt(
         )
 
     if not sections:
-        return f"{base_prompt}\n\n{language_instruction}"
+        return f"{base_prompt}\n\n{response_instruction}"
     return (
         f"{base_prompt}\n\n"
         "Use the selected reference sections below only when relevant to the user's question. "
         "Keep the answer independent of any business or document data that is not included here.\n\n"
         + "\n\n".join(sections)
-        + f"\n\n{language_instruction}"
+        + f"\n\n{response_instruction}"
     )

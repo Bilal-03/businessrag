@@ -336,7 +336,7 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
         ...(useBusinessContext ? ['business'] : []),
         ...(useDocumentContext ? ['documents'] : []),
       ];
-      const answer = useDocumentContext ? 'Grounded answer from your document.' : 'Independent Gemini answer.';
+      const answer = useDocumentContext ? 'Grounded answer from your document.' : 'Independent answer.';
       const stream = [
         'event: meta\n',
         `data: ${JSON.stringify({

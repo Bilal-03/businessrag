@@ -16,7 +16,7 @@ def test_general_question_ignores_active_business_without_selected_context(monke
 
     def fake_generate(*args, **kwargs):
         captured.update(kwargs)
-        return AgentGenerationResult(answer="Gemini answered independently.", sources=[], grounding="general")
+        return AgentGenerationResult(answer="Independent answer.", sources=[], grounding="general")
 
     monkeypatch.setattr(chat_engine, "agent_generate_with_sources", fake_generate)
     monkeypatch.setattr(chat_engine, "retrieve_sources", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("documents were not selected")))
@@ -36,7 +36,7 @@ def test_general_question_ignores_active_business_without_selected_context(monke
     assert "language" not in captured
 
 
-def test_selected_business_context_is_sent_to_gemini_even_without_reviewed_claims(monkeypatch):
+def test_selected_business_context_is_sent_to_generation_even_without_reviewed_claims(monkeypatch):
     async def fake_request(self, method, table, *, params=None, payload=None):
         if table == "businesses":
             return [{"id": BUSINESS_ID, "industry_code": "technology_it", "industry": "Technology/IT", "entity_type": "Private Limited (Pvt Ltd)", "state_code": "DL", "status": "operating"}]
@@ -50,7 +50,7 @@ def test_selected_business_context_is_sent_to_gemini_even_without_reviewed_claim
 
     def fake_generate(*args, **kwargs):
         captured.update(kwargs)
-        return AgentGenerationResult(answer="Gemini tailored the answer.", sources=[], grounding="general")
+        return AgentGenerationResult(answer="Tailored answer.", sources=[], grounding="general")
 
     monkeypatch.setattr(SupabaseRestClient, "request", fake_request)
     monkeypatch.setattr(chat_engine, "agent_generate_with_sources", fake_generate)
@@ -69,13 +69,13 @@ def test_selected_business_context_is_sent_to_gemini_even_without_reviewed_claim
     assert "Industry: Technology/IT" in captured["business_context_text"]
 
 
-def test_selected_documents_are_sent_to_gemini(monkeypatch):
+def test_selected_documents_are_sent_to_generation(monkeypatch):
     source = RetrievedSource(content="The uploaded handbook describes the onboarding process.", document_id="doc-1", file_name="handbook.pdf", page_number=2, score=0.91)
     captured = {}
 
     def fake_generate(*args, **kwargs):
         captured.update(kwargs)
-        return AgentGenerationResult(answer="Gemini used the handbook.", sources=list(kwargs["sources"]), grounding="document")
+        return AgentGenerationResult(answer="The handbook was used.", sources=list(kwargs["sources"]), grounding="document")
 
     monkeypatch.setattr(chat_engine, "retrieve_sources", lambda *args, **kwargs: [source])
     monkeypatch.setattr(chat_engine, "agent_generate_with_sources", fake_generate)
@@ -124,7 +124,7 @@ def test_reviewed_claim_requires_healthy_current_evidence(monkeypatch):
     monkeypatch.setattr(
         chat_engine,
         "agent_generate_with_sources",
-        lambda *args, **kwargs: AgentGenerationResult(answer="Gemini grounded this answer.", sources=list(kwargs["sources"]), grounding="document"),
+        lambda *args, **kwargs: AgentGenerationResult(answer="Grounded answer.", sources=list(kwargs["sources"]), grounding="document"),
     )
     response = asyncio.run(chat_engine.build_chat_response(ChatRequest(query="What SaaS procedure applies?", business_id=BUSINESS_ID, use_business_context=True, as_of=date(2026, 8, 13)), "test-user-id", "token"))
     assert response.evidence_status == "verified"
