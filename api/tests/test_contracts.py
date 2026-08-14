@@ -17,6 +17,8 @@ def test_chat_contract_keeps_legacy_query_and_supports_scoped_context():
 
     assert request.query.startswith("What are")
     assert request.history[-1].role == "assistant"
+    assert request.use_business_context is False
+    assert request.use_document_context is False
 
 
 def test_chat_contract_rejects_system_messages_from_client_history():

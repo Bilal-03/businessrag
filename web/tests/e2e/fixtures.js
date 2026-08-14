@@ -206,7 +206,7 @@ function bodyFromRequest(request) {
   }
 }
 
-export async function installMocks(page, { authenticated = true, chatMode = 'stream' } = {}) {
+export async function installMocks(page, { authenticated = true, chatMode = 'stream', activeBusinessId = null } = {}) {
   const state = {
     tasks: [WORKFLOW_TASK],
     obligations: WORKFLOW_OBLIGATIONS,
@@ -215,14 +215,16 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
     complianceProfiles: COMPLIANCE_PROFILES.map(profile => ({ ...profile })),
   };
 
-  await page.addInitScript(({ isAuthenticated, marker, authStorage }) => {
+  await page.addInitScript(({ isAuthenticated, marker, authStorage, selectedBusinessId }) => {
     window.localStorage.clear();
     window.localStorage.setItem(`bizguide_core_cutover:${marker}`, 'core-v1');
     if (isAuthenticated) window.localStorage.setItem('sb-test-auth-token', authStorage);
+    if (selectedBusinessId) window.localStorage.setItem(`bizguide_active_business:${marker}`, selectedBusinessId);
   }, {
     isAuthenticated: authenticated,
     marker: TEST_USER.id,
     authStorage: sessionStorageValue(),
+    selectedBusinessId: activeBusinessId,
   });
 
   await page.route('**/auth/v1/**', async route => {
@@ -326,21 +328,32 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
         });
         return;
       }
+      const requestBody = bodyFromRequest(request);
+      const useBusinessContext = requestBody.use_business_context === true;
+      const useDocumentContext = requestBody.use_document_context === true;
+      const contextUsed = [
+        ...(useBusinessContext ? ['business'] : []),
+        ...(useDocumentContext ? ['documents'] : []),
+      ];
+      const answer = useDocumentContext ? 'Grounded answer from your document.' : 'Independent Gemini answer.';
       const stream = [
         'event: meta\n',
         `data: ${JSON.stringify({
-          grounding: 'document',
-          agent_type: 'Document Agent',
-          citations: [{
+          grounding: useDocumentContext ? 'document' : 'general',
+          agent_type: useDocumentContext ? 'Document Agent' : 'General Agent',
+          evidence_status: useDocumentContext ? 'partially_supported' : 'general_guidance',
+          answer_mode: useDocumentContext ? 'user_document_analysis' : 'general_business_guidance',
+          context_used: contextUsed,
+          citations: useDocumentContext ? [{
             document_id: DOCUMENT.id,
             file_name: DOCUMENT.file_name,
             page_number: 2,
             snippet: 'Verify the filing date against the official notice.',
             score: 0.94,
-          }],
+          }] : [],
         })}\n\n`,
         'event: token\n',
-        `data: ${JSON.stringify({ text: 'Grounded answer from your document.' })}\n\n`,
+        `data: ${JSON.stringify({ text: answer })}\n\n`,
         'event: done\n',
         'data: {}\n\n',
       ].join('');

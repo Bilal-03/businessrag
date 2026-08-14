@@ -317,8 +317,8 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                 </div>
                 <div className="about-features">
                   {[
-                    { icon: <Bot size={24} />, title: 'AI-assisted guidance', desc: 'Uses a routing step and Llama 3.3 to tailor business, legal, and tax information' },
-                    { icon: <Search size={24} />, title: 'RAG-Powered', desc: 'Retrieval-augmented generation with Pinecone vector search and Gemini embeddings' },
+                    { icon: <Bot size={24} />, title: 'Gemini-assisted guidance', desc: 'Answers every question with Gemini and keeps business or document context opt-in per question' },
+                    { icon: <Search size={24} />, title: 'Opt-in RAG', desc: 'Retrieval-augmented generation with Pinecone vector search and Gemini embeddings when Documents is enabled' },
                     { icon: <FileText size={24} />, title: 'Document Intelligence', desc: 'Upload your business PDFs to get answers grounded in your actual documents' },
                     { icon: <MapPin size={24} />, title: 'India-Focused', desc: 'Specialized in Indian business laws, GST, MCA regulations, and compliance' },
                   ].map(f => (

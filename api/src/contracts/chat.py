@@ -14,13 +14,15 @@ class ConversationMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    """Versioned, business-scoped chat request."""
+    """Chat request with explicit, per-question workspace context."""
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
     query: str = Field(min_length=1, max_length=8000)
     conversation_id: str | None = Field(default=None, max_length=120)
     business_id: str | None = Field(default=None, max_length=120)
+    use_business_context: bool = False
+    use_document_context: bool = False
     language: Literal["en", "hi"] = "en"
     as_of: date | None = None
     history: list[ConversationMessage] = Field(default_factory=list, max_length=20)
@@ -86,6 +88,7 @@ class ChatResponse(BaseModel):
     language: Literal["en", "hi"] = "en"
     claims: list[VerifiedClaim] = Field(default_factory=list, max_length=20)
     citations: list[SourceCitation] = Field(default_factory=list, max_length=20)
+    context_used: list[Literal["business", "documents"]] = Field(default_factory=list, max_length=2)
     assumptions: list[str] = Field(default_factory=list, max_length=20)
     missing_inputs: list[str] = Field(default_factory=list, max_length=20)
     conflicts: list[str] = Field(default_factory=list, max_length=20)

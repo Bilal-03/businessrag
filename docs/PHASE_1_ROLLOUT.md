@@ -36,7 +36,7 @@ Set these server-only variables on Render (never `VITE_*`):
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (server-only; required by the background document worker)
 - `SUPABASE_JWT_SECRET` for legacy HS256 signing, or `SUPABASE_JWKS_URL` for asymmetric signing keys
-- `GROQ_API_KEY`, `GEMINI_API_KEY`, `PINECONE_API_KEY`, `PINECONE_INDEX_NAME`
+- `GEMINI_API_KEY`, `GEMINI_MODEL`, `PINECONE_API_KEY`, `PINECONE_INDEX_NAME`
 - `REDIS_URL` for multi-instance rate limiting
 - `ASYNC_DOCUMENT_INGESTION_ENABLED=true` after migration `0003` and Storage bucket policy verification
 - `DOCUMENT_STORAGE_BUCKET=documents`
@@ -54,7 +54,7 @@ Set only public client variables on Vercel:
 - `VITE_SUPABASE_URL=https://<project>.supabase.co`
 - `VITE_SUPABASE_ANON_KEY=<public-anon-key>`
 
-Deploy the frontend after the backend can answer the authenticated health smoke tests. Do not put Groq, Gemini, Pinecone, JWT, or service-role keys in Vercel client variables.
+Deploy the frontend after the backend can answer the authenticated health smoke tests. Do not put Gemini, Pinecone, JWT, or service-role keys in Vercel client variables.
 
 ## 5. Canary acceptance gates
 

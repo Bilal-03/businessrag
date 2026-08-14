@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -16,7 +17,7 @@ from src.contracts.chat import (
     VerifiedClaim,
 )
 from src.integrations.supabase_rest import SupabaseRestClient, SupabaseRestError
-from src.llm.llm_client import agent_generate_with_sources, generate_from_retrieved_sources
+from src.llm.llm_client import agent_generate_with_sources
 from src.retrieval.retriever import retrieve_sources
 from src.routes.workflow import (
     PROFILE_VERSION,
@@ -47,15 +48,49 @@ STOPWORDS = {
 NUMBER_TOKEN = re.compile(r"(?:₹|rs\.?\s*)?\d[\d,]*(?:\.\d+)?%?", re.IGNORECASE)
 
 
-def classify_mode(query: str, has_documents: bool) -> str:
+def classify_mode(query: str, has_documents: bool = False, use_business_context: bool = False) -> str:
     normalized = " ".join(query.casefold().split())
-    # Current-law questions always use the reviewed official catalog first.
-    # Mentioning an uploaded PDF never promotes private evidence to law.
-    if any(term in normalized for term in TAX_TERMS | LEGAL_TERMS):
+    if use_business_context and any(term in normalized for term in TAX_TERMS | LEGAL_TERMS):
         return "reviewed_compliance"
     if has_documents:
         return "user_document_analysis"
     return "general_business_guidance"
+
+
+def _context_value(value: Any) -> str:
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    return str(value)
+
+
+def _business_context_text(business: dict[str, Any] | None, profile: dict[str, Any] | None) -> str:
+    """Create a bounded, user-visible business profile context for Gemini."""
+    if not business:
+        return ""
+    metadata = business.get("metadata") or {}
+    fields = [
+        ("Business name", business.get("legal_name")),
+        ("Entity type", business.get("entity_type")),
+        ("Industry", business.get("industry")),
+        ("Industry code", business.get("industry_code")),
+        ("Primary state or jurisdiction", business.get("state_code")),
+        ("Operating status", business.get("status")),
+        ("Description", metadata.get("description")),
+    ]
+    if profile:
+        fields.extend([
+            ("Confirmed regulated activities", profile.get("regulated_activities")),
+            ("GST registration status", profile.get("gst_registration_status")),
+            ("GST scheme", profile.get("gst_scheme")),
+            ("Incorporation stage", profile.get("incorporation_stage")),
+            ("Turnover band", profile.get("turnover_band")),
+            ("Employee count band", profile.get("employee_count_band")),
+            ("Physical establishment", profile.get("has_physical_establishment")),
+            ("Operating states", profile.get("operating_state_codes")),
+            ("Additional profile answers", profile.get("answers")),
+        ])
+    lines = [f"{label}: {_context_value(value)}" for label, value in fields if value not in (None, "", [], {})]
+    return "\n".join(lines)[:6000]
 
 
 def _looks_like_legal_output(answer: str) -> bool:
@@ -341,6 +376,27 @@ def _document_citations(sources) -> list[SourceCitation]:
     ]
 
 
+def _reviewed_context_text(claims: list[VerifiedClaim], citations: list[SourceCitation]) -> str:
+    """Format reviewed claims for Gemini without turning them into instructions."""
+    citations_by_evidence = {citation.evidence_id: citation for citation in citations}
+    sections: list[str] = []
+    for index, claim in enumerate(claims, start=1):
+        citation = citations_by_evidence.get(claim.evidence_ids[0])
+        source_line = ""
+        if citation:
+            source_line = f"\nSource: {citation.title or citation.authority or 'Reviewed official source'}"
+            if citation.anchor:
+                source_line += f" ({citation.anchor})"
+            source_line += f"\nSupport excerpt: {citation.snippet}"
+        sections.append(
+            f"[reviewed_claim_{index}]\n"
+            f"Statement: {claim.statement}\n"
+            f"Applicability: {', '.join(claim.applicability) or 'Confirmed for the selected profile'}"
+            f"{source_line}"
+        )
+    return "\n\n".join(sections)[:10000]
+
+
 def _document_official_conflicts(sources, claims: list[VerifiedClaim]) -> list[str]:
     """Identify explicit numeric disagreement without treating private text as law."""
     official_numbers = {
@@ -380,9 +436,10 @@ async def build_chat_response(
     business = None
     profile = None
     coverage: dict[str, Any] = {}
-    if req.business_id:
-        business = await _load_business(client, req.business_id)
-        profile = await _load_profile(client, req.business_id)
+    selected_business_id = req.business_id if req.use_business_context else None
+    if req.use_business_context and selected_business_id:
+        business = await _load_business(client, selected_business_id)
+        profile = await _load_profile(client, selected_business_id)
         industry_code = _profile_context(business, profile)["industry_code"]
         coverage_rows = await client.request(
             "GET", "compliance_catalog_coverage",
@@ -394,104 +451,115 @@ async def build_chat_response(
         )
         coverage = _coverage_for(business, coverage_rows[0] if coverage_rows else None, coverage_cells)
 
-    explicit_document_request = any(term in req.query.casefold() for term in DOCUMENT_TERMS)
-    preliminary_mode = classify_mode(req.query, has_documents=explicit_document_request)
-    # Official legal/tax retrieval never needs the private vector index. This
-    # avoids sending legal questions to third-party document retrieval before
-    # the trust mode and business scope are established.
-    sources = [] if preliminary_mode == "reviewed_compliance" else retrieve_sources(req.query, user_id, req.business_id)
-    mode = preliminary_mode if preliminary_mode == "reviewed_compliance" else classify_mode(req.query, bool(sources))
+    business_context_text = _business_context_text(business, profile) if business else ""
+    sources = (
+        retrieve_sources(req.query, user_id, selected_business_id)
+        if req.use_document_context
+        else []
+    )
+    mode = classify_mode(
+        req.query,
+        has_documents=bool(sources),
+        use_business_context=bool(business),
+    )
     normalized = req.query.casefold()
-    agent_type = "Tax Agent" if any(term in normalized for term in TAX_TERMS) else "Legal Agent" if mode == "reviewed_compliance" else "General Agent"
+    agent_type = "Tax Agent" if any(term in normalized for term in TAX_TERMS) else "Legal Agent" if any(term in normalized for term in LEGAL_TERMS) else "General Agent"
 
-    if mode == "reviewed_compliance":
-        if not business:
-            return ChatResponse(
-                answer="Select a business before asking for personalised legal or tax guidance. No legal conclusion has been generated.",
-                answer_mode="professional_escalation", evidence_status="cannot_verify", language=req.language,
-                missing_inputs=["business_id"], coverage=coverage, effective_date=as_of,
-                escalation=_escalation(agent_type, ["business profile"]), agent_type=agent_type,
-                grounding="insufficient", request_id=request_id,
-            )
+    claims: list[VerifiedClaim] = []
+    official_citations: list[SourceCitation] = []
+    missing: list[str] = []
+    official_context_text = ""
+    if mode == "reviewed_compliance" and business:
         try:
             claims, citations, missing = await _load_reviewed_evidence(client, req.query, business, profile, as_of, req.language)
         except SupabaseRestError:
             claims, citations, missing = [], [], ["reviewed source catalog availability"]
-        private_sources = retrieve_sources(req.query, user_id, req.business_id) if explicit_document_request else []
-        private_citations = _document_citations(private_sources)
+        official_citations = citations
+        official_context_text = _reviewed_context_text(claims, official_citations)
         if not claims:
-            return ChatResponse(
-                answer=(
-                    "I cannot verify a personalised answer from the active reviewed catalog. "
-                    "No legal or tax requirement has been inferred from model memory or an uploaded document. "
-                    "Complete the missing business facts, inspect the coverage limits, or use the professional briefing below."
-                ),
-                answer_mode="professional_escalation", evidence_status="cannot_verify", language=req.language,
-                citations=private_citations, assumptions=["Uploaded documents are private evidence and do not establish current law."] if private_citations else [],
-                missing_inputs=missing, coverage=coverage, effective_date=as_of,
-                profile_version=(profile or {}).get("profile_version", PROFILE_VERSION),
-                escalation=_escalation(agent_type, missing), agent_type=agent_type,
-                grounding="insufficient", request_id=request_id,
-            )
-        answer_lines = ["Based only on active reviewed evidence for this business:"]
-        for index, claim in enumerate(claims, 1):
-            answer_lines.append(f"{index}. {claim.statement} [{index}]")
-            if req.language == "hi" and claim.explanation_hi:
-                answer_lines.append(f"   समीक्षित Hindi explanation: {claim.explanation_hi}")
-        if req.language == "hi":
-            answer_lines.insert(0, "नीचे दिए गए वैधानिक कथन समीक्षित English स्रोत-पाठ में रखे गए हैं; Hindi व्याख्या उपलब्ध न होने पर अर्थ का अनुमान नहीं लगाया गया है।")
-        conflicts = _document_official_conflicts(private_sources, claims)
+            # A missing reviewed claim should reduce verification status, not
+            # prevent Gemini from answering the user's broader question.
+            mode = "user_document_analysis" if sources else "general_business_guidance"
+
+    result = agent_generate_with_sources(
+        req.query,
+        agent_type,
+        user_id=user_id,
+        business_id=selected_business_id,
+        history=req.history,
+        sources=sources,
+        business_context_text=business_context_text,
+        official_context_text=official_context_text,
+    )
+
+    document_citations = _document_citations(sources)
+    all_citations = [*official_citations, *document_citations]
+    context_used: list[str] = []
+    assumptions: list[str] = []
+    if business:
+        context_used.append("business")
+        assumptions.append("The selected business profile was used as user-provided context, not as official legal authority.")
+    if sources:
+        context_used.append("documents")
+        assumptions.append("Selected uploaded documents are private reference material and do not establish current law.")
+    elif req.use_document_context:
+        assumptions.append("No relevant uploaded document was found, so this answer was generated independently by Gemini.")
+    if not context_used:
+        assumptions.append("Answered independently by Gemini without business or uploaded-document context.")
+    if not claims and missing:
+        assumptions.append("The reviewed catalog did not provide a verified claim for this question; current specifics should be checked against an official source.")
+
+    if claims:
         return ChatResponse(
-            answer="\n\n".join(answer_lines), answer_mode="reviewed_compliance", evidence_status="verified",
-            language=req.language, claims=claims, citations=[*citations, *private_citations],
-            assumptions=["Uploaded documents are private evidence; reviewed official claims take precedence."] if private_citations else [],
-            conflicts=conflicts, coverage=coverage, effective_date=as_of,
-            profile_version=(profile or {}).get("profile_version", PROFILE_VERSION), agent_type=agent_type,
-            grounding="document", request_id=request_id,
+            answer=result.answer,
+            answer_mode="reviewed_compliance",
+            evidence_status="verified",
+            language=req.language,
+            claims=claims,
+            citations=all_citations,
+            context_used=context_used,
+            assumptions=assumptions,
+            missing_inputs=missing,
+            conflicts=_document_official_conflicts(sources, claims),
+            coverage=coverage,
+            effective_date=as_of,
+            profile_version=(profile or {}).get("profile_version", PROFILE_VERSION),
+            agent_type=agent_type,
+            grounding=result.grounding,
+            request_id=request_id,
         )
 
-    if mode == "user_document_analysis":
-        if not sources:
-            return ChatResponse(
-                answer="I could not find relevant text in your uploaded documents.",
-                answer_mode="user_document_analysis", evidence_status="cannot_verify", language=req.language,
-                missing_inputs=["relevant uploaded document"], coverage=coverage, effective_date=as_of,
-                profile_version=(profile or {}).get("profile_version"), agent_type="General Agent",
-                grounding="insufficient", request_id=request_id,
-            )
-        # Reuse the already owner/business-scoped retrieval result so a legal
-        # phrase inside a private-document question cannot change evidence.
-        answer = generate_from_retrieved_sources(req.query, "General Agent", sources, req.history)
-        if _looks_like_legal_output(answer):
-            return ChatResponse(
-                answer="The document-analysis draft contained legal or tax conclusions that were not verified against active official claims, so that prose was suppressed.",
-                answer_mode="professional_escalation", evidence_status="cannot_verify", language=req.language,
-                citations=_document_citations(sources), assumptions=["Uploaded documents are private evidence and do not establish current law."],
-                missing_inputs=["active reviewed official claim evidence"], coverage=coverage, effective_date=as_of,
-                profile_version=(profile or {}).get("profile_version"), escalation=_escalation("lawyer", ["the exact document statement to verify"]),
-                agent_type="General Agent", grounding="insufficient", request_id=request_id,
-            )
+    if sources:
         return ChatResponse(
-            answer=answer, answer_mode="user_document_analysis", evidence_status="partially_supported",
-            language=req.language, citations=_document_citations(sources),
-            assumptions=["Uploaded documents are private evidence and do not establish current law."],
-            coverage=coverage, effective_date=as_of, profile_version=(profile or {}).get("profile_version"),
-            agent_type="General Agent", grounding="document", request_id=request_id,
-        )
-
-    result = agent_generate_with_sources(req.query, "General Agent", user_id=user_id, business_id=req.business_id, history=req.history)
-    if _looks_like_legal_output(result.answer):
-        return ChatResponse(
-            answer="The generated draft contained legal, tax, filing, threshold, or deadline language that is not backed by reviewed evidence, so it was suppressed.",
-            answer_mode="professional_escalation", evidence_status="cannot_verify", language=req.language,
-            missing_inputs=["active reviewed claim evidence"], coverage=coverage, effective_date=as_of,
+            answer=result.answer,
+            answer_mode="user_document_analysis",
+            evidence_status="partially_supported",
+            language=req.language,
+            citations=all_citations,
+            context_used=context_used,
+            assumptions=assumptions,
+            missing_inputs=missing,
+            coverage=coverage,
+            effective_date=as_of,
             profile_version=(profile or {}).get("profile_version"),
-            escalation=_escalation("lawyer", ["the exact decision or requirement to verify"]),
-            agent_type="General Agent", grounding="insufficient", request_id=request_id,
+            agent_type=agent_type,
+            grounding=result.grounding,
+            request_id=request_id,
         )
+
     return ChatResponse(
-        answer=result.answer, answer_mode="general_business_guidance", evidence_status="general_guidance",
-        language=req.language, assumptions=["This is general business guidance, not a legal or tax conclusion."],
-        coverage=coverage, effective_date=as_of, profile_version=(profile or {}).get("profile_version"),
-        agent_type="General Agent", grounding="general", request_id=request_id,
+        answer=result.answer,
+        answer_mode="general_business_guidance",
+        evidence_status="general_guidance",
+        language=req.language,
+        citations=all_citations,
+        context_used=context_used,
+        assumptions=assumptions,
+        missing_inputs=missing,
+        coverage=coverage,
+        effective_date=as_of,
+        profile_version=(profile or {}).get("profile_version"),
+        agent_type=agent_type,
+        grounding=result.grounding,
+        request_id=request_id,
     )

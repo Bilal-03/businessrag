@@ -4,7 +4,7 @@ The code platform is designed to fail closed. That does **not** make the legal c
 
 ## Implemented safeguards
 
-- Legal/tax questions cannot fall back to model memory. They resolve to active reviewed claim evidence or `cannot_verify` with a professional brief.
+- Every question receives an independent Gemini answer by default. Legal/tax questions use reviewed claim evidence only when the user explicitly selects business context; otherwise the response is general guidance with verification limits clearly disclosed.
 - Official sources and private uploaded-document evidence are separate response modes and citation types.
 - Source content is versioned by SHA-256 with immutable snapshot fields, effective dates, last-checked dates, fetch health, and reviewer status.
 - Atomic claims carry declarative applicability rules, risk, source-passage IDs, freshness deadlines, and qualified-review requirements.

@@ -7,8 +7,9 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 class Settings(BaseSettings):
-    groq_api_key: str
+    # Gemini is the only chat generation provider.
     gemini_api_key: str
+    gemini_model: str = "gemini-2.5-flash"
     pinecone_api_key: str
     pinecone_index_name: str = "bizguide-index"
     supabase_url: str

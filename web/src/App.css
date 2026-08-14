@@ -2447,6 +2447,57 @@
   color: #394737;
 }
 
+.composer-options {
+  grid-column: 3;
+  justify-self: end;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.composer-options-label {
+  color: var(--color-content-muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.context-toggle {
+  min-height: 44px;
+  padding: 6px 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--color-surface-1);
+  color: var(--color-content-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+  transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease, color var(--motion-fast) ease;
+}
+
+.context-toggle:hover:not(:disabled) {
+  border-color: #b99a80;
+  color: var(--color-accent);
+}
+
+.context-toggle.active {
+  border-color: rgba(82, 99, 77, 0.55);
+  background: var(--color-sage-soft);
+  color: #394737;
+}
+
+.context-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .chat-input-wrapper {
   width: min(100%, 940px);
   min-height: 62px;
@@ -2536,6 +2587,20 @@
   font-size: 15px;
   line-height: 1.65;
   box-shadow: none;
+}
+
+.answer-context {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 10px;
+  padding: 5px 9px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  color: var(--color-content-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .message-user {
@@ -3329,10 +3394,29 @@
 
   .composer-context {
     margin-bottom: 5px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "workspace language"
+      "options options";
+    row-gap: 6px;
   }
 
   .composer-workspace {
+    grid-area: workspace;
+    grid-column: auto;
     max-width: 48%;
+  }
+
+  .language-switch {
+    grid-area: language;
+    grid-column: auto;
+    justify-self: end;
+  }
+
+  .composer-options {
+    grid-area: options;
+    grid-column: auto;
+    justify-self: center;
   }
 
   .chat-input-wrapper {

@@ -44,19 +44,19 @@ def _record_trust_metrics(request: Request, result: ChatResponse) -> None:
 async def chat_stream_endpoint(request: Request, req: ChatRequest, user_id: str = Depends(get_current_user)):
     """Stream progress only, then reveal one fully assembled trust response.
 
-    Legal and tax prose is never token-streamed before its evidence references
-    and applicability checks have passed.
+    The endpoint streams progress only, then reveals one complete Gemini answer
+    after any explicitly selected context has been assembled.
     """
     request_id = getattr(request.state, "request_id", None)
     token = getattr(request.state, "access_token", "")
 
     async def event_stream():
         yield _sse_event("status", {"stage": "classifying", "message": "Classifying the question"})
-        yield _sse_event("status", {"stage": "retrieving", "message": "Checking business-scoped evidence"})
+        yield _sse_event("status", {"stage": "retrieving", "message": "Preparing selected context"})
         try:
             result = await build_chat_response(req, user_id, token, request_id)
             _record_trust_metrics(request, result)
-            yield _sse_event("status", {"stage": "verifying", "message": "Verifying citations and applicability"})
+            yield _sse_event("status", {"stage": "verifying", "message": "Checking selected context and response safeguards"})
             yield _sse_event("result", result.model_dump(mode="json"))
             yield _sse_event("done", {})
         except Exception as exc:

@@ -66,7 +66,7 @@ async function readChatStream(response, onUpdate) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  const result = { answer: '', citations: [], grounding: 'general', agent_type: 'General Agent' };
+  const result = { answer: '', citations: [], context_used: null, grounding: 'general', agent_type: 'General Agent' };
 
   const consumeEvent = (rawEvent) => {
     const lines = rawEvent.split(/\r?\n/);
@@ -126,6 +126,8 @@ function App() {
   const [messages, setMessages]           = useState([]);
   const [input, setInput]                 = useState('');
   const [answerLanguage, setAnswerLanguage] = useState('en');
+  const [useBusinessContext, setUseBusinessContext] = useState(false);
+  const [useDocumentContext, setUseDocumentContext] = useState(false);
   const [isTyping, setIsTyping]           = useState(false);
   const [isUploading, setIsUploading]     = useState(false);
   const [conversations, setConversations] = useState([]);
@@ -164,6 +166,8 @@ function App() {
     setConversations([]);
     setBusinesses([]);
     setInput('');
+    setUseBusinessContext(false);
+    setUseDocumentContext(false);
     setActiveConvId(null);
     currentConvIdRef.current = null;
     setCurrentView('home');
@@ -442,6 +446,8 @@ function App() {
     const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
     captureEvent('chat_submitted', {
       has_active_business: Boolean(activeBusinessId),
+      use_business_context: useBusinessContext && Boolean(activeBusinessId),
+      use_document_context: useDocumentContext,
       history_count: Math.min(messages.length, 12),
       input_length: lengthBucket(query),
     });
@@ -472,7 +478,9 @@ function App() {
       const requestBody = JSON.stringify({
         query,
         conversation_id: currentConvIdRef.current,
-        business_id: activeBusinessId,
+        business_id: useBusinessContext ? activeBusinessId : null,
+        use_business_context: useBusinessContext && Boolean(activeBusinessId),
+        use_document_context: useDocumentContext,
         language: answerLanguage,
         history,
       });
@@ -505,6 +513,7 @@ function App() {
             role: 'ai',
             content: streamed.answer,
             citations: streamed.citations || [],
+            contextUsed: Array.isArray(streamed.context_used) ? streamed.context_used : null,
             grounding: streamed.grounding || 'general',
             agentType: streamed.agent_type || 'General Agent',
             schemaVersion: streamed.schema_version || 1,
@@ -535,6 +544,7 @@ function App() {
         role: 'ai',
         content: data.answer || 'No response received',
         citations: Array.isArray(data.citations) ? data.citations : [],
+        contextUsed: Array.isArray(data.context_used) ? data.context_used : null,
         grounding: data.grounding || 'general',
         agentType: data.agent_type || 'General Agent',
         schemaVersion: data.schema_version || 1,
@@ -859,6 +869,13 @@ function App() {
                                   {msg.effectiveDate && <span> · as of {msg.effectiveDate}</span>}
                                 </div>
                               )}
+                              {Array.isArray(msg.contextUsed) && (
+                                <div className="answer-context" role="status">
+                                  {msg.contextUsed.length > 0
+                                    ? `Context used: ${msg.contextUsed.map(context => context === 'business' ? 'business profile' : 'uploaded documents').join(' + ')}`
+                                    : 'Answered independently by Gemini — no business or document context used'}
+                                </div>
+                              )}
                               {msg.missingInputs?.length > 0 && (
                                 <div className="grounding-warning" role="status"><strong>Missing inputs:</strong> {msg.missingInputs.join(', ')}</div>
                               )}
@@ -901,7 +918,7 @@ function App() {
                                   Try again
                                 </button>
                               )}
-                              <p className="answer-disclaimer">{msg.evidenceStatus === 'verified' ? 'The answer is limited to the cited evidence, effective date, confirmed profile facts, and disclosed coverage.' : 'This answer is not a verified legal or tax conclusion. Coverage limits and missing evidence are shown above.'}</p>
+                              <p className="answer-disclaimer">{msg.evidenceStatus === 'verified' ? 'The answer is limited to the cited evidence, effective date, confirmed profile facts, and disclosed coverage.' : msg.evidenceStatus === 'general_guidance' ? 'This is general Gemini guidance. Verify current legal or tax specifics against an official source or qualified professional.' : 'This answer is not a verified legal or tax conclusion. Coverage limits and missing evidence are shown above.'}</p>
                               {msg.evidenceStatus && (() => {
                                 const feedbackKey = msg.id || `${activeConvId || 'current'}:${idx}`;
                                 const feedbackStatus = feedbackState[feedbackKey];
@@ -945,16 +962,41 @@ function App() {
 
               {/* Input Area */}
               <div className="input-container">
-                <div className="composer-context">
-                  <div className="composer-workspace" title={activeBusinessProfile?.name || 'Personal workspace'}>
-                    <span className="composer-status-dot" aria-hidden="true" />
-                    <span>{activeBusinessProfile?.name || 'Personal workspace'}</span>
+                  <div className="composer-context">
+                    <div className="composer-workspace" title={activeBusinessProfile?.name || 'Personal workspace'}>
+                      <span className="composer-status-dot" aria-hidden="true" />
+                      <span>{activeBusinessProfile?.name || 'Personal workspace'}</span>
+                    </div>
+                    <div className="language-switch" aria-label="Answer language">
+                      <button type="button" className={answerLanguage === 'en' ? 'active' : ''} onClick={() => setAnswerLanguage('en')}>English</button>
+                      <button type="button" className={answerLanguage === 'hi' ? 'active' : ''} onClick={() => setAnswerLanguage('hi')}>हिन्दी</button>
+                    </div>
+                    <div className="composer-options" aria-label="Optional answer context">
+                      <span className="composer-options-label">Include</span>
+                      <button
+                        type="button"
+                        className={`context-toggle ${useBusinessContext ? 'active' : ''}`}
+                        aria-pressed={useBusinessContext}
+                        disabled={!activeBusinessId || isTyping || isUploading}
+                        title={activeBusinessId ? 'Use the selected business profile for this question' : 'Select a business to enable business context'}
+                        onClick={() => setUseBusinessContext(current => !current)}
+                      >
+                        <Building2 size={14} aria-hidden="true" />
+                        <span>Business</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`context-toggle ${useDocumentContext ? 'active' : ''}`}
+                        aria-pressed={useDocumentContext}
+                        disabled={isTyping || isUploading}
+                        title="Use relevant uploaded documents for this question"
+                        onClick={() => setUseDocumentContext(current => !current)}
+                      >
+                        <Paperclip size={14} aria-hidden="true" />
+                        <span>Documents</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="language-switch" aria-label="Answer language">
-                    <button type="button" className={answerLanguage === 'en' ? 'active' : ''} onClick={() => setAnswerLanguage('en')}>English</button>
-                    <button type="button" className={answerLanguage === 'hi' ? 'active' : ''} onClick={() => setAnswerLanguage('hi')}>हिन्दी</button>
-                  </div>
-                </div>
                 <div className="chat-input-wrapper">
                   <button
                     className="upload-button"
@@ -977,7 +1019,7 @@ function App() {
                     rows="1"
                     className="chat-input"
                     aria-label="Ask BizGuide a question"
-                    placeholder="Ask about registration, GST, licences, or your uploaded sources…"
+                    placeholder="Ask anything — Gemini answers independently unless you include context…"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => {

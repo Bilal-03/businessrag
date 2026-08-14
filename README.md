@@ -11,7 +11,7 @@
   </p>
 
   <p>
-    <img src="https://img.shields.io/badge/LLM-Llama%203.3%2070B-8B5CF6?style=for-the-badge" alt="Llama 3.3" />
+    <img src="https://img.shields.io/badge/LLM-Gemini%202.5%20Flash-4285F4?style=for-the-badge&logo=google" alt="Gemini 2.5 Flash" />
     <img src="https://img.shields.io/badge/Embeddings-Gemini%202-4285F4?style=for-the-badge&logo=google" alt="Gemini" />
     <img src="https://img.shields.io/badge/Vector%20DB-Pinecone-00C4B4?style=for-the-badge" alt="Pinecone" />
   </p>
@@ -21,11 +21,11 @@
 
 ## 🌟 What is BizGuide AI?
 
-BizGuide AI is an evidence-first beta for Indian SME business-compliance workflows. Legal and tax answers are blocked unless active, professionally reviewed claim evidence supports them; uploaded documents remain private business evidence and are never treated as superior legal authority. The product is not launch-complete until the explicit India/Delhi/Maharashtra coverage matrix and human review gates pass.
+BizGuide AI is a Gemini-backed assistant for Indian SME business-compliance workflows. Every question receives an independent Gemini answer by default. A user can explicitly include the selected business profile and/or uploaded documents for one question; those sources are then disclosed and scoped to that request. Current legal and tax specifics should still be checked against official sources and a qualified professional.
 
 Unlike generic AI, BizGuide:
-- **Classifies your query** into lightweight Legal, Tax, or General response guidance
-- **Retrieves context** from your uploaded business documents using vector search
+- **Answers every question with Gemini** and keeps workspace context opt-in per question
+- **Retrieves context only when selected** from the active business profile and/or uploaded documents
 - **Answers with markdown formatting** and shows an educational-beta/professional-verification disclaimer
 
 ---
@@ -34,9 +34,10 @@ Unlike generic AI, BizGuide:
 
 | Feature | Description |
 |---|---|
-| 🛡️ **Fail-closed legal/tax** | Unsupported legal or tax questions return missing facts, coverage limits, and a professional brief—not model-memory claims |
-| 🔍 **RAG Architecture** | Pinecone vector DB + Gemini Embeddings for document-grounded answers |
-| 📎 **Document Upload** | Upload your business PDFs; AI answers questions based on your actual documents |
+| 🧭 **Independent by default** | General questions go to Gemini without silently including business or document data |
+| 🔍 **Opt-in context** | Enable Business and/or Documents in the composer for scoped, disclosed context |
+| 🔍 **RAG Architecture** | Pinecone vector DB + Gemini Embeddings for selected document-grounded answers |
+| 📎 **Document Upload** | Upload your business PDFs; enable Documents in the composer when a question should use them |
 | 🏢 **My Businesses** | Manage your business profiles with quick-ask shortcuts |
 | 🚧 **Compliance Plan** | Business-scoped obligations, applicability reasons, evidence needs, safe due dates, tasks, and in-app reminders with explicit coverage gaps |
 | 👩‍⚖️ **Review governance** | Source snapshots, passages, atomic claims, qualified approvals, audit history, change quarantine, and kill switches |
@@ -69,8 +70,8 @@ User Query
        ▼              ▼
 ┌─────────────┐  ┌────────────────────┐
 │ Topic       │  │ Pinecone Vector DB  │
-│ Classifier  │  │ (Gemini Embeddings) │
-│ (Llama 3.3) │  │ k=4 similarity      │
+│ Context     │  │ (Gemini Embeddings) │
+│ selector    │  │ k=4 similarity      │
 └──────┬──────┘  └────────────────────┘
        │              │
        ▼              ▼
@@ -87,7 +88,7 @@ User Query
 │ │  Tax Agent       │ │  → GST, Income Tax, Startup India
 │ │  General Agent   │ │  → Business guidance & planning
 │ └──────────────────┘ │
-│   (Llama 3.3 70B)    │
+│   (Gemini 2.5 Flash) │
 └──────────────────────┘
 ```
 
@@ -116,7 +117,7 @@ not configured; production workers should use Redis and a server-only
 | Technology | Purpose |
 |---|---|
 | **FastAPI** | REST API framework |
-| **Groq API** | LLM inference (Llama 3.3 70B) |
+| **Google Gemini** | LLM inference for independent and selected-context answers |
 | **Pinecone** | Vector database for RAG |
 | **Google Gemini** | Embeddings (`gemini-embedding-2`, 3072 dim) |
 | **LangChain** | Document loading, splitting, vector store |
@@ -129,7 +130,7 @@ not configured; production workers should use Redis and a server-only
 ### Prerequisites
 - Node.js 18+ and npm
 - Python 3.11+
-- API keys for: Groq, Pinecone, Google Gemini
+- API keys for: Pinecone and Google Gemini
 
 ### 1. Clone the repository
 ```bash
@@ -173,15 +174,13 @@ The app will open at `http://localhost:5173`
 Create a `.env` file in the root directory:
 
 ```env
-# LLM Inference (Groq)
-GROQ_API_KEY=gsk_...
+# LLM Inference (Google Gemini)
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
 
 # Vector Database (Pinecone)
 PINECONE_API_KEY=...
 PINECONE_INDEX_NAME=bizguide-index
-
-# Embeddings (Google Gemini)
-GEMINI_API_KEY=...
 
 # Supabase + production controls (server only)
 SUPABASE_URL=https://your-project.supabase.co
@@ -217,7 +216,9 @@ See [`.env.example`](.env.example) for the full template.
 ```json
 POST /api/chat
 {
-  "query": "How do I register a Private Limited Company in India?"
+  "query": "How do I register a Private Limited Company in India?",
+  "use_business_context": false,
+  "use_document_context": false
 }
 ```
 
@@ -225,13 +226,14 @@ POST /api/chat
 ```json
 {
   "schema_version": 2,
-  "answer": "I cannot verify a personalised answer from the active reviewed catalog.",
-  "answer_mode": "professional_escalation",
-  "evidence_status": "cannot_verify",
+  "answer": "Gemini's independent overview of the registration process...",
+  "answer_mode": "general_business_guidance",
+  "evidence_status": "general_guidance",
   "claims": [],
   "citations": [],
-  "missing_inputs": ["reviewed source catalog availability"],
-  "effective_date": "2026-08-13"
+  "context_used": [],
+  "assumptions": ["Answered independently by Gemini without business or uploaded-document context."],
+  "effective_date": "2026-08-14"
 }
 ```
 
@@ -296,7 +298,7 @@ The FastAPI backend is deployed on **Render** (free tier).
 
 ### Security baseline
 
-The frontend deployment includes a restrictive Content Security Policy, HSTS, clickjacking and MIME-sniffing protections, a referrer policy, and a permissions policy through `web/vercel.json`. Keep server keys (Groq, Gemini, Pinecone, and JWT secrets) in the backend environment only; `VITE_*` variables are public client configuration.
+The frontend deployment includes a restrictive Content Security Policy, HSTS, clickjacking and MIME-sniffing protections, a referrer policy, and a permissions policy through `web/vercel.json`. Keep server keys (Gemini, Pinecone, and JWT secrets) in the backend environment only; `VITE_*` variables are public client configuration.
 
 The source-backed workflow schema continues through `supabase/migrations/0014_bilingual_review_controls.sql`. Apply every migration in filename order. The controlled obligation manifest is `supabase/seed/obligations.csv`; review it with `scripts/validate_source_catalog.py`. Follow [`docs/TRUSTED_BIZGUIDE_RELEASE.md`](docs/TRUSTED_BIZGUIDE_RELEASE.md) before production promotion.
 

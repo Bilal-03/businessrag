@@ -1,20 +1,70 @@
 import { test, expect } from '@playwright/test';
-import { openAuthenticatedApp } from './fixtures';
+import { BUSINESSES, openAuthenticatedApp } from './fixtures';
 
 test('streams a source-aware answer with citation metadata', async ({ page }) => {
   await openAuthenticatedApp(page, { chatMode: 'stream' });
+  const documentsToggle = page.getByRole('button', { name: 'Documents', exact: true });
+  await expect(documentsToggle).toBeEnabled();
+  await documentsToggle.click();
   const input = page.getByLabel('Ask BizGuide a question');
+  const requestPromise = page.waitForRequest(request => request.url().endsWith('/api/chat/stream') && request.method() === 'POST');
   await input.fill('What does my uploaded notice say?');
   await page.getByRole('button', { name: 'Send message' }).click();
+  const request = await requestPromise;
+  expect(request.postDataJSON()).toMatchObject({
+    business_id: null,
+    use_business_context: false,
+    use_document_context: true,
+  });
 
   await expect(page.getByText('Grounded answer from your document.')).toBeVisible();
+  await expect(page.getByText('Context used: uploaded documents')).toBeVisible();
   await expect(page.getByText(/Sources from your documents/)).toBeVisible();
   await expect(page.getByText('employee-handbook.pdf')).toBeVisible();
   await expect(page.getByText('page 2')).toBeVisible();
 });
 
+test('answers independently by default without workspace context', async ({ page }) => {
+  await openAuthenticatedApp(page, { chatMode: 'stream' });
+  const input = page.getByLabel('Ask BizGuide a question');
+  const requestPromise = page.waitForRequest(request => request.url().endsWith('/api/chat/stream') && request.method() === 'POST');
+  await input.fill('What is a good customer onboarding checklist?');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  const request = await requestPromise;
+  expect(request.postDataJSON()).toMatchObject({
+    business_id: null,
+    use_business_context: false,
+    use_document_context: false,
+  });
+
+  await expect(page.getByText('Independent Gemini answer.')).toBeVisible();
+  await expect(page.getByText('Answered independently by Gemini — no business or document context used')).toBeVisible();
+});
+
+test('sends business and document context only when both toggles are enabled', async ({ page }) => {
+  await openAuthenticatedApp(page, { chatMode: 'stream', activeBusinessId: BUSINESSES[0].id });
+  const businessToggle = page.getByRole('button', { name: 'Business', exact: true });
+  const documentsToggle = page.getByRole('button', { name: 'Documents', exact: true });
+  await expect(businessToggle).toBeEnabled();
+  await businessToggle.click();
+  await documentsToggle.click();
+
+  const input = page.getByLabel('Ask BizGuide a question');
+  const requestPromise = page.waitForRequest(request => request.url().endsWith('/api/chat/stream') && request.method() === 'POST');
+  await input.fill('How should I tailor onboarding for this business?');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  const request = await requestPromise;
+  expect(request.postDataJSON()).toMatchObject({
+    business_id: BUSINESSES[0].id,
+    use_business_context: true,
+    use_document_context: true,
+  });
+  await expect(page.getByText('Context used: business profile + uploaded documents')).toBeVisible();
+});
+
 test('supports multiline questions and sends with Enter', async ({ page }) => {
   await openAuthenticatedApp(page, { chatMode: 'stream' });
+  await page.getByRole('button', { name: 'Documents', exact: true }).click();
   const input = page.getByLabel('Ask BizGuide a question');
   await input.fill('First line');
   await input.press('Shift+Enter');
