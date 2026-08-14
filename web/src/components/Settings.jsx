@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Globe, Trash2, Info, Check, Palette, Shield, Bell, Bot, Search, FileText, MapPin, Settings as SettingsIcon } from 'lucide-react';
 import Logo from './Logo';
+import BrandKicker from './BrandKicker';
 
 const APP_VERSION = '1.0.0';
 
@@ -115,7 +116,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
     <div className="panel-container">
       <div className="panel-header">
         <div>
-          <div className="panel-kicker"><SettingsIcon size={14} /> Workspace preferences</div>
+          <BrandKicker icon={SettingsIcon}>Workspace preferences</BrandKicker>
           <h2 className="panel-title">Settings</h2>
           <p className="panel-subtitle">Customize your BizGuide experience.</p>
         </div>
@@ -235,7 +236,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
                           // Fire a test notification so they can see it works
                           new Notification('BizGuide AI', {
                             body: 'Notifications are enabled! You\'ll be notified when AI responds.',
-                            icon: '/logo.png',
+                            icon: '/brand/bizguide-ai-mark.svg',
                           });
                         } else {
                           setNotifications(false);
@@ -307,6 +308,9 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
             {activeSection === 'about' && (
               <motion.div key="about" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
                 <div className="settings-section-title">About BizGuide AI</div>
+                <div className="brand-board-preview">
+                  <img src="/brand/bizguide-ai-brand-board.png" alt="BizGuide AI logo system showing light, dark, monochrome, and application icon variations" />
+                </div>
                 <div className="about-card glass-panel">
                   <Logo size={56} showText={false} />
                   <div className="about-info">

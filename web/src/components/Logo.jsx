@@ -8,11 +8,11 @@ const Logo = ({ size = 40, showText = false, textSize = 24 }) => {
         style={{ width: size, height: size, fontSize: `${size * 0.48}px` }}
         aria-hidden="true"
       >
-        B
+        <img className="brand-mark-image" src="/brand/bizguide-ai-mark.svg" alt="" />
       </span>
       {showText && (
         <span className="brand-name" style={{ fontSize: `${textSize}px` }}>
-          BizGuide
+          <span>BizGuide</span><span className="brand-name-accent"> AI</span>
         </span>
       )}
     </div>

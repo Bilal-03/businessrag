@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Bell, CheckCircle2, ClipboardCheck, ExternalLink, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
 import { captureEvent, captureException } from '../lib/observability';
+import BrandKicker from './BrandKicker';
 
 const TASK_STATUSES = [
   { value: 'todo', label: 'To do' },
@@ -324,7 +325,7 @@ const WorkflowDashboard = ({
         const due = await parseResponse(response);
         for (const reminder of Array.isArray(due) ? due : []) {
           if (cancelled) return;
-          try { new Notification('BizGuide reminder', { body: reminder.title }); } catch {}
+          try { new Notification('BizGuide reminder', { body: reminder.title, icon: '/brand/bizguide-ai-mark.svg', badge: '/brand/bizguide-ai-mark.svg' }); } catch {}
           const delivered = await fetch(`${apiUrl}/api/workflow/reminders/${encodeURIComponent(reminder.id)}/delivered`, {
             method: 'POST', headers, body: JSON.stringify({
               delivered_at: new Date().toISOString(), alert_offset_days: reminder.alert_offset_days,
@@ -371,7 +372,7 @@ const WorkflowDashboard = ({
     <div className="panel-container workflow-container">
       <div className="panel-header">
         <div>
-          <div className="workflow-kicker"><ClipboardCheck size={15} /> Source-backed workflow</div>
+          <BrandKicker icon={ClipboardCheck}>Source-backed workflow</BrandKicker>
           <h2 className="panel-title">Compliance Plan</h2>
           <p className="panel-subtitle">Track verified obligations and your own planning tasks for the selected business.</p>
         </div>

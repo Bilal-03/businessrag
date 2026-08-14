@@ -1,0 +1,11 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">BizGuide AI mark</title>
+  <desc id="desc">A terracotta B with an integrated upward guide path and connected intelligence nodes.</desc>
+  <path d="M16 8H50C66.57 8 78 16.12 78 29.2C78 37.53 73.55 43.7 66.45 47.05C75.31 50.28 80 57.22 80 67.95C80 80.86 68.92 88 51.25 88H16V8Z" fill="#9F3F29"/>
+  <path d="M16 8H46C61.3 8 70.5 14.4 70.5 25.6C70.5 34.37 64.27 39.36 54.88 41.16C64.54 42.88 70 48.89 70 59.1C70 70.71 61.79 77 48 77H16V8Z" fill="#7F321F" fill-opacity="0.16"/>
+  <path d="M27.5 75C23.7 67.15 23.15 57.55 26.92 49.45C31.27 40.1 39.45 34.86 48.86 31.37C55.79 28.79 61.3 24.57 66.28 18.82L72.5 11.65" stroke="#F3EFE6" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M61.3 12.25L74.7 10.2L72.47 23.38L67.4 18.55L61.3 12.25Z" fill="#F3EFE6"/>
+  <path d="M48.7 31.45C55.05 30.15 61.1 27.1 65.9 21.62" stroke="#F3EFE6" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="28" cy="74" r="6.5" fill="#F3EFE6"/>
+  <circle cx="48.7" cy="31.4" r="6.5" fill="#F3EFE6"/>
+</svg>

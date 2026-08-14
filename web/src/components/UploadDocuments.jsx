@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle2, XCircle, Clock, Trash2, LoaderCircle, FileText, Building2 } from 'lucide-react';
 import { documentHistoryEntry, pollDocumentStatus } from '../lib/documentJobs';
 import { captureEvent, captureException, sizeBucket } from '../lib/observability';
+import BrandKicker from './BrandKicker';
 
 const UploadDocuments = ({ session, apiUrl, businessId }) => {
   const [uploadHistory, setUploadHistory] = useState([]);
@@ -214,7 +215,7 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
     <div className="panel-container">
       <div className="panel-header">
         <div>
-          <div className="panel-kicker"><FileText size={14} /> Source library</div>
+          <BrandKicker icon={FileText}>Source library</BrandKicker>
           <h2 className="panel-title">Source Library</h2>
           <p className="panel-subtitle">Upload PDFs to ground answers in your source documents. {businessId ? 'Showing documents for the selected business.' : 'Select a business to keep documents scoped to one workspace.'}</p>
         </div>

@@ -1950,24 +1950,31 @@
 }
 
 .brand-mark {
-  display: inline-grid;
+  display: inline-block;
   flex: 0 0 auto;
-  place-items: center;
-  border-radius: 11px 11px 11px 4px;
-  background: var(--color-accent);
-  color: var(--color-content-on-accent);
-  font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-  font-weight: 800;
-  line-height: 1;
-  box-shadow: inset 0 -2px 0 rgba(79, 36, 23, 0.2);
+  overflow: hidden;
+  line-height: 0;
+}
+
+.brand-mark-image {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .brand-name {
+  display: inline-flex;
+  align-items: baseline;
   color: #fffaf3;
   font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
   font-weight: 750;
   letter-spacing: -0.03em;
   line-height: 1;
+}
+
+.brand-name-accent {
+  color: #d8896c;
+  letter-spacing: -0.02em;
 }
 
 .sidebar {
@@ -2233,6 +2240,42 @@
   font-weight: 800;
   letter-spacing: 0.13em;
   text-transform: uppercase;
+}
+
+.panel-kicker-brand {
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  background: var(--color-surface-1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.panel-kicker-brand img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-badge-brand {
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  background: var(--color-surface-1);
+}
+
+.hero-badge-brand img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .hero-title {
@@ -2636,11 +2679,31 @@
 
 .ai-label {
   margin-bottom: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: var(--color-accent);
   font-size: 11px;
   font-weight: 850;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.ai-label-mark {
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.ai-label-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ai-label-mark-pulsing {
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .ai-dot,
@@ -3164,6 +3227,22 @@
   box-shadow: none;
 }
 
+.brand-board-preview {
+  margin: 0 0 16px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--color-canvas);
+}
+
+.brand-board-preview img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  object-position: center top;
+}
+
 .credits-card::before {
   display: none;
 }
@@ -3203,6 +3282,24 @@
 .panel-loading,
 .error-state {
   color: var(--color-content-secondary);
+}
+
+.panel-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.panel-loading-mark {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+}
+
+.panel-loading-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .error-state-card {

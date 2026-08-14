@@ -26,7 +26,12 @@ const Auth = lazy(() => import('./components/Auth.jsx'));
 const MarkdownMessage = lazy(() => import('./components/MarkdownMessage.jsx'));
 
 function PanelFallback() {
-  return <div className="panel-loading" role="status" aria-live="polite" aria-busy="true">Loading workspace…</div>;
+  return (
+    <div className="panel-loading" role="status" aria-live="polite" aria-busy="true">
+      <span className="panel-loading-mark" aria-hidden="true"><img src="/brand/bizguide-ai-mark.svg" alt="" /></span>
+      Loading workspace…
+    </div>
+  );
 }
 
 const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'https://businessrag.onrender.com';
@@ -184,7 +189,7 @@ function fireNotification(title, body) {
   if (Notification.permission !== 'granted') return;
   if (document.visibilityState === 'visible' && document.hasFocus()) return;
   try {
-    new Notification(title, { body, icon: '/logo.png', badge: '/logo.png' });
+    new Notification(title, { body, icon: '/brand/bizguide-ai-mark.svg', badge: '/brand/bizguide-ai-mark.svg' });
   } catch {}
 }
 
@@ -858,7 +863,7 @@ function App() {
                         <span className="hero-topline-context">{chatWorkspaceLabel}</span>
                       </div>
                       <div className="hero-copy">
-                        <div className="hero-badge">Guided by your business context and sources</div>
+                        <div className="hero-badge"><span className="hero-badge-brand" aria-hidden="true"><img src="/brand/bizguide-ai-mark.svg" alt="" /></span>Guided by your business context and sources</div>
                         <h1 className="hero-title">
                           What do you need to<br />
                           <span className="gradient-text">verify today?</span>
@@ -916,8 +921,8 @@ function App() {
                           {msg.role === 'ai' ? (
                             <>
                               <div className="ai-label">
-                                <span className="ai-dot" />
-                                BizGuide
+                                <span className="ai-label-mark" aria-hidden="true"><img src="/brand/bizguide-ai-mark.svg" alt="" /></span>
+                                BizGuide AI
                               </div>
                               <Suspense fallback={<div className="markdown-fallback">{msg.content}</div>}>
                                 <MarkdownMessage content={msg.content} />
@@ -1002,7 +1007,7 @@ function App() {
                           animate={{ opacity: 1, y: 0 }}
                           className="message-bubble message-ai"
                         >
-                          <div className="ai-label"><span className="ai-dot pulsing" /> BizGuide</div>
+                          <div className="ai-label"><span className="ai-label-mark ai-label-mark-pulsing" aria-hidden="true"><img src="/brand/bizguide-ai-mark.svg" alt="" /></span> BizGuide AI</div>
                           <div className="typing-indicator" role="status" aria-live="polite">
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} className="typing-dot" />
                             <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }} className="typing-dot" />
