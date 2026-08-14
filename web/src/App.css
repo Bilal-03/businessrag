@@ -2260,6 +2260,9 @@
   line-height: 1.65;
 }
 
+.hero-subtitle-desktop { display: inline; }
+.hero-subtitle-mobile { display: none; }
+
 .hero-privacy-note {
   width: fit-content;
   max-width: 680px;
@@ -3335,12 +3338,19 @@
   }
 
   .chat-container {
-    padding: 72px 16px 198px;
+    padding: 64px 16px calc(272px + env(safe-area-inset-bottom));
   }
 
   .hero-topline {
-    max-width: calc(100% - 58px);
+    width: calc(100% - 58px);
+    max-width: none;
     margin: 6px 0 14px 58px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .hero-topline > span:nth-child(2) {
+    flex: 0 0 auto;
   }
 
   .hero-copy {
@@ -3348,32 +3358,47 @@
   }
 
   .hero-title {
-    font-size: clamp(36px, 10.5vw, 44px);
-    letter-spacing: -0.045em;
+    margin: 0 0 14px;
+    font-size: clamp(32px, 9.2vw, 38px);
+    letter-spacing: -0.04em;
+    line-height: 1.03;
   }
 
   .hero-subtitle {
     margin-top: 12px;
-    margin-bottom: 10px;
+    margin-bottom: 0;
     font-size: 14px;
     line-height: 1.5;
   }
+
+  .hero-subtitle-desktop { display: none; }
+  .hero-subtitle-mobile { display: inline; }
 
   .hero-privacy-note {
     display: none;
   }
 
   .hero-mobile-disclaimer {
-    display: inline;
+    display: block;
+    margin-top: 7px;
+    color: var(--color-content-muted);
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   .hero-workbench-heading {
-    margin-top: 26px;
+    margin-top: 4px;
+    padding-top: 0;
     display: block;
   }
 
+  .hero-section-kicker {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+
   .hero-workbench-heading h2 {
-    font-size: 23px;
+    font-size: 20px;
   }
 
   .hero-workbench-note {
@@ -3387,8 +3412,8 @@
   }
 
   .action-card {
-    min-height: 94px;
-    padding: 14px;
+    min-height: 88px;
+    padding: 12px;
   }
 
   .input-container {
@@ -3397,7 +3422,8 @@
     left: 0;
     padding: 8px 12px 10px;
     border-top: 0;
-    background: rgba(243, 239, 230, 0.94);
+    background: var(--color-canvas);
+    box-shadow: 0 -10px 26px rgba(67, 55, 43, 0.1);
   }
 
   .composer-context {
@@ -3412,7 +3438,7 @@
   .composer-workspace {
     grid-area: workspace;
     grid-column: auto;
-    max-width: 48%;
+    max-width: 100%;
   }
 
   .language-switch {
@@ -3424,7 +3450,7 @@
   .composer-options {
     grid-area: options;
     grid-column: auto;
-    justify-self: center;
+    justify-self: start;
   }
 
   .chat-input-wrapper {

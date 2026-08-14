@@ -793,6 +793,11 @@ function App() {
   const chatWorkspaceTitle = chatBusinessIncluded
     ? 'Business context is included for this question'
     : 'Business context is off; this question uses Gemini independently';
+  const chatComposerLabel = chatBusinessIncluded && activeBusinessProfile?.name
+    ? activeBusinessProfile.name
+    : useDocumentContext
+      ? 'Selected documents'
+      : 'Gemini by default';
 
   if (isAuthLoading) {
     return <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', color: 'white' }}>Loading...</div>;
@@ -859,8 +864,9 @@ function App() {
                           <span className="gradient-text">verify today?</span>
                         </h1>
                         <p className="hero-subtitle">
-                          Ask a question, review an obligation, or work from your own documents. BizGuide will show the evidence and coverage limits behind each answer.
-                          <span className="hero-mobile-disclaimer"> Verify important decisions against the original source and with a qualified professional.</span>
+                          <span className="hero-subtitle-desktop">Ask a question, review an obligation, or work from your own documents. BizGuide will show the evidence and coverage limits behind each answer.</span>
+                          <span className="hero-subtitle-mobile">Ask anything with Gemini. Turn on Business or Documents below when you want context included.</span>
+                          <span className="hero-mobile-disclaimer">Verify important decisions against the original source.</span>
                         </p>
                         <div className="hero-privacy-note">
                           <span className="hero-privacy-icon" aria-hidden="true">i</span>
@@ -1018,11 +1024,11 @@ function App() {
                   <div className="composer-context">
                     <div className="composer-workspace" title={chatWorkspaceTitle}>
                       <span className={`composer-status-dot ${chatBusinessIncluded ? 'included' : 'independent'}`} aria-hidden="true" />
-                      <span>{chatWorkspaceLabel}</span>
+                      <span>{chatComposerLabel}</span>
                     </div>
                     <div className="language-switch" aria-label="Answer language">
-                      <button type="button" className={answerLanguage === 'en' ? 'active' : ''} onClick={() => setAnswerLanguage('en')}>English</button>
-                      <button type="button" className={answerLanguage === 'hi' ? 'active' : ''} onClick={() => setAnswerLanguage('hi')}>हिन्दी</button>
+                      <button type="button" className={answerLanguage === 'en' ? 'active' : ''} aria-pressed={answerLanguage === 'en'} onClick={() => setAnswerLanguage('en')}>English</button>
+                      <button type="button" className={answerLanguage === 'hi' ? 'active' : ''} aria-pressed={answerLanguage === 'hi'} onClick={() => setAnswerLanguage('hi')}>हिन्दी</button>
                     </div>
                     <div className="composer-options" aria-label="Optional answer context">
                       <span className="composer-options-label">Include</span>
@@ -1072,7 +1078,7 @@ function App() {
                     rows="1"
                     className="chat-input"
                     aria-label="Ask BizGuide a question"
-                    placeholder="Ask anything — Gemini answers independently unless you include context…"
+                    placeholder="Ask a question…"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => {

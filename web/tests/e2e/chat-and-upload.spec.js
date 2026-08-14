@@ -78,6 +78,25 @@ test('sends the selected answer language and renders Hindi output', async ({ pag
   await expect(page.getByText('जेमिनी ने स्वतंत्र रूप से उत्तर दिया।')).toBeVisible();
 });
 
+test('keeps the mobile home hierarchy clear above the fixed composer', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 696 });
+  await openAuthenticatedApp(page, { chatMode: 'stream' });
+
+  await expect(page.locator('.hero-subtitle-mobile')).toBeVisible();
+  await expect(page.locator('.hero-subtitle-desktop')).not.toBeVisible();
+  await expect(page.locator('.hero-topline')).toHaveCSS('white-space', 'nowrap');
+
+  const subtitleBox = await page.locator('.hero-subtitle').boundingBox();
+  const workflowHeadingBox = await page.getByRole('heading', { name: 'Common starting points' }).boundingBox();
+  const composerBox = await page.locator('.input-container').boundingBox();
+  expect(subtitleBox).not.toBeNull();
+  expect(workflowHeadingBox).not.toBeNull();
+  expect(composerBox).not.toBeNull();
+  expect(subtitleBox.y + subtitleBox.height).toBeLessThanOrEqual(composerBox.y + 1);
+  expect(workflowHeadingBox.y + workflowHeadingBox.height).toBeLessThanOrEqual(composerBox.y + 1);
+  await expect(page.getByPlaceholder('Ask a question…')).toBeVisible();
+});
+
 test('supports multiline questions and sends with Enter', async ({ page }) => {
   await openAuthenticatedApp(page, { chatMode: 'stream' });
   await page.getByRole('button', { name: 'Documents', exact: true }).click();
