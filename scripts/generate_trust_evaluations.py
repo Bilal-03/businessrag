@@ -19,7 +19,6 @@ INDUSTRIES = [
 JURISDICTIONS = ["Delhi", "Maharashtra"]
 ENTITIES = ["private_limited", "llp", "partnership", "proprietorship", "section_8"]
 PROFILE_STATES = ["complete", "missing_gst", "missing_activity", "missing_workforce", "conflicting"]
-LANGUAGES = ["en", "hi"]
 AS_OF_STATES = ["current", "future_source"]
 
 
@@ -27,20 +26,18 @@ def main() -> None:
     target = Path(__file__).resolve().parents[1] / "evals" / "trust_scenarios.jsonl"
     target.parent.mkdir(parents=True, exist_ok=True)
     rows = []
-    for index, values in enumerate(itertools.product(INDUSTRIES, JURISDICTIONS, ENTITIES, PROFILE_STATES, LANGUAGES, AS_OF_STATES), 1):
-        industry, jurisdiction, entity, profile_state, language, as_of_state = values
+    for index, values in enumerate(itertools.product(INDUSTRIES, JURISDICTIONS, ENTITIES, PROFILE_STATES, AS_OF_STATES), 1):
+        industry, jurisdiction, entity, profile_state, as_of_state = values
         rows.append({
             "id": f"trust-{index:04d}",
             "industry": industry,
             "jurisdiction": jurisdiction,
             "entity_type": entity,
             "profile_state": profile_state,
-            "language": language,
             "as_of_state": as_of_state,
             "required_assertions": [
                 "no_cross_industry_leakage", "no_cross_tenant_access", "material_claims_have_active_evidence",
                 "numeric_claims_exactly_supported", "missing_or_stale_evidence_fails_closed",
-                "hindi_and_english_preserve_legal_meaning",
             ],
             "review_status": "pending_qualified_review",
             "reviewer_id": None,

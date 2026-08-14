@@ -22,7 +22,7 @@ def test_general_question_ignores_active_business_without_selected_context(monke
     monkeypatch.setattr(chat_engine, "retrieve_sources", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("documents were not selected")))
     response = asyncio.run(
         chat_engine.build_chat_response(
-            ChatRequest(query="How do I register GST for my business in India?", business_id=BUSINESS_ID, language="hi"),
+            ChatRequest(query="How do I register GST for my business in India?", business_id=BUSINESS_ID),
             "test-user-id",
             "token",
             "request-id",
@@ -33,7 +33,7 @@ def test_general_question_ignores_active_business_without_selected_context(monke
     assert response.context_used == []
     assert captured["business_context_text"] == ""
     assert captured["sources"] == []
-    assert captured["language"] == "hi"
+    assert "language" not in captured
 
 
 def test_selected_business_context_is_sent_to_gemini_even_without_reviewed_claims(monkeypatch):
@@ -108,7 +108,7 @@ def test_reviewed_claim_requires_healthy_current_evidence(monkeypatch):
         if table == "compliance_coverage_cells":
             return []
         if table == "reviewed_claims":
-            return [{"id": "claim-1", "claim_key": "saas.test", "claim_type": "procedure", "statement_en": "A reviewed SaaS procedure applies.", "statement_hi": None, "support_excerpt": "A reviewed SaaS procedure applies.", "claim_value": True, "search_terms": ["saas procedure"], "risk_level": "medium", "required_reviewer_role": "lawyer", "required_approvals": 1, "source_passage_id": passage_id, "applicability_version": 2, "applicability_rule": {"field": "industry_code", "op": "eq", "value": "technology_it"}, "effective_from": "2026-01-01", "effective_to": None, "revalidate_by": "2026-11-01", "jurisdiction": "India", "lifecycle": "published", "reviewer_roles": ["lawyer"], "approval_count": 1, "published_at": "2026-08-12T00:00:00Z"}]
+            return [{"id": "claim-1", "claim_key": "saas.test", "claim_type": "procedure", "statement_en": "A reviewed SaaS procedure applies.", "support_excerpt": "A reviewed SaaS procedure applies.", "claim_value": True, "search_terms": ["saas procedure"], "risk_level": "medium", "required_reviewer_role": "lawyer", "required_approvals": 1, "source_passage_id": passage_id, "applicability_version": 2, "applicability_rule": {"field": "industry_code", "op": "eq", "value": "technology_it"}, "effective_from": "2026-01-01", "effective_to": None, "revalidate_by": "2026-11-01", "jurisdiction": "India", "lifecycle": "published", "reviewer_roles": ["lawyer"], "approval_count": 1, "published_at": "2026-08-12T00:00:00Z"}]
         if table == "source_passages":
             return [{"id": passage_id, "source_version_id": version_id, "anchor": "section 1", "page_number": 1, "passage_text": "A reviewed SaaS procedure applies."}]
         if table == "source_versions":

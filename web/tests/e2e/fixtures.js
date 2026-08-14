@@ -332,14 +332,11 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
       const requestBody = bodyFromRequest(request);
       const useBusinessContext = requestBody.use_business_context === true;
       const useDocumentContext = requestBody.use_document_context === true;
-      const language = requestBody.language === 'hi' ? 'hi' : 'en';
       const contextUsed = [
         ...(useBusinessContext ? ['business'] : []),
         ...(useDocumentContext ? ['documents'] : []),
       ];
-      const answer = language === 'hi'
-        ? (useDocumentContext ? 'आपके दस्तावेज़ से उत्तर।' : 'जेमिनी ने स्वतंत्र रूप से उत्तर दिया।')
-        : (useDocumentContext ? 'Grounded answer from your document.' : 'Independent Gemini answer.');
+      const answer = useDocumentContext ? 'Grounded answer from your document.' : 'Independent Gemini answer.';
       const stream = [
         'event: meta\n',
         `data: ${JSON.stringify({
@@ -347,7 +344,6 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
           agent_type: useDocumentContext ? 'Document Agent' : 'General Agent',
           evidence_status: useDocumentContext ? 'partially_supported' : 'general_guidance',
           answer_mode: useDocumentContext ? 'user_document_analysis' : 'general_business_guidance',
-          language,
           context_used: contextUsed,
           citations: useDocumentContext ? [{
             document_id: DOCUMENT.id,

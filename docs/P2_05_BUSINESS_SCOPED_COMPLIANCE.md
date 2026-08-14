@@ -12,7 +12,7 @@ The Compliance Plan is now built from a user-owned business ID. The backend load
 
 ## Rollout
 
-1. Apply every migration in `supabase/migrations/` through `0014_bilingual_review_controls.sql` in filename order. Applying the migrations alone does not publish a legal catalog; it installs fail-closed gates.
+1. Apply every migration in `supabase/migrations/` through `0014_bilingual_review_controls.sql` in filename order. The named migration is retained for schema history; active review and chat flows are English-only. Applying the migrations alone does not publish a legal catalog; it installs fail-closed gates.
 2. Run `scripts/verify_trusted_schema.sql` in Supabase and confirm the 210 coverage cells exist, RLS is enabled, and no malformed/unqualified legacy row is published.
 3. Bootstrap a real `catalog_admin`, assign qualified reviewers, and stage source snapshots, exact passages, claims, applicability rules, due-date rules, and evidence items. Publish only after the required human approvals are recorded.
 4. Deploy the backend and verify the authenticated plan/profile endpoints. Then deploy the frontend with only public `VITE_*` variables.

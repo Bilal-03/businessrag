@@ -5,7 +5,7 @@ Phase 1 code is not production-complete until these external steps are done. The
 ## 1. Supabase schema and safety verification
 
 1. Create a staging Supabase project or a point-in-time backup of production.
-2. Apply every file in `supabase/migrations/` in filename order, through `0014_bilingual_review_controls.sql`. Do not skip `0003` if document ingestion is enabled. Migrations `0008`–`0014` add the evidence, reviewer, contradiction, reminder, publication-gate, and bilingual controls; they intentionally do not publish new legal claims.
+2. Apply every file in `supabase/migrations/` in filename order, through `0014_bilingual_review_controls.sql`. Do not skip `0003` if document ingestion is enabled. Migrations `0008`–`0014` add the evidence, reviewer, contradiction, reminder, publication-gate, and historical language controls; they intentionally do not publish new legal claims. The current product surface is English-only.
 3. Run `scripts/verify_trusted_schema.sql` in the Supabase SQL Editor. It checks the 210 launch coverage cells, RLS, publication gates, and absence of malformed published records.
 4. Confirm RLS with two separate authenticated users: each user must see only their own businesses, profiles, documents, conversations, messages, reminders, evidence, and tasks.
 5. Run `python scripts/validate_source_catalog.py supabase/seed/obligations.csv` after every catalog change. The validator requires official URLs, citations, review ownership, lifecycle state, effective dates, and valid applicability rules.
@@ -22,7 +22,7 @@ Phase 1 code is not production-complete until these external steps are done. The
    do update set active = true;
    ```
 
-2. From the review console, assign real CA, CS, lawyer, sector-specialist, and bilingual-reviewer users. Never use placeholder reviewer names for publishable records.
+2. From the review console, assign real CA, CS, lawyer, and sector-specialist users. Never use placeholder reviewer names for publishable records.
 3. Seed source candidates only as registry metadata. Fetch an immutable source snapshot, approve its source version, extract an exact passage/anchor, create the reviewed claim and applicability rule, collect the required reviewer approvals, and publish through the catalog-admin workflow.
 4. Mark each central/Delhi/Maharashtra coverage cell `covered` or `not_applicable` only after the responsible reviewer has signed it. Leave unreviewed cells `blocked` or `in_review`; blocked cells must remain visible as coverage gaps.
 5. Keep source monitor credentials server-side. `scripts/monitor_sources.py` needs `SUPABASE_SERVICE_ROLE_KEY`, creates draft versions, and must never be treated as an approval or publishing job.

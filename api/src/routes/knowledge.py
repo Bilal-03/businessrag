@@ -21,6 +21,7 @@ from src.contracts.knowledge import (
 from src.integrations.supabase_rest import SupabaseRestClient, SupabaseRestError
 
 router = APIRouter(prefix="/api", tags=["knowledge"])
+SUPPORTED_REVIEWER_ROLES = {"CA", "CS", "lawyer", "sector_specialist", "catalog_admin"}
 
 
 def _client(request: Request) -> SupabaseRestClient:
@@ -42,7 +43,7 @@ async def _roles(client: SupabaseRestClient, user_id: str) -> set[str]:
         "GET", "reviewer_assignments",
         params={"select": "reviewer_role", "reviewer_user_id": f"eq.{user_id}", "active": "eq.true"},
     )
-    return {row["reviewer_role"] for row in rows}
+    return {row["reviewer_role"] for row in rows if row.get("reviewer_role") in SUPPORTED_REVIEWER_ROLES}
 
 
 async def _require_reviewer(client: SupabaseRestClient, user_id: str, role: str | None = None) -> set[str]:

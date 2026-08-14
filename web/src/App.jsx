@@ -197,7 +197,6 @@ function App() {
   const [currentView, setCurrentView]     = useState('home');
   const [messages, setMessages]           = useState([]);
   const [input, setInput]                 = useState('');
-  const [answerLanguage, setAnswerLanguage] = useState('en');
   const [useBusinessContext, setUseBusinessContext] = useState(false);
   const [useDocumentContext, setUseDocumentContext] = useState(false);
   const [isTyping, setIsTyping]           = useState(false);
@@ -363,7 +362,10 @@ function App() {
     let cancelled = false;
     fetch(`${apiUrl}/api/review/me`, { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then(readApiResponse)
-      .then(data => { if (!cancelled) setReviewerRoles(Array.isArray(data.roles) ? data.roles : []); })
+      .then(data => {
+        const supportedRoles = ['CA', 'CS', 'lawyer', 'sector_specialist', 'catalog_admin'];
+        if (!cancelled) setReviewerRoles(Array.isArray(data.roles) ? data.roles.filter(role => supportedRoles.includes(role)) : []);
+      })
       .catch(() => { if (!cancelled) setReviewerRoles([]); });
     return () => { cancelled = true; };
   }, [apiUrl, session?.access_token]);
@@ -555,7 +557,6 @@ function App() {
         business_id: useBusinessContext ? activeBusinessId : null,
         use_business_context: useBusinessContext && Boolean(activeBusinessId),
         use_document_context: useDocumentContext,
-        language: answerLanguage,
         history,
       });
       const { data, usedStreaming } = await requestChatResponse({
@@ -577,7 +578,6 @@ function App() {
             schemaVersion: streamed.schema_version || 1,
             answerMode: streamed.answer_mode,
             evidenceStatus: streamed.evidence_status,
-            language: streamed.language || answerLanguage,
             assumptions: streamed.assumptions || [],
             missingInputs: streamed.missing_inputs || [],
             conflicts: streamed.conflicts || [],
@@ -599,7 +599,6 @@ function App() {
         schemaVersion: data.schema_version || 1,
         answerMode: data.answer_mode,
         evidenceStatus: data.evidence_status,
-        language: data.language || answerLanguage,
         assumptions: data.assumptions || [],
         missingInputs: data.missing_inputs || [],
         conflicts: data.conflicts || [],
@@ -1030,10 +1029,6 @@ function App() {
                     <div className="composer-workspace" title={chatWorkspaceTitle}>
                       <span className={`composer-status-dot ${chatBusinessIncluded ? 'included' : 'independent'}`} aria-hidden="true" />
                       <span>{chatComposerLabel}</span>
-                    </div>
-                    <div className="language-switch" aria-label="Answer language">
-                      <button type="button" className={answerLanguage === 'en' ? 'active' : ''} aria-pressed={answerLanguage === 'en'} onClick={() => setAnswerLanguage('en')}>English</button>
-                      <button type="button" className={answerLanguage === 'hi' ? 'active' : ''} aria-pressed={answerLanguage === 'hi'} onClick={() => setAnswerLanguage('hi')}>हिन्दी</button>
                     </div>
                     <div className="composer-options" aria-label="Optional answer context">
                       <span className="composer-options-label">Include</span>

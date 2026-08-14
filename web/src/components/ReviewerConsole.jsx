@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, History, RefreshCw, ShieldAlert, XCircle } from 'lucide-react';
 import BrandKicker from './BrandKicker';
 
+const SUPPORTED_REVIEWER_ROLES = ['CA', 'CS', 'lawyer', 'sector_specialist', 'catalog_admin'];
+
 async function parseResponse(response) {
   let data = {};
   try { data = await response.json(); } catch {}
@@ -41,7 +43,7 @@ export default function ReviewerConsole({ session, apiUrl, reviewerRoles = [] })
       setConflicts(Array.isArray(claimConflicts) ? claimConflicts : []);
       setAudit(Array.isArray(events) ? events : []);
       setSourceVersions(sourceGroups.flat());
-      setAssignments(Array.isArray(reviewerAssignments) ? reviewerAssignments : []);
+      setAssignments(Array.isArray(reviewerAssignments) ? reviewerAssignments.filter(item => SUPPORTED_REVIEWER_ROLES.includes(item.reviewer_role)) : []);
     } catch (requestError) { setError(requestError.message); } finally { setLoading(false); }
   }, [apiUrl, headers, reviewerRoles]);
 
@@ -50,7 +52,7 @@ export default function ReviewerConsole({ session, apiUrl, reviewerRoles = [] })
   const review = async (claim, decision) => {
     const role = reviewerRoles.includes(claim.required_reviewer_role)
       ? claim.required_reviewer_role
-      : reviewerRoles.find(item => item !== 'catalog_admin' && item !== 'bilingual_reviewer') || reviewerRoles.find(item => item !== 'catalog_admin');
+      : reviewerRoles.find(item => item !== 'catalog_admin');
     if (!role || !comments[claim.id]?.trim()) { setError('Select an assigned reviewer role and add review comments.'); return; }
     try {
       await parseResponse(await fetch(`${apiUrl}/api/review/claims/${claim.id}/reviews`, {
@@ -127,7 +129,7 @@ export default function ReviewerConsole({ session, apiUrl, reviewerRoles = [] })
       </section>
       <section className="glass-panel reviewer-panel"><h3>Source version lifecycle</h3><p>Snapshots remain immutable; review status controls whether a source may support claims.</p>{sourceVersions.length === 0 ? <div className="workflow-task-empty">No source versions in the active queues.</div> : sourceVersions.map(item => <div className="review-event" key={item.id}><strong>{item.version_label}</strong><span>{item.review_status} · {item.fetch_status} · checked {new Date(item.last_checked_at).toLocaleString('en-IN')}</span>{reviewerRoles.includes('catalog_admin') && <><textarea className="form-input" value={comments[`source:${item.id}`] || ''} onChange={event => setComments(current => ({ ...current, [`source:${item.id}`]: event.target.value }))} placeholder="Source transition reason" /><div className="review-actions">{item.review_status === 'draft' && <button className="btn-ghost" onClick={() => transitionSource(item, 'in_review')}>Submit</button>}{item.review_status === 'in_review' && <button className="btn-primary" onClick={() => transitionSource(item, 'approved')}>Approve source</button>}{item.review_status === 'approved' && <button className="btn-ghost" onClick={() => transitionSource(item, 'quarantined')}>Quarantine</button>}{item.review_status === 'quarantined' && <button className="btn-ghost" onClick={() => transitionSource(item, 'superseded')}>Supersede</button>}</div></>}</div>)}</section>
       <section className="glass-panel reviewer-panel"><h3>Open claim contradictions</h3><p>Conflicting canonical claim values remain unpublished or suppressed until a catalog administrator records a resolution.</p>{conflicts.length === 0 ? <div className="workflow-task-empty">No unresolved claim contradictions.</div> : conflicts.map(item => <div className="review-event" key={item.id}><strong>{item.claim_id} ↔ {item.conflicting_claim_id}</strong><textarea className="form-input" value={comments[`conflict:${item.id}`] || ''} onChange={event => setComments(current => ({ ...current, [`conflict:${item.id}`]: event.target.value }))} placeholder="Resolution notes" />{reviewerRoles.includes('catalog_admin') && <div className="review-actions"><button className="btn-ghost" onClick={() => resolveConflict(item, 'not_a_conflict')}>Not a conflict</button><button className="btn-primary" onClick={() => resolveConflict(item, 'resolved')}>Resolved</button></div>}</div>)}</section>
-      {reviewerRoles.includes('catalog_admin') && <section className="glass-panel reviewer-panel"><h3>Qualified reviewer assignments</h3><div className="review-actions"><input className="form-input" value={assignment.reviewer_user_id} onChange={event => setAssignment(current => ({ ...current, reviewer_user_id: event.target.value }))} placeholder="Reviewer user UUID" /><select className="form-input" value={assignment.reviewer_role} onChange={event => setAssignment(current => ({ ...current, reviewer_role: event.target.value }))}><option value="CA">CA</option><option value="CS">CS</option><option value="lawyer">Lawyer</option><option value="sector_specialist">Sector specialist</option><option value="bilingual_reviewer">Bilingual reviewer</option><option value="catalog_admin">Catalog admin</option></select><button className="btn-primary" onClick={createAssignment}>Assign</button></div>{assignments.map(item => <div className="review-event" key={item.id}><strong>{item.reviewer_role}</strong><span>{item.reviewer_user_id} · {item.active ? 'active' : 'inactive'}</span></div>)}</section>}
+      {reviewerRoles.includes('catalog_admin') && <section className="glass-panel reviewer-panel"><h3>Qualified reviewer assignments</h3><div className="review-actions"><input className="form-input" value={assignment.reviewer_user_id} onChange={event => setAssignment(current => ({ ...current, reviewer_user_id: event.target.value }))} placeholder="Reviewer user UUID" /><select className="form-input" value={assignment.reviewer_role} onChange={event => setAssignment(current => ({ ...current, reviewer_role: event.target.value }))}><option value="CA">CA</option><option value="CS">CS</option><option value="lawyer">Lawyer</option><option value="sector_specialist">Sector specialist</option><option value="catalog_admin">Catalog admin</option></select><button className="btn-primary" onClick={createAssignment}>Assign</button></div>{assignments.map(item => <div className="review-event" key={item.id}><strong>{item.reviewer_role}</strong><span>{item.reviewer_user_id} · {item.active ? 'active' : 'inactive'}</span></div>)}</section>}
       <section className="glass-panel reviewer-panel"><h3><History size={16} /> Append-only review history</h3>{audit.slice(0, 30).map(item => <div className="review-event" key={item.id}><strong>{item.entity_type}: {item.action.replaceAll('_', ' ')}</strong><span>{item.from_state || 'new'} → {item.to_state || 'unchanged'} · {new Date(item.created_at).toLocaleString('en-IN')}</span><p>{item.reason}</p></div>)}</section>
     </div>
   );

@@ -41,7 +41,7 @@ Unlike generic AI, BizGuide:
 | 🏢 **My Businesses** | Manage your business profiles with quick-ask shortcuts |
 | 🚧 **Compliance Plan** | Business-scoped obligations, applicability reasons, evidence needs, safe due dates, tasks, and in-app reminders with explicit coverage gaps |
 | 👩‍⚖️ **Review governance** | Source snapshots, passages, atomic claims, qualified approvals, audit history, change quarantine, and kill switches |
-| 🌐 **English/Hindi** | Both language modes share the same verified claim objects; unavailable reviewed Hindi text is disclosed instead of improvised as law |
+| 🌐 **English output** | Gemini answers in English across independent, business-context, and document-grounded conversations |
 | 💬 **Conversation History** | Signed-in conversations and citations use normalized RLS-protected tables; legacy checklist state is intentionally not imported |
 | 🗃️ **Document Inventory** | Uploaded PDFs have owner-scoped server records with queued/processing/indexed/failed/deleted status and progress tracking |
 | ⚙️ **Settings** | Accent color themes, API URL config, profile management |
@@ -300,14 +300,14 @@ The FastAPI backend is deployed on **Render** (free tier).
 
 The frontend deployment includes a restrictive Content Security Policy, HSTS, clickjacking and MIME-sniffing protections, a referrer policy, and a permissions policy through `web/vercel.json`. Keep server keys (Gemini, Pinecone, and JWT secrets) in the backend environment only; `VITE_*` variables are public client configuration.
 
-The source-backed workflow schema continues through `supabase/migrations/0014_bilingual_review_controls.sql`. Apply every migration in filename order. The controlled obligation manifest is `supabase/seed/obligations.csv`; review it with `scripts/validate_source_catalog.py`. Follow [`docs/TRUSTED_BIZGUIDE_RELEASE.md`](docs/TRUSTED_BIZGUIDE_RELEASE.md) before production promotion.
+The source-backed workflow schema continues through `supabase/migrations/0014_bilingual_review_controls.sql`. Apply every migration in filename order; that legacy language migration remains in the sequence for existing database history, while the active API and UI expose English-only chat and review flows. The controlled obligation manifest is `supabase/seed/obligations.csv`; review it with `scripts/validate_source_catalog.py`. Follow [`docs/TRUSTED_BIZGUIDE_RELEASE.md`](docs/TRUSTED_BIZGUIDE_RELEASE.md) before production promotion.
 
 ---
 
 ## 🛣️ Roadmap
 
 - [x] User authentication and RLS (Supabase)
-- [x] English/Hindi trust-contract rendering (reviewed bilingual claim content remains a launch gate)
+- [x] English-only trust-contract rendering (reviewed claim content remains a launch gate)
 - [x] Source fetch/hash/change monitoring worker
 - [ ] Complete qualified-review coverage for India, Delhi, and Maharashtra
 - [ ] Telugu and Tamil support

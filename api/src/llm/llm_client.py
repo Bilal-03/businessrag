@@ -95,14 +95,12 @@ def _generate(
     document_context: str = "",
     business_context_text: str = "",
     official_context_text: str = "",
-    language: str = "en",
 ) -> str:
     final_prompt = build_agent_prompt(
         agent_type,
         document_context,
         business_context_text=business_context_text,
         official_context_text=official_context_text,
-        language=language,
     )
     response = _get_model().invoke(_build_generation_messages(query, final_prompt, history))
     answer = _content_text(response)
@@ -122,7 +120,6 @@ def agent_generate_with_sources(
     include_documents: bool = False,
     business_context_text: str = "",
     official_context_text: str = "",
-    language: str = "en",
 ) -> AgentGenerationResult:
     """Generate with Gemini and only the document/business context selected by the caller."""
     selected_sources = list(sources) if sources is not None else []
@@ -136,7 +133,6 @@ def agent_generate_with_sources(
         document_context=build_context_text(selected_sources),
         business_context_text=business_context_text,
         official_context_text=official_context_text,
-        language=language,
     )
     grounding = (
         "mixed"
@@ -156,7 +152,6 @@ def generate_from_retrieved_sources(
     *,
     business_context_text: str = "",
     official_context_text: str = "",
-    language: str = "en",
 ) -> str:
     """Generate from an already scoped retrieval set without querying again."""
     try:
@@ -167,7 +162,6 @@ def generate_from_retrieved_sources(
             document_context=build_context_text(list(sources)),
             business_context_text=business_context_text,
             official_context_text=official_context_text,
-            language=language,
         )
     except Exception as exc:
         logger.error("Gemini generation from scoped sources failed: %s", str(exc))
@@ -182,7 +176,6 @@ def stream_agent_with_sources(
     *,
     business_context_text: str = "",
     official_context_text: str = "",
-    language: str = "en",
 ):
     """Yield Gemini text deltas for callers that need token streaming."""
     final_prompt = build_agent_prompt(
@@ -190,7 +183,6 @@ def stream_agent_with_sources(
         build_context_text(list(sources)),
         business_context_text=business_context_text,
         official_context_text=official_context_text,
-        language=language,
     )
     stream = _get_model().stream(_build_generation_messages(query, final_prompt, history))
     for chunk in stream:
@@ -209,7 +201,6 @@ def agent_generate(
     include_documents: bool = False,
     business_context_text: str = "",
     official_context_text: str = "",
-    language: str = "en",
 ) -> str:
     """Backward-compatible string-only Gemini generation helper."""
     return agent_generate_with_sources(
@@ -221,5 +212,4 @@ def agent_generate(
         include_documents=include_documents,
         business_context_text=business_context_text,
         official_context_text=official_context_text,
-        language=language,
     ).answer

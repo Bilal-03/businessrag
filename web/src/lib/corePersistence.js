@@ -202,7 +202,6 @@ function messageToRow(message, conversationId, ownerId, index) {
     answer_mode: message.answerMode || null,
     evidence_status: message.evidenceStatus || null,
     trust_metadata: {
-      language: message.language || 'en',
       assumptions: message.assumptions || [],
       missing_inputs: message.missingInputs || [],
       conflicts: message.conflicts || [],
@@ -235,7 +234,6 @@ function messageRowToUi(row, sourceMap) {
     schemaVersion: row.schema_version || 1,
     answerMode: row.answer_mode || null,
     evidenceStatus: row.evidence_status || null,
-    language: row.trust_metadata?.language || 'en',
     assumptions: row.trust_metadata?.assumptions || [],
     missingInputs: row.trust_metadata?.missing_inputs || [],
     conflicts: row.trust_metadata?.conflicts || [],

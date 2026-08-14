@@ -491,9 +491,6 @@
 .escalation-brief strong { color: #fde68a; }
 .escalation-brief p { margin: 6px 0; }
 .escalation-brief ul { margin-bottom: 0; }
-.language-switch { display: flex; justify-content: flex-end; gap: 4px; max-width: 900px; margin: 0 auto 8px; }
-.language-switch button { border: 1px solid var(--glass-border); border-radius: 999px; padding: 5px 10px; min-width: 44px; min-height: 44px; background: rgba(15,23,42,.6); color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 11px; }
-.language-switch button.active { border-color: rgba(82,99,77,.55); background: rgba(159,63,41,.18); color: #f3e5c8; }
 .grounding-warning {
   margin-top: 12px;
   padding: 9px 11px;
@@ -2451,14 +2448,15 @@
   width: min(100%, 940px);
   margin: 0 auto 7px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "workspace options";
   align-items: center;
   gap: 12px;
 }
 
 .composer-workspace {
   min-width: 0;
-  grid-column: 1;
+  grid-area: workspace;
   justify-self: start;
   display: inline-flex;
   align-items: center;
@@ -2488,40 +2486,8 @@
   background: var(--color-sage);
 }
 
-.language-switch {
-  position: static;
-  grid-column: 2;
-  justify-self: center;
-  display: inline-flex;
-  width: max-content;
-  max-width: none;
-  margin: 0;
-  padding: 2px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 9px;
-  background: var(--color-surface-1);
-}
-
-.language-switch button {
-  min-width: 52px;
-  min-height: 44px;
-  padding: 6px 9px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--color-content-secondary);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.language-switch button.active {
-  border: 0;
-  background: var(--color-sage-soft);
-  color: #394737;
-}
-
 .composer-options {
-  grid-column: 3;
+  grid-area: options;
   justify-self: end;
   min-width: 0;
   display: inline-flex;
@@ -3562,10 +3528,10 @@
 
   .composer-context {
     margin-bottom: 5px;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "workspace language"
-      "options options";
+      "workspace"
+      "options";
     row-gap: 6px;
   }
 
@@ -3573,12 +3539,6 @@
     grid-area: workspace;
     grid-column: auto;
     max-width: 100%;
-  }
-
-  .language-switch {
-    grid-area: language;
-    grid-column: auto;
-    justify-self: end;
   }
 
   .composer-options {

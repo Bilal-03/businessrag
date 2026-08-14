@@ -37,6 +37,7 @@ test('answers independently by default without workspace context', async ({ page
     use_business_context: false,
     use_document_context: false,
   });
+  expect(request.postDataJSON()).not.toHaveProperty('language');
 
   await expect(page.getByText('Independent Gemini answer.')).toBeVisible();
   await expect(page.getByText('Answered independently by Gemini — no business or document context used')).toBeVisible();
@@ -63,19 +64,6 @@ test('sends business and document context only when both toggles are enabled', a
     use_document_context: true,
   });
   await expect(page.getByText('Context used: business profile + uploaded documents')).toBeVisible();
-});
-
-test('sends the selected answer language and renders Hindi output', async ({ page }) => {
-  await openAuthenticatedApp(page, { chatMode: 'stream' });
-  await page.getByRole('button', { name: 'हिन्दी', exact: true }).click();
-
-  const input = page.getByLabel('Ask BizGuide a question');
-  const requestPromise = page.waitForRequest(request => request.url().endsWith('/api/chat/stream') && request.method() === 'POST');
-  await input.fill('मुझे एक सामान्य व्यवसाय सुझाव दें');
-  await page.getByRole('button', { name: 'Send message' }).click();
-  const request = await requestPromise;
-  expect(request.postDataJSON()).toMatchObject({ language: 'hi' });
-  await expect(page.getByText('जेमिनी ने स्वतंत्र रूप से उत्तर दिया।')).toBeVisible();
 });
 
 test('keeps the mobile home hierarchy clear above the fixed composer', async ({ page }) => {

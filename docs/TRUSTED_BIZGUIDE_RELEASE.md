@@ -19,11 +19,11 @@ The code platform is designed to fail closed. That does **not** make the legal c
 
 These cannot honestly be completed by software or by AI:
 
-1. Assign real CA, CS, lawyer, sector-specialist, bilingual-reviewer, and catalog-admin user IDs in `reviewer_assignments`.
+1. Assign real CA, CS, lawyer, sector-specialist, and catalog-admin user IDs in `reviewer_assignments`.
 2. Capture immutable source snapshots and pinpoint passages. A source-family URL alone is not evidence.
 3. Draft and professionally approve every common/activity claim, due-date rule, evidence item, and coverage cell for India, Delhi, and Maharashtra.
-4. Run the generated 2,000-case evaluation manifest. Reviewers must approve every case; generated `pending_qualified_review` rows do not count.
-5. Complete security review, backup/restore drill, accessibility and real-device bilingual QA, and a pilot with at least 20 representative SME owners.
+4. Run the generated 1,000-case English-only evaluation manifest. Reviewers must approve every case; generated `pending_qualified_review` rows do not count.
+5. Complete security review, backup/restore drill, accessibility and real-device QA, and a pilot with at least 20 representative SME owners.
 6. Run `scripts/check_release_gates.py`. Production promotion is blocked unless it exits zero.
 
 ## Required rollout order
@@ -32,7 +32,7 @@ These cannot honestly be completed by software or by AI:
 2. Configure reviewer identities. Validate RLS with two unrelated users and every reviewer role.
 3. Run source ingestion and monitoring in a private worker. Review all source versions before claim work.
 4. Complete and approve coverage cells; never replace `blocked` with `covered` based on row count.
-5. Run API, browser, injection, stale/change, and 2,000-case evaluations.
+5. Run API, browser, injection, stale/change, and 1,000-case evaluations.
 6. Canary food, technology, retail, and finance businesses in both states. Their applicable obligation/claim IDs must differ when facts differ.
 7. Promote only after the release-gate command passes and reviewers record launch approval.
 

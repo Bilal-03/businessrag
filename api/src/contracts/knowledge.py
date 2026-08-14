@@ -4,7 +4,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-ReviewerRole = Literal["CA", "CS", "lawyer", "sector_specialist", "bilingual_reviewer", "catalog_admin"]
+ReviewerRole = Literal["CA", "CS", "lawyer", "sector_specialist", "catalog_admin"]
 
 
 class AnswerFeedbackCreate(BaseModel):
@@ -28,7 +28,6 @@ class SourceDocumentCreate(BaseModel):
     source_type: Literal["gazette", "statute", "rules", "notification", "circular", "order", "master_direction", "form", "official_guidance", "official_faq", "institutional_guidance"]
     canonical_url: str = Field(pattern=r"^https://", max_length=2048)
     title: str = Field(min_length=2, max_length=500)
-    language: Literal["en", "hi", "bilingual"] = "en"
     monitoring_frequency: Literal["daily", "weekly", "monthly", "manual"] = "weekly"
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -68,7 +67,6 @@ class ClaimCreate(BaseModel):
     jurisdiction: str = Field(min_length=2, max_length=120)
     claim_type: Literal["duty", "deadline", "rate", "threshold", "penalty", "eligibility", "definition", "procedure", "exemption"]
     statement_en: str = Field(min_length=1, max_length=4000)
-    statement_hi: str | None = Field(default=None, max_length=4000)
     support_excerpt: str = Field(min_length=5, max_length=1200)
     # A reviewer-authored canonical value makes contradiction checks
     # deterministic. Examples: true, "18%", "2026-09-30", or a bounded
@@ -97,7 +95,7 @@ class ClaimCreate(BaseModel):
 class ReviewDecisionCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    reviewer_role: Literal["CA", "CS", "lawyer", "sector_specialist", "bilingual_reviewer"]
+    reviewer_role: Literal["CA", "CS", "lawyer", "sector_specialist"]
     decision: Literal["approve", "reject", "request_changes"]
     comments: str = Field(min_length=1, max_length=4000)
 

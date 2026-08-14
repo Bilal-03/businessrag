@@ -218,14 +218,13 @@ async def _load_reviewed_evidence(
     business: dict[str, Any],
     profile: dict[str, Any] | None,
     as_of: date,
-    language: str = "en",
 ) -> tuple[list[VerifiedClaim], list[SourceCitation], list[str]]:
     context = _profile_context(business, profile)
     rows = await client.request(
         "GET",
         "reviewed_claims",
         params={
-            "select": "id,claim_key,claim_type,statement_en,statement_hi,support_excerpt,claim_value,search_terms,risk_level,required_reviewer_role,required_approvals,source_passage_id,applicability_version,applicability_rule,effective_from,effective_to,revalidate_by,jurisdiction,lifecycle,reviewer_roles,approval_count,published_at",
+            "select": "id,claim_key,claim_type,statement_en,support_excerpt,claim_value,search_terms,risk_level,required_reviewer_role,required_approvals,source_passage_id,applicability_version,applicability_rule,effective_from,effective_to,revalidate_by,jurisdiction,lifecycle,reviewer_roles,approval_count,published_at",
             "lifecycle": "eq.published",
             "current": "eq.true",
             "effective_from": f"lte.{as_of.isoformat()}",
@@ -327,17 +326,9 @@ async def _load_reviewed_evidence(
             continue
         evidence_id = passage["id"]
         statement = row["statement_en"]
-        explanation_hi = None
-        language_status = "reviewed"
-        if language == "hi":
-            if row.get("statement_hi") and "bilingual_reviewer" in (row.get("reviewer_roles") or []):
-                explanation_hi = row["statement_hi"]
-            else:
-                language_status = "english_only"
         verified_claim = VerifiedClaim(
             claim_id=row["id"], statement=statement, evidence_ids=[evidence_id],
-            applicability=reasons, risk_level=row["risk_level"], claim_type=row.get("claim_type"), language_status=language_status,
-            statutory_text_en=row["statement_en"], explanation_hi=explanation_hi,
+            applicability=reasons, risk_level=row["risk_level"], claim_type=row.get("claim_type"),
         )
         citation = SourceCitation(
             evidence_id=evidence_id, source_kind="official", source_id=document["id"],
@@ -471,7 +462,7 @@ async def build_chat_response(
     official_context_text = ""
     if mode == "reviewed_compliance" and business:
         try:
-            claims, citations, missing = await _load_reviewed_evidence(client, req.query, business, profile, as_of, req.language)
+            claims, citations, missing = await _load_reviewed_evidence(client, req.query, business, profile, as_of)
         except SupabaseRestError:
             claims, citations, missing = [], [], ["reviewed source catalog availability"]
         official_citations = citations
@@ -490,7 +481,6 @@ async def build_chat_response(
         sources=sources,
         business_context_text=business_context_text,
         official_context_text=official_context_text,
-        language=req.language,
     )
 
     document_citations = _document_citations(sources)
@@ -515,7 +505,6 @@ async def build_chat_response(
             answer=result.answer,
             answer_mode="reviewed_compliance",
             evidence_status="verified",
-            language=req.language,
             claims=claims,
             citations=all_citations,
             context_used=context_used,
@@ -535,7 +524,6 @@ async def build_chat_response(
             answer=result.answer,
             answer_mode="user_document_analysis",
             evidence_status="partially_supported",
-            language=req.language,
             citations=all_citations,
             context_used=context_used,
             assumptions=assumptions,
@@ -552,7 +540,6 @@ async def build_chat_response(
         answer=result.answer,
         answer_mode="general_business_guidance",
         evidence_status="general_guidance",
-        language=req.language,
         citations=all_citations,
         context_used=context_used,
         assumptions=assumptions,
