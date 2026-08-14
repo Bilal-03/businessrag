@@ -12,11 +12,15 @@ The Compliance Plan is now built from a user-owned business ID. The backend load
 
 ## Rollout
 
-1. Apply `0006_business_scoped_applicability.sql`.
-2. Apply `0007_industry_catalog_coverage.sql`.
-3. Deploy the backend and verify the new plan/profile endpoints with an authenticated user.
-4. Deploy the frontend.
-5. Edit each existing business and explicitly select regulated activities. Complete remaining “Needs your input” questions in Compliance Plan.
-6. Canary a food business and a Technology/IT business. Their plan IDs must differ, and the technology business must not receive FSSAI unless a food activity was explicitly selected.
+1. Apply every migration in `supabase/migrations/` through `0014_bilingual_review_controls.sql` in filename order. Applying the migrations alone does not publish a legal catalog; it installs fail-closed gates.
+2. Run `scripts/verify_trusted_schema.sql` in Supabase and confirm the 210 coverage cells exist, RLS is enabled, and no malformed/unqualified legacy row is published.
+3. Bootstrap a real `catalog_admin`, assign qualified reviewers, and stage source snapshots, exact passages, claims, applicability rules, due-date rules, and evidence items. Publish only after the required human approvals are recorded.
+4. Deploy the backend and verify the authenticated plan/profile endpoints. Then deploy the frontend with only public `VITE_*` variables.
+5. Edit each existing business and explicitly select regulated activities. Complete remaining “Needs your input” questions in Compliance Plan. Existing incomplete profiles should show a verified partial plan plus questions—not guessed obligations.
+6. Canary a food business and a Technology/IT business. Their returned obligation IDs must differ; Technology/IT must not receive FSSAI unless food activity was explicitly selected. Unknown GST status must return a question, not GSTR-3B.
+
+### Why an empty plan can be correct
+
+After the trust migrations, `No confirmed applicable obligations` means the database is reachable but no record has simultaneously passed publication, source freshness, qualified review, effective-date, jurisdiction, applicability, and profile-answer checks. It is not evidence that the migration failed. Do not “fix” the empty state by turning on legacy rows or by making industry a universal match.
 
 The coverage registry contains routing declarations for all ten primary industries. `partial` is a disclosure, not a claim of completeness. New legal rows remain unpublished until a human domain owner completes record-level source review.

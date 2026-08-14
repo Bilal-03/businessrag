@@ -2385,14 +2385,16 @@
 .composer-context {
   width: min(100%, 940px);
   margin: 0 auto 7px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
 .composer-workspace {
   min-width: 0;
+  grid-column: 1;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -2415,7 +2417,12 @@
 
 .language-switch {
   position: static;
+  grid-column: 2;
+  justify-self: center;
   display: inline-flex;
+  width: max-content;
+  max-width: none;
+  margin: 0;
   padding: 2px;
   border: 1px solid var(--border-subtle);
   border-radius: 9px;
@@ -2445,7 +2452,7 @@
   min-height: 62px;
   margin: 0 auto;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   border: 1px solid var(--border-strong);
   border-radius: 16px;
   background: var(--color-surface-1);
@@ -2459,9 +2466,11 @@
 }
 
 .chat-input {
+  width: 100%;
+  flex: 1 1 auto;
   min-height: 60px;
   max-height: 152px;
-  padding: 19px 14px 17px;
+  padding: 19px 72px 17px;
   border: 0;
   background: transparent;
   color: var(--color-ink);
@@ -2481,9 +2490,12 @@
 
 .upload-button,
 .send-button {
+  position: absolute;
+  top: 50%;
+  margin: 0;
+  transform: translateY(-50%);
   min-width: 44px;
   min-height: 44px;
-  margin: 8px;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   background: var(--color-surface-2);
@@ -3330,13 +3342,13 @@
 
   .chat-input {
     min-height: 56px;
-    padding: 17px 8px 15px;
+    padding: 17px 62px 15px;
     font-size: 16px;
   }
 
   .upload-button,
   .send-button {
-    margin: 6px;
+    margin: 0;
   }
 
   .messages-list {
