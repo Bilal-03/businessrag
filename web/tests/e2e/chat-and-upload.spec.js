@@ -24,6 +24,30 @@ test('streams a source-aware answer with citation metadata', async ({ page }) =>
   await expect(page.getByText('page 2')).toBeVisible();
 });
 
+test('wraps long document citation snippets inside the chat panel', async ({ page }) => {
+  await openAuthenticatedChat(page, { chatMode: 'long-document-snippet' });
+  await page.getByRole('button', { name: 'Documents', exact: true }).click();
+
+  const input = page.getByLabel('Ask BizGuide a question');
+  await input.fill('Show the relevant document excerpt.');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByText(/Sources from your documents/)).toBeVisible();
+
+  const widths = await page.locator('.message-ai').evaluate(element => {
+    const snippet = element.querySelector('.citation-snippet');
+    const chat = element.closest('.chat-container');
+    return {
+      chat: { clientWidth: chat?.clientWidth || 0, scrollWidth: chat?.scrollWidth || 0 },
+      message: { clientWidth: element.clientWidth, scrollWidth: element.scrollWidth },
+      snippet: { clientWidth: snippet?.clientWidth || 0, scrollWidth: snippet?.scrollWidth || 0 },
+    };
+  });
+
+  expect(widths.chat.scrollWidth).toBeLessThanOrEqual(widths.chat.clientWidth);
+  expect(widths.message.scrollWidth).toBeLessThanOrEqual(widths.message.clientWidth);
+  expect(widths.snippet.scrollWidth).toBeLessThanOrEqual(widths.snippet.clientWidth);
+});
+
 test('answers independently by default without workspace context', async ({ page }) => {
   await openAuthenticatedChat(page, { chatMode: 'stream' });
   await expect(page.getByText('Personal workspace', { exact: true }).first()).toBeVisible();

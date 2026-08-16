@@ -392,6 +392,9 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
         ...(useDocumentContext ? ['documents'] : []),
       ];
       const answer = useDocumentContext ? 'Grounded answer from your document.' : 'Independent answer.';
+      const documentSnippet = chatMode === 'long-document-snippet'
+        ? 'TransactionControlLanguage(TCL)'.repeat(20)
+        : 'Verify the filing date against the official notice.';
       const stream = [
         'event: meta\n',
         `data: ${JSON.stringify({
@@ -404,7 +407,7 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
             document_id: DOCUMENT.id,
             file_name: DOCUMENT.file_name,
             page_number: 2,
-            snippet: 'Verify the filing date against the official notice.',
+            snippet: documentSnippet,
             score: 0.94,
           }] : [],
         })}\n\n`,

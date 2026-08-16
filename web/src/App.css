@@ -3193,6 +3193,8 @@
 
 .chat-container {
   padding: 26px 42px 154px;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .hero-section {
@@ -3580,15 +3582,18 @@
 
 .messages-list {
   width: min(100%, 860px);
+  min-width: 0;
   padding: 18px 0 24px;
   gap: 22px;
 }
 
 .message-bubble {
+  min-width: 0;
   border-radius: 16px;
   font-size: 15px;
   line-height: 1.65;
   box-shadow: none;
+  overflow-wrap: anywhere;
 }
 
 .answer-context {
@@ -3617,6 +3622,7 @@
 .message-ai {
   width: 100%;
   max-width: none;
+  min-width: 0;
   padding: 24px 26px;
   border: 1px solid var(--border-subtle);
   border-radius: 4px 18px 18px 18px;
@@ -3710,6 +3716,13 @@
 .citation-list {
   border: 1px solid var(--border-subtle);
   background: #faf5ed;
+}
+
+.citation-meta,
+.citation-snippet,
+.citation-freshness {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .citation-list li {
