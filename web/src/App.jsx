@@ -843,15 +843,6 @@ function App() {
     await supabase.auth.signOut();
   };
 
-  const chatBusinessIncluded = useBusinessContext && Boolean(activeBusinessId);
-  const chatWorkspaceTitle = chatBusinessIncluded
-    ? 'Business context is included for this question'
-    : 'Business context is off; this question is answered independently';
-  const chatComposerLabel = chatBusinessIncluded && activeBusinessProfile?.name
-    ? activeBusinessProfile.name
-    : useDocumentContext
-      ? 'Selected documents'
-      : 'Independent by default';
   const activeConversationTitle = conversations.find(conversation => conversation.id === activeConvId)?.title || (messages.length ? generateTitle(messages[0]?.content) : 'New question');
 
   if (isAuthLoading) {
@@ -920,15 +911,10 @@ function App() {
                 <div className="chat-workspace-title">
                   <span className="chat-workspace-mark" aria-hidden="true"><img src="/brand/bizguide-ai-mark.svg" alt="" /></span>
                   <div>
-                    <span className="chat-workspace-kicker">Source-aware conversation</span>
                     <h1>{activeConversationTitle}</h1>
                   </div>
                 </div>
                 <div className="chat-workspace-actions">
-                  <span className="chat-context-summary" title={chatWorkspaceTitle}>
-                    <span className={`composer-status-dot ${chatBusinessIncluded ? 'included' : 'independent'}`} aria-hidden="true" />
-                    {chatComposerLabel}
-                  </span>
                   {messages.length > 0 && <button type="button" className="btn-ghost chat-export-button" onClick={handleExportConversation}><Download size={14} aria-hidden="true" /> Export</button>}
                 </div>
               </div>
@@ -941,7 +927,6 @@ function App() {
                     className="chat-empty-state"
                   >
                     <span className="chat-empty-mark" aria-hidden="true"><img src="/brand/bizguide-ai-mark.svg" alt="" /></span>
-                    <span className="chat-empty-kicker">Ask BizGuide</span>
                     <h2>What would you like to verify?</h2>
                     <p>Ask about your business, uploaded sources, or next compliance steps.</p>
                     <div className="chat-starter-prompts" aria-label="Starter questions">
@@ -987,11 +972,9 @@ function App() {
                                   {msg.effectiveDate && <span> · as of {msg.effectiveDate}</span>}
                                 </div>
                               )}
-                              {Array.isArray(msg.contextUsed) && (
+                              {Array.isArray(msg.contextUsed) && msg.contextUsed.length > 0 && (
                                 <div className="answer-context" role="status">
-                                  {msg.contextUsed.length > 0
-                                    ? `Context used: ${msg.contextUsed.map(context => context === 'business' ? 'business profile' : 'uploaded documents').join(' + ')}`
-                                    : 'Answered independently — no business or document context used'}
+                                  {`Context used: ${msg.contextUsed.map(context => context === 'business' ? 'business profile' : 'uploaded documents').join(' + ')}`}
                                 </div>
                               )}
                               {msg.missingInputs?.length > 0 && (
@@ -1080,11 +1063,7 @@ function App() {
 
               {/* Input Area */}
               <div className="input-container">
-                  <div className="composer-context">
-                    <div className="composer-workspace" title={chatWorkspaceTitle}>
-                      <span className={`composer-status-dot ${chatBusinessIncluded ? 'included' : 'independent'}`} aria-hidden="true" />
-                      <span>{chatComposerLabel}</span>
-                    </div>
+                <div className="composer-context">
                     <div className="composer-options" aria-label="Optional answer context">
                       <span className="composer-options-label">Include</span>
                       <button

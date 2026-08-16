@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Building2, Trash2, Edit2, ChevronRight, X, Check, ChevronDown } from 'lucide-react';
 import { captureEvent } from '../lib/observability';
 import { INDUSTRY_CODE_BY_LABEL, INDUSTRY_OPTIONS, activityOptionsFor } from '../lib/complianceCatalog';
-import BrandKicker from './BrandKicker';
 
 const BUSINESS_TYPES = ['Private Limited (Pvt Ltd)', 'Limited Liability Partnership (LLP)', 'One Person Company (OPC)', 'Sole Proprietorship', 'Partnership Firm', 'Public Limited'];
 const INDUSTRIES = INDUSTRY_OPTIONS.map(option => option.label);
@@ -271,7 +270,6 @@ const MyBusinesses = ({ businesses = [], onBusinessesChange, onAskQuestion, acti
     <div className="panel-container">
       <div className="panel-header">
         <div>
-          <BrandKicker icon={Building2}>Workspace directory</BrandKicker>
           <h2 className="panel-title">My Businesses</h2>
           <p className="panel-subtitle">Manage your registered business profiles and get tailored compliance guidance.</p>
         </div>

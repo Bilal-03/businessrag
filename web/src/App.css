@@ -1933,7 +1933,6 @@
 .workspace-header-new,
 .chat-workspace-title,
 .chat-workspace-actions,
-.chat-context-summary,
 .dashboard-context-line,
 .dashboard-welcome-actions,
 .dashboard-source-cta,
@@ -1978,15 +1977,6 @@
   min-width: 0;
   display: grid;
   gap: 1px;
-}
-
-.workspace-header-page strong {
-  overflow: hidden;
-  color: var(--color-content-muted);
-  font-size: 11px;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .workspace-header-eyebrow {
@@ -2537,16 +2527,6 @@
   min-width: 0;
 }
 
-.chat-workspace-kicker {
-  display: block;
-  margin-bottom: 2px;
-  color: var(--color-accent);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
 .chat-workspace-title h1 {
   overflow: hidden;
   color: var(--color-ink);
@@ -2561,26 +2541,6 @@
   justify-content: flex-end;
   gap: 8px;
   min-width: 0;
-}
-
-.chat-context-summary {
-  max-width: 240px;
-  gap: 7px;
-  min-height: 36px;
-  padding: 7px 10px;
-  overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  border-radius: 999px;
-  color: var(--color-content-secondary);
-  background: var(--color-surface-2);
-  font-size: 11px;
-  font-weight: 750;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chat-context-summary .composer-status-dot {
-  flex: 0 0 auto;
 }
 
 .chat-export-button {
@@ -2857,7 +2817,6 @@
   .workspace-header-brand { gap: 9px; }
   .workspace-header-brand .brand-logo-image { width: 112px; }
   .workspace-header-divider,
-  .workspace-header-page strong,
   .workspace-header-context,
   .workspace-header-user-copy,
   .workspace-header-user > svg,
@@ -2899,9 +2858,7 @@
   .chat-workspace-header { min-height: 62px; padding: 9px 14px; }
   .chat-workspace-mark { width: 32px; height: 32px; padding: 6px; }
   .chat-workspace-title h1 { font-size: 14px; }
-  .chat-workspace-kicker { font-size: 9px; }
   .chat-workspace-actions { gap: 5px; }
-  .chat-context-summary { max-width: 135px; min-height: 32px; padding: 5px 8px; font-size: 10px; }
   .chat-export-button { min-height: 32px; padding: 5px 8px; }
   .chat-export-button svg { margin-right: -2px; }
   .chat-container { padding-top: 8px; }
@@ -2921,7 +2878,6 @@
   .dashboard-metric-card strong { font-size: 21px; }
   .dashboard-source-row { align-items: flex-start; }
   .dashboard-status { margin-left: auto; }
-  .chat-context-summary { max-width: 108px; }
 }
 
 /* Tablet: preserve comfortable reading width while keeping controls in a
@@ -3246,7 +3202,6 @@
 }
 
 .hero-status-dot,
-.composer-status-dot,
 .panel-context-dot {
   width: 8px;
   height: 8px;
@@ -3471,48 +3426,14 @@
 .composer-context {
   width: min(100%, 940px);
   margin: 0 auto 7px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "workspace options";
+  display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
 }
 
-.composer-workspace {
-  min-width: 0;
-  grid-area: workspace;
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-content-secondary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.composer-workspace > span:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.composer-status-dot {
-  width: 7px;
-  height: 7px;
-  box-shadow: none;
-}
-
-.composer-status-dot.independent {
-  background: var(--color-content-muted);
-}
-
-.composer-status-dot.included {
-  background: var(--color-sage);
-}
-
 .composer-options {
-  grid-area: options;
-  justify-self: end;
+  margin-left: auto;
   min-width: 0;
   display: inline-flex;
   align-items: center;
@@ -4552,23 +4473,11 @@
 
   .composer-context {
     margin-bottom: 5px;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "workspace"
-      "options";
-    row-gap: 6px;
-  }
-
-  .composer-workspace {
-    grid-area: workspace;
-    grid-column: auto;
-    max-width: 100%;
+    justify-content: flex-start;
   }
 
   .composer-options {
-    grid-area: options;
-    grid-column: auto;
-    justify-self: start;
+    margin-left: 0;
   }
 
   .chat-input-wrapper {
@@ -4714,15 +4623,6 @@
   object-fit: contain;
 }
 
-.chat-empty-kicker {
-  margin-top: 15px;
-  color: var(--color-accent);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
 .chat-empty-state h2 {
   margin-top: 8px;
   color: var(--color-ink);
@@ -4848,11 +4748,6 @@
     height: 36px;
     padding: 7px;
     border-radius: 11px;
-  }
-
-  .chat-empty-kicker {
-    margin-top: 6px;
-    font-size: 9px;
   }
 
   .chat-empty-state h2 {

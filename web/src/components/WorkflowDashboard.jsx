@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Bell, CheckCircle2, ClipboardCheck, ExternalLink, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
 import { captureEvent, captureException } from '../lib/observability';
-import BrandKicker from './BrandKicker';
 
 const TASK_STATUSES = [
   { value: 'todo', label: 'To do' },
@@ -372,7 +371,6 @@ const WorkflowDashboard = ({
     <div className="panel-container workflow-container">
       <div className="panel-header">
         <div>
-          <BrandKicker icon={ClipboardCheck}>Source-backed workflow</BrandKicker>
           <h2 className="panel-title">Compliance Plan</h2>
           <p className="panel-subtitle">Track verified obligations and your own planning tasks for the selected business.</p>
         </div>

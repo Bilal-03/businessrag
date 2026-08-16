@@ -60,7 +60,7 @@ export default function Auth() {
           <p>Bring your business context, source documents, obligations, and next questions into one calm workspace.</p>
         </div>
         <div className="auth-trust-list" aria-label="Product safeguards">
-          <span><CheckCircle2 size={17} /> Source-aware answers</span>
+          <span><CheckCircle2 size={17} /> Evidence-backed answers</span>
           <span><CheckCircle2 size={17} /> Business-scoped workspaces</span>
           <span><CheckCircle2 size={17} /> Clear evidence and coverage limits</span>
         </div>

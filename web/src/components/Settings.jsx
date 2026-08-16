@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Globe, Trash2, Info, Check, Palette, Shield, Bell, Bot, Search, FileText, MapPin, Settings as SettingsIcon } from 'lucide-react';
+import { User, Globe, Trash2, Info, Check, Palette, Shield, Bell, Bot, Search, FileText, MapPin } from 'lucide-react';
 import Logo from './Logo';
-import BrandKicker from './BrandKicker';
 
 const APP_VERSION = '1.0.0';
 
@@ -116,7 +115,6 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
     <div className="panel-container">
       <div className="panel-header">
         <div>
-          <BrandKicker icon={SettingsIcon}>Workspace preferences</BrandKicker>
           <h2 className="panel-title">Settings</h2>
           <p className="panel-subtitle">Customize your BizGuide experience.</p>
         </div>

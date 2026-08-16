@@ -11,7 +11,6 @@ import {
   Plus,
   UploadCloud,
 } from 'lucide-react';
-import BrandKicker from './BrandKicker';
 
 function displayName(session) {
   const metadata = session?.user?.user_metadata || {};
@@ -111,7 +110,7 @@ const WorkspaceDashboard = ({
     {
       label: 'Conversations',
       value: conversations.length,
-      detail: conversations.length ? 'Saved source-aware discussions' : 'Start your first question',
+      detail: conversations.length ? 'Saved discussions' : 'Start your first question',
       icon: MessageSquare,
       tone: 'sage',
     },
@@ -135,9 +134,7 @@ const WorkspaceDashboard = ({
     <div className="dashboard-page">
       <section className="dashboard-welcome" aria-labelledby="dashboard-title">
         <div className="dashboard-welcome-copy">
-          <BrandKicker icon={SparkleIcon}>Workspace overview</BrandKicker>
           <h1 id="dashboard-title">Welcome back, {displayName(session)}.</h1>
-          <p>Keep your business context, trusted sources, and next compliance questions in one clear workspace.</p>
           <div className="dashboard-context-line">
             <span className="dashboard-context-dot" aria-hidden="true" />
             <span>Current workspace: <strong>{activeBusinessLabel}</strong></span>
@@ -195,7 +192,6 @@ const WorkspaceDashboard = ({
         <section className="dashboard-activity-card" aria-labelledby="dashboard-sources-heading">
           <div className="dashboard-section-heading">
             <div>
-              <span className="dashboard-section-kicker">Knowledge base</span>
               <h2 id="dashboard-sources-heading">Recent sources</h2>
             </div>
             <button type="button" className="dashboard-text-action" onClick={() => onNavigate('upload')}>View library <ArrowUpRight size={13} aria-hidden="true" /></button>
@@ -232,7 +228,6 @@ const WorkspaceDashboard = ({
         <section className="dashboard-activity-card" aria-labelledby="dashboard-conversations-heading">
           <div className="dashboard-section-heading">
             <div>
-              <span className="dashboard-section-kicker">Saved work</span>
               <h2 id="dashboard-conversations-heading">Recent conversations</h2>
             </div>
             <button type="button" className="dashboard-text-action" onClick={() => onNavigate('history')}>View history <ArrowUpRight size={13} aria-hidden="true" /></button>
@@ -241,7 +236,7 @@ const WorkspaceDashboard = ({
             <div className="dashboard-list-state dashboard-empty-inline">
               <MessageSquare size={20} aria-hidden="true" />
               <strong>Your next answer starts here</strong>
-              <span>Ask a question and your source-aware conversation will appear in this list.</span>
+              <span>Ask a question and your conversation will appear in this list.</span>
               <button type="button" className="btn-ghost" onClick={onNewChat}>Start a question</button>
             </div>
           ) : (
@@ -268,9 +263,5 @@ const WorkspaceDashboard = ({
     </div>
   );
 };
-
-function SparkleIcon(props) {
-  return <span {...props} aria-hidden="true">✦</span>;
-}
 
 export default WorkspaceDashboard;

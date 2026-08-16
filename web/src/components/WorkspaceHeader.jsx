@@ -36,7 +36,6 @@ const WorkspaceHeader = ({ currentView, activeBusinessProfile, session, onNewCha
       <span className="workspace-header-divider" aria-hidden="true" />
       <div className="workspace-header-page">
         <span className="workspace-header-eyebrow">{VIEW_LABELS[currentView] || 'BizGuide workspace'}</span>
-        <strong>Source-first guidance for your business</strong>
       </div>
     </div>
 

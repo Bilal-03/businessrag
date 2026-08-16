@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Clock3, FileText, MessageSquare, Plus, Search, Trash2 } from 'lucide-react';
-import BrandKicker from './BrandKicker';
 
 function conversationText(conversation) {
   return (conversation?.messages || [])
@@ -84,9 +83,8 @@ const ConversationHistory = ({
     <div className="history-page">
       <section className="history-hero" aria-labelledby="history-title">
         <div>
-          <BrandKicker icon={Clock3}>Saved work</BrandKicker>
           <h1 id="history-title">Conversation history</h1>
-          <p>Return to previous questions, review the evidence behind an answer, or start a new source-aware conversation.</p>
+          <p>Return to previous questions, review the evidence behind an answer, or start a new one.</p>
         </div>
         <div className="history-hero-actions">
           <button type="button" className="btn-danger" onClick={handleClear} aria-label={confirmClear ? 'Confirm clearing conversation history' : 'Clear conversation history'}>
@@ -122,7 +120,7 @@ const ConversationHistory = ({
         <section className="history-empty glass-panel">
           <span className="history-empty-icon" aria-hidden="true"><MessageSquare size={24} /></span>
           <h2>{conversations.length === 0 ? 'No conversations yet' : 'No matching conversations'}</h2>
-          <p>{conversations.length === 0 ? 'Ask BizGuide a question and your saved source-aware work will appear here.' : 'Try a different search term or clear the filter.'}</p>
+          <p>{conversations.length === 0 ? 'Ask BizGuide a question to start your saved work.' : 'Try a different search term or clear the filter.'}</p>
           {conversations.length === 0 && <button type="button" className="btn-primary" onClick={onNewChat}><Plus size={15} aria-hidden="true" /> Start a question</button>}
           {conversations.length > 0 && <button type="button" className="btn-ghost" onClick={() => setQuery('')}>Clear search</button>}
         </section>
@@ -139,9 +137,11 @@ const ConversationHistory = ({
                 </div>
                 <h2>{conversation.title || 'Untitled conversation'}</h2>
                 <p>{preview(conversation)}</p>
-                <div className="history-card-contexts">
-                  {contexts.length > 0 ? contexts.map(context => <span key={context}><FileText size={11} aria-hidden="true" /> {context}</span>) : <span>Independent guidance</span>}
-                </div>
+                {contexts.length > 0 && (
+                  <div className="history-card-contexts">
+                    {contexts.map(context => <span key={context}><FileText size={11} aria-hidden="true" /> {context}</span>)}
+                  </div>
+                )}
                 <div className="history-card-actions">
                   <button type="button" className="history-resume" onClick={() => onSelectConversation(conversation.id)}>Resume <ArrowUpRight size={13} aria-hidden="true" /></button>
                   <button type="button" className={`history-delete ${pending ? 'confirming' : ''}`} onClick={() => handleDelete(conversation.id)} aria-label={pending ? `Confirm deleting ${conversation.title || 'conversation'}` : `Delete ${conversation.title || 'conversation'}`}>

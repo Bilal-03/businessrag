@@ -40,7 +40,7 @@ test('answers independently by default without workspace context', async ({ page
   expect(request.postDataJSON()).not.toHaveProperty('language');
 
   await expect(page.getByText('Independent answer.')).toBeVisible();
-  await expect(page.getByText('Answered independently — no business or document context used')).toBeVisible();
+  await expect(page.getByText('Answered independently — no business or document context used')).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText('Gemini');
 });
 
