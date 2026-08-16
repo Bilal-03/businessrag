@@ -5,7 +5,7 @@ export default defineConfig({
   // Accessibility and visual regression suites have dedicated configs and
   // device/snapshot policies. Keep the default command focused on functional
   // smoke coverage so a new project does not silently multiply test scope.
-  testIgnore: [/accessibility\.spec\.js/, /visual\.spec\.js/],
+  testIgnore: [/accessibility\.spec\.js/, /visual\.spec\.js/, /portfolio-demo\.spec\.js/],
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,

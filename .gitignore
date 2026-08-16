@@ -9,3 +9,5 @@ __pycache__/
 logs/
 /audit-evidence/
 /BizGuide-AI-*-Audit*.md
+/artifacts/portfolio-demo-raw/
+/artifacts/bizguide-ai-portfolio-demo.mp4

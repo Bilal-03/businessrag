@@ -51,6 +51,7 @@
 - [API surface](#api-surface)
 - [Data and source governance](#data-and-source-governance)
 - [Quality checks](#quality-checks)
+- [Portfolio demo recording](#portfolio-demo-recording)
 - [Deployment](#deployment)
 - [Project structure](#project-structure)
 - [Roadmap and current limits](#roadmap-and-current-limits)
@@ -401,6 +402,17 @@ npm run test:e2e:visual
 ```
 
 The functional browser suite uses deterministic Supabase and API fixtures; it does not need production credentials or mutate production data. Install Chromium first with `npx playwright install chromium`. Use `npm run test:e2e:debug` or `npm run test:e2e:ui` when investigating a browser failure.
+
+### Portfolio demo recording
+
+The repository includes a paced, fixture-backed walkthrough for portfolio use. It covers the standard-user workspace surfaces with synthetic data, adds branded captions to the captured page, and produces a silent 1280×720 MP4 without calling production services.
+
+```bash
+cd web
+npm run demo:portfolio
+```
+
+The final artifact is written to `artifacts/bizguide-ai-portfolio-demo.mp4`. To run the steps separately, use `npm run demo:record` for the raw Playwright recording and `npm run demo:convert` for conversion. The converter tries macOS `avconvert` first, then explicitly falls back to FFmpeg when the native tool cannot read Playwright’s WebM input. The generated media is ignored by Git; only the demo configuration, test, and commands are source-controlled.
 
 ### Release evidence
 

@@ -11,6 +11,9 @@
     "test:e2e": "playwright test",
     "test:e2e:accessibility": "playwright test --config=playwright.accessibility.config.js",
     "test:e2e:visual": "playwright test --config=playwright.visual.config.js",
+    "demo:record": "node scripts/record-portfolio-demo.mjs",
+    "demo:convert": "node scripts/convert-portfolio-demo.mjs",
+    "demo:portfolio": "npm run demo:record && npm run demo:convert",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug"
   },

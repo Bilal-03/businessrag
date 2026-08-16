@@ -436,7 +436,14 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
       return;
     }
     if (path === '/api/documents/upload' && request.method() === 'POST') {
-      const document = { ...DOCUMENT, file_name: 'uploaded-guide.pdf', business_id: null };
+      const document = {
+        ...DOCUMENT,
+        id: state.documents.some(item => item.id === DOCUMENT.id)
+          ? '55555555-5555-4555-8555-555555555556'
+          : DOCUMENT.id,
+        file_name: 'uploaded-guide.pdf',
+        business_id: null,
+      };
       state.documents.unshift(document);
       await fulfillJson(route, {
         message: 'Successfully uploaded and indexed 1 chunk from uploaded-guide.pdf',
