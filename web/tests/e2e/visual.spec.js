@@ -18,6 +18,7 @@ test('authenticated chat workspace visual baseline', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openAuthenticatedChat(page);
   await expect(page.getByRole('heading', { name: 'What would you like to verify?' })).toBeVisible();
+  await page.waitForTimeout(400);
   await expect(page).toHaveScreenshot('chat-workspace.png', { fullPage: true });
 });
 

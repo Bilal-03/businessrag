@@ -221,6 +221,7 @@ function App() {
   const [feedbackState, setFeedbackState] = useState({});
   const fileInputRef = useRef(null);
   const chatInputRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const currentConvIdRef = useRef(null);
   const sessionUserIdRef = useRef(null);
@@ -739,6 +740,7 @@ function App() {
     if (messages.length > 0 && currentConvIdRef.current) {
       persistCurrentConv(messages, currentConvIdRef.current);
     }
+    chatContainerRef.current?.scrollTo({ top: 0, behavior: 'auto' });
     setMessages([]);
     setInput('');
     setUseBusinessContext(false);
@@ -930,7 +932,7 @@ function App() {
                   {messages.length > 0 && <button type="button" className="btn-ghost chat-export-button" onClick={handleExportConversation}><Download size={14} aria-hidden="true" /> Export</button>}
                 </div>
               </div>
-              <div className="chat-container">
+              <div ref={chatContainerRef} className="chat-container">
                 {messages.length === 0 ? (
                   <motion.div
                     initial={{ opacity: 0, y: 12 }}

@@ -25,12 +25,37 @@ test('new question opens a clean chat while keeping recent conversations in the 
 
   await expect(page.getByRole('heading', { name: 'New question' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'What would you like to verify?' })).toBeVisible();
+  await page.waitForTimeout(400);
+  const chatHeaderBox = await page.locator('.chat-workspace-header').boundingBox();
+  const emptyMarkBox = await page.locator('.chat-empty-mark').boundingBox();
+  expect(chatHeaderBox).not.toBeNull();
+  expect(emptyMarkBox).not.toBeNull();
+  expect(emptyMarkBox.y).toBeGreaterThanOrEqual(chatHeaderBox.y + chatHeaderBox.height - 1);
   const recentConversation = page.getByRole('button', { name: /Open conversation FSSAI registration requirements/ });
   await expect(recentConversation).toBeVisible();
   const recentConversationBox = await recentConversation.boundingBox();
   expect(recentConversationBox).not.toBeNull();
   expect(recentConversationBox.y + recentConversationBox.height).toBeLessThanOrEqual((page.viewportSize()?.height || 0) + 1);
   await expect(page.locator('.chat-starter-prompt')).toHaveCount(3);
+});
+
+test('new question resets the chat scroll position after an existing conversation', async ({ page }) => {
+  await openAuthenticatedApp(page, { seedWorkspace: true });
+
+  await page.getByRole('button', { name: /Open conversation FSSAI registration requirements/ }).click();
+  await expect(page.getByRole('heading', { name: 'FSSAI registration requirements' })).toBeVisible();
+  await page.locator('.chat-container').evaluate(element => {
+    element.scrollTop = element.scrollHeight;
+  });
+
+  await page.locator('.workspace-header-new').click();
+  await expect(page.getByRole('heading', { name: 'New question' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'What would you like to verify?' })).toBeVisible();
+  const chatHeaderBox = await page.locator('.chat-workspace-header').boundingBox();
+  const emptyMarkBox = await page.locator('.chat-empty-mark').boundingBox();
+  expect(chatHeaderBox).not.toBeNull();
+  expect(emptyMarkBox).not.toBeNull();
+  expect(emptyMarkBox.y).toBeGreaterThanOrEqual(chatHeaderBox.y + chatHeaderBox.height - 1);
 });
 
 test('history supports search and resuming a saved conversation', async ({ page }) => {

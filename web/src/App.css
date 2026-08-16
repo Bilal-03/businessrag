@@ -4690,7 +4690,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* Keep the mark anchored below the conversation header when the viewport
+     is too short for the full welcome copy to fit without scrolling. */
+  justify-content: flex-start;
   text-align: center;
 }
 
@@ -4832,28 +4834,54 @@
 }
 
 @media (max-width: 767px) {
+  .chat-container {
+    padding-top: 4px;
+  }
+
   .chat-empty-state {
     width: 100%;
-    padding: 22px 8px 18px;
+    padding: 8px 8px 10px;
+  }
+
+  .chat-empty-mark {
+    width: 36px;
+    height: 36px;
+    padding: 7px;
+    border-radius: 11px;
+  }
+
+  .chat-empty-kicker {
+    margin-top: 6px;
+    font-size: 9px;
   }
 
   .chat-empty-state h2 {
-    font-size: 29px;
+    margin-top: 4px;
+    font-size: 26px;
+    line-height: 1;
   }
 
   .chat-empty-state > p:not(.chat-empty-disclaimer) {
     max-width: 330px;
-    font-size: 13px;
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.35;
   }
 
   .chat-starter-prompts {
     width: min(100%, 360px);
-    margin-top: 20px;
+    margin-top: 10px;
+    gap: 4px;
+  }
+
+  .chat-starter-prompt {
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 12px;
   }
 
   .chat-empty-disclaimer {
-    max-width: 330px;
-    margin-top: 15px;
+    display: none;
   }
 
   .sidebar-section {
