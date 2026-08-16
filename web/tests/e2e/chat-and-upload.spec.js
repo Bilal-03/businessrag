@@ -50,7 +50,7 @@ test('sends business and document context only when both toggles are enabled', a
   const documentsToggle = page.getByRole('button', { name: 'Documents', exact: true });
   await expect(businessToggle).toBeEnabled();
   await expect(businessToggle).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.getByText('Personal workspace', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(BUSINESSES[0].legal_name, { exact: true }).first()).toBeVisible();
   await businessToggle.click();
   await documentsToggle.click();
 
@@ -71,18 +71,15 @@ test('keeps the mobile home hierarchy clear above the fixed composer', async ({ 
   await page.setViewportSize({ width: 393, height: 696 });
   await openAuthenticatedChat(page, { chatMode: 'stream' });
 
-  await expect(page.locator('.hero-subtitle-mobile')).toBeVisible();
-  await expect(page.locator('.hero-subtitle-desktop')).not.toBeVisible();
-  await expect(page.locator('.hero-topline')).toHaveCSS('white-space', 'nowrap');
+  await expect(page.getByRole('heading', { name: 'What would you like to verify?' })).toBeVisible();
+  await expect(page.locator('.chat-starter-prompt')).toHaveCount(3);
+  await expect(page.locator('.action-card')).toHaveCount(0);
 
-  const subtitleBox = await page.locator('.hero-subtitle').boundingBox();
-  const workflowHeadingBox = await page.getByRole('heading', { name: 'Common starting points' }).boundingBox();
+  const starterBox = await page.locator('.chat-starter-prompts').boundingBox();
   const composerBox = await page.locator('.input-container').boundingBox();
-  expect(subtitleBox).not.toBeNull();
-  expect(workflowHeadingBox).not.toBeNull();
+  expect(starterBox).not.toBeNull();
   expect(composerBox).not.toBeNull();
-  expect(subtitleBox.y + subtitleBox.height).toBeLessThanOrEqual(composerBox.y + 1);
-  expect(workflowHeadingBox.y + workflowHeadingBox.height).toBeLessThanOrEqual(composerBox.y + 1);
+  expect(starterBox.y + starterBox.height).toBeLessThanOrEqual(composerBox.y + 1);
   await expect(page.getByPlaceholder('Ask a question…')).toBeVisible();
 });
 

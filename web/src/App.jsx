@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Send, Paperclip, Building2, UtensilsCrossed, Rocket, BarChart3, Wallet, Scale, Flag, ThumbsUp } from 'lucide-react';
+import { Download, Send, Paperclip, Building2, Flag, ThumbsUp } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import WorkspaceHeader from './components/WorkspaceHeader';
 import WorkspaceDashboard from './components/WorkspaceDashboard';
@@ -46,13 +46,10 @@ const SESSION_STORAGE_KEYS = [
   'bizguide_api_url',
 ];
 
-const QUICK_ACTIONS = [
-  { icon: <Building2 size={24} />, title: 'Company Registration', desc: 'Steps to incorporate a Pvt Ltd', query: 'What are the steps to register a Private Limited Company in India?' },
-  { icon: <UtensilsCrossed size={24} />, title: 'FSSAI License',        desc: 'Get your food business permits',  query: 'How do I apply for FSSAI food license in India?' },
-  { icon: <Rocket size={24} />, title: 'Startup India',         desc: 'Tax exemptions and funding',      query: 'What are the benefits of Startup India DPIIT recognition?' },
-  { icon: <BarChart3 size={24} />, title: 'GST Registration',      desc: 'Register for GST online',         query: 'How do I register for GST for my business in India?' },
-  { icon: <Wallet size={24} />, title: 'Income Tax Filing',     desc: 'ITR for businesses',              query: 'What are the income tax filing requirements for a Private Limited Company?' },
-  { icon: <Scale size={24} />, title: 'LLP Formation',        desc: 'Set up an LLP',                  query: 'How do I form a Limited Liability Partnership (LLP) in India?' },
+const STARTER_PROMPTS = [
+  { label: 'What should I verify for my business?', query: 'What should I verify first for my business?' },
+  { label: 'Summarize my uploaded sources.', query: 'Summarize my uploaded sources.' },
+  { label: 'What permits or registrations may apply?', query: 'What permits or registrations may apply to my business?' },
 ];
 
 function generateTitle(firstMessage) {
@@ -328,7 +325,14 @@ function App() {
         }
         const [nextConversations, nextBusinesses] = await Promise.all([listConversations(), listBusinesses()]);
         if (cancelled || sessionUserIdRef.current !== userId) return;
-        setConversations(nextConversations);
+        // Preserve a conversation created while the initial persistence read
+        // was still in flight. The server response can legitimately predate
+        // that optimistic client-side conversation.
+        setConversations(current => {
+          const serverIds = new Set(nextConversations.map(conversation => conversation.id));
+          const optimistic = current.filter(conversation => !serverIds.has(conversation.id) && conversation.messages?.length);
+          return [...optimistic, ...nextConversations];
+        });
         setBusinesses(nextBusinesses);
         setPersistenceStatus('ready');
         setPersistenceMessage(result.migrated ? 'Your workspace was moved to the secured core data model. Legacy checklist state was not imported.' : '');
@@ -736,9 +740,17 @@ function App() {
       persistCurrentConv(messages, currentConvIdRef.current);
     }
     setMessages([]);
+    setInput('');
+    setUseBusinessContext(false);
+    setUseDocumentContext(false);
+    setIsRetrying(false);
+    setFeedbackState({});
     currentConvIdRef.current = null;
     setActiveConvId(null);
     setCurrentView('chat');
+    if (typeof window !== 'undefined' && !window.matchMedia('(max-width: 767px)').matches) {
+      setSidebarCollapsed(false);
+    }
   };
 
   const handleSelectConversation = (convId) => {
@@ -830,9 +842,6 @@ function App() {
   };
 
   const chatBusinessIncluded = useBusinessContext && Boolean(activeBusinessId);
-  const chatWorkspaceLabel = chatBusinessIncluded && activeBusinessProfile?.name
-    ? activeBusinessProfile.name
-    : 'Personal workspace';
   const chatWorkspaceTitle = chatBusinessIncluded
     ? 'Business context is included for this question'
     : 'Business context is off; this question is answered independently';
@@ -924,62 +933,31 @@ function App() {
               <div className="chat-container">
                 {messages.length === 0 ? (
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="hero-section"
+                    transition={{ duration: 0.35 }}
+                    className="chat-empty-state"
                   >
-                    <div className="hero-shell">
-                      <div className="hero-topline" aria-label="Workspace status">
-                        <span className="hero-status-dot" aria-hidden="true" />
-                        <span>Source-first workspace</span>
-                        <span className="hero-topline-divider" aria-hidden="true" />
-                        <span className="hero-topline-context">{chatWorkspaceLabel}</span>
-                      </div>
-                      <div className="hero-copy">
-                        <div className="hero-badge"><span className="hero-badge-brand" aria-hidden="true"><img src="/brand/bizguide-ai-mark.svg" alt="" /></span>Guided by your business context and sources</div>
-                        <h1 className="hero-title">
-                          What do you need to<br />
-                          <span className="gradient-text">verify today?</span>
-                        </h1>
-                        <p className="hero-subtitle">
-                          <span className="hero-subtitle-desktop">Ask a question, review an obligation, or work from your own documents. BizGuide will show the evidence and coverage limits behind each answer.</span>
-                          <span className="hero-subtitle-mobile">Ask anything. Turn on Business or Documents below when you want context included.</span>
-                          <span className="hero-mobile-disclaimer">Verify important decisions against the original source.</span>
-                        </p>
-                        <div className="hero-privacy-note">
-                          <span className="hero-privacy-icon" aria-hidden="true">i</span>
-                          Important legal and tax decisions should still be checked against the original source and a qualified professional.
-                        </div>
-                      </div>
-                      <div className="hero-workbench-heading">
-                        <div>
-                          <span className="hero-section-kicker">Start with a workflow</span>
-                          <h2>Common starting points</h2>
-                        </div>
-                        <span className="hero-workbench-note">Choose one to begin a sourced conversation</span>
-                      </div>
-                      <div className="quick-actions">
-                        {QUICK_ACTIONS.map((qa) => (
-                          <motion.button
-                            key={qa.title}
-                            type="button"
-                            whileHover={{ y: -2 }}
-                            whileTap={{ y: 0 }}
-                            className="glass-panel action-card"
-                            onClick={() => handleSend(qa.query)}
-                            aria-label={`${qa.title}: ${qa.desc}`}
-                          >
-                            <div className="action-icon">{qa.icon}</div>
-                            <div className="action-copy">
-                              <div className="action-title">{qa.title}</div>
-                              <div className="action-desc">{qa.desc}</div>
-                            </div>
-                            <span className="action-arrow" aria-hidden="true">↗</span>
-                          </motion.button>
-                        ))}
-                      </div>
+                    <span className="chat-empty-mark" aria-hidden="true"><img src="/brand/bizguide-ai-mark.svg" alt="" /></span>
+                    <span className="chat-empty-kicker">Ask BizGuide</span>
+                    <h2>What would you like to verify?</h2>
+                    <p>Ask about your business, uploaded sources, or next compliance steps.</p>
+                    <div className="chat-starter-prompts" aria-label="Starter questions">
+                      {STARTER_PROMPTS.map(prompt => (
+                        <motion.button
+                          key={prompt.label}
+                          type="button"
+                          whileHover={{ y: -1 }}
+                          whileTap={{ y: 0 }}
+                          className="chat-starter-prompt"
+                          onClick={() => handleSend(prompt.query)}
+                        >
+                          <span>{prompt.label}</span>
+                          <span aria-hidden="true">↗</span>
+                        </motion.button>
+                      ))}
                     </div>
+                    <p className="chat-empty-disclaimer">Verify important legal and tax decisions against the original source and a qualified professional.</p>
                   </motion.div>
                 ) : (
                   <div className="messages-list">

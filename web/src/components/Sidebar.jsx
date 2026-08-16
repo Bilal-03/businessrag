@@ -93,9 +93,14 @@ const Sidebar = ({
             </nav>
 
             {/* Recent Conversations */}
-            {recentConvos.length > 0 && (
-              <div className="sidebar-section">
-                <div className="sidebar-section-label">Recent Conversations</div>
+            <div className="sidebar-section">
+                <div className="sidebar-section-label">
+                  <span>Recent Conversations</span>
+                  {recentConvos.length > 0 && <span className="sidebar-section-count">{recentConvos.length}</span>}
+                </div>
+                {recentConvos.length === 0 ? (
+                  <div className="sidebar-empty-state">Your saved questions will appear here.</div>
+                ) : (
                 <div className="conversation-list">
                   <AnimatePresence>
                     {recentConvos.map(conv => (
@@ -132,8 +137,8 @@ const Sidebar = ({
                     ))}
                   </AnimatePresence>
                 </div>
-              </div>
-            )}
+                )}
+            </div>
 
             {/* Settings + Sign Out at bottom */}
             <div className="sidebar-bottom">

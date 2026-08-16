@@ -18,6 +18,21 @@ test('dashboard shows live workspace metrics and recent activity', async ({ page
   await expect(metricCards.nth(3)).toContainText('4.0 KB');
 });
 
+test('new question opens a clean chat while keeping recent conversations in the sidebar', async ({ page }) => {
+  await openAuthenticatedApp(page, { seedWorkspace: true });
+
+  await page.getByRole('button', { name: 'New question', exact: true }).first().click();
+
+  await expect(page.getByRole('heading', { name: 'New question' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'What would you like to verify?' })).toBeVisible();
+  const recentConversation = page.getByRole('button', { name: /Open conversation FSSAI registration requirements/ });
+  await expect(recentConversation).toBeVisible();
+  const recentConversationBox = await recentConversation.boundingBox();
+  expect(recentConversationBox).not.toBeNull();
+  expect(recentConversationBox.y + recentConversationBox.height).toBeLessThanOrEqual((page.viewportSize()?.height || 0) + 1);
+  await expect(page.locator('.chat-starter-prompt')).toHaveCount(3);
+});
+
 test('history supports search and resuming a saved conversation', async ({ page }) => {
   await openAuthenticatedApp(page, { seedWorkspace: true });
   await page.getByRole('button', { name: 'Conversation History', exact: true }).click();
