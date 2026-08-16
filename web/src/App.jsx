@@ -1,7 +1,10 @@
 import React, { lazy, Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Paperclip, Building2, UtensilsCrossed, Rocket, BarChart3, Wallet, Scale, Flag, ThumbsUp } from 'lucide-react';
+import { Download, Send, Paperclip, Building2, UtensilsCrossed, Rocket, BarChart3, Wallet, Scale, Flag, ThumbsUp } from 'lucide-react';
 import Sidebar from './components/Sidebar';
+import WorkspaceHeader from './components/WorkspaceHeader';
+import WorkspaceDashboard from './components/WorkspaceDashboard';
+import ConversationHistory from './components/ConversationHistory';
 import { supabase } from './lib/supabase';
 import { captureEvent, captureException, durationBucket, lengthBucket, sizeBucket } from './lib/observability';
 import {
@@ -194,7 +197,7 @@ function fireNotification(title, body) {
 }
 
 function App() {
-  const [currentView, setCurrentView]     = useState('home');
+  const [currentView, setCurrentView]     = useState('dashboard');
   const [messages, setMessages]           = useState([]);
   const [input, setInput]                 = useState('');
   const [useBusinessContext, setUseBusinessContext] = useState(false);
@@ -243,7 +246,7 @@ function App() {
     setIsRetrying(false);
     setActiveConvId(null);
     currentConvIdRef.current = null;
-    setCurrentView('home');
+    setCurrentView('dashboard');
     setApiUrl(DEFAULT_API_URL);
     setActiveBusinessId(null);
     setActiveBusinessProfile(null);
@@ -529,7 +532,7 @@ function App() {
     });
 
     // Switch to home/chat view when sending a message
-    setCurrentView('home');
+    setCurrentView('chat');
 
     const userMsg = { role: 'user', content: query };
     const updatedMessages = [...messages, userMsg];
@@ -678,7 +681,7 @@ function App() {
       return;
     }
 
-    setCurrentView('home');
+    setCurrentView('chat');
     setIsUploading(true);
     captureEvent('upload_started', { size: sizeBucket(file.size), has_active_business: Boolean(activeBusinessId) });
     const uploadMsg = { role: 'user', content: `📎 Uploading **${file.name}**…` };
@@ -735,7 +738,7 @@ function App() {
     setMessages([]);
     currentConvIdRef.current = null;
     setActiveConvId(null);
-    setCurrentView('home');
+    setCurrentView('chat');
   };
 
   const handleSelectConversation = (convId) => {
@@ -747,7 +750,7 @@ function App() {
       setMessages(conv.messages || []);
       currentConvIdRef.current = convId;
       setActiveConvId(convId);
-      setCurrentView('home');
+      setCurrentView('chat');
       if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
         setSidebarCollapsed(true);
       }
@@ -779,9 +782,45 @@ function App() {
     setActiveConvId(null);
   };
 
+  const handleExportConversation = () => {
+    if (!messages.length) return;
+    const conversation = conversations.find(item => item.id === activeConvId);
+    const title = conversation?.title || generateTitle(messages[0]?.content) || 'BizGuide conversation';
+    const safeTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'bizguide-conversation';
+    const content = [
+      `# ${title}`,
+      '',
+      `Exported from BizGuide AI on ${new Date().toLocaleString('en-IN')}.`,
+      '',
+      ...messages.flatMap(message => {
+        const heading = message.role === 'ai' ? '## BizGuide AI' : '## You';
+        const citations = message.role === 'ai' && message.citations?.length
+          ? ['', '### Evidence', ...message.citations.map(citation => {
+            const source = citation.title || citation.authority || citation.file_name || 'Source';
+            const location = citation.page_number ? ` · page ${citation.page_number}` : '';
+            return `- ${source}${location}: ${citation.snippet || 'Citation available.'}`;
+          })]
+          : [];
+        return [heading, '', String(message.content || ''), ...citations, ''];
+      }),
+      '---',
+      'Verify important legal and tax decisions against the original source and a qualified professional.',
+    ].join('\n');
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${safeTitle}.md`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    captureEvent('conversation_exported');
+  };
+
   // Navigate to chat with a pre-filled query from other panels
   const handleAskQuestion = (query) => {
-    setCurrentView('home');
+    setCurrentView('chat');
     setTimeout(() => handleSend(query), 100);
   };
 
@@ -802,6 +841,7 @@ function App() {
     : useDocumentContext
       ? 'Selected documents'
       : 'Independent by default';
+  const activeConversationTitle = conversations.find(conversation => conversation.id === activeConvId)?.title || (messages.length ? generateTitle(messages[0]?.content) : 'New question');
 
   if (isAuthLoading) {
     return <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', color: 'white' }}>Loading...</div>;
@@ -830,6 +870,12 @@ function App() {
       />
 
       <main id="main-content" className="main-content" tabIndex="-1">
+        <WorkspaceHeader
+          currentView={currentView}
+          activeBusinessProfile={activeBusinessProfile}
+          session={session}
+          onNewChat={handleNewChat}
+        />
         {persistenceMessage && (
           <div className={`persistence-banner ${persistenceStatus === 'unavailable' ? 'error' : 'notice'}`} role={persistenceStatus === 'unavailable' ? 'alert' : 'status'}>
             <span>{persistenceMessage}</span>
@@ -837,15 +883,44 @@ function App() {
           </div>
         )}
         <AnimatePresence mode="wait">
-          {currentView === 'home' ? (
+          {currentView === 'dashboard' ? (
+            <motion.div key="dashboard" className="panel-view dashboard-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+              <WorkspaceDashboard
+                session={session}
+                apiUrl={apiUrl}
+                businesses={businesses}
+                conversations={conversations}
+                activeBusinessProfile={activeBusinessProfile}
+                onNavigate={setCurrentView}
+                onSelectConversation={handleSelectConversation}
+                onNewChat={handleNewChat}
+              />
+            </motion.div>
+          ) : currentView === 'chat' ? (
             <motion.div
-              key="home"
+              key="chat"
               className="home-view"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
+              <div className="chat-workspace-header">
+                <div className="chat-workspace-title">
+                  <span className="chat-workspace-mark" aria-hidden="true"><img src="/brand/bizguide-ai-mark.svg" alt="" /></span>
+                  <div>
+                    <span className="chat-workspace-kicker">Source-aware conversation</span>
+                    <h1>{activeConversationTitle}</h1>
+                  </div>
+                </div>
+                <div className="chat-workspace-actions">
+                  <span className="chat-context-summary" title={chatWorkspaceTitle}>
+                    <span className={`composer-status-dot ${chatBusinessIncluded ? 'included' : 'independent'}`} aria-hidden="true" />
+                    {chatComposerLabel}
+                  </span>
+                  {messages.length > 0 && <button type="button" className="btn-ghost chat-export-button" onClick={handleExportConversation}><Download size={14} aria-hidden="true" /> Export</button>}
+                </div>
+              </div>
               <div className="chat-container">
                 {messages.length === 0 ? (
                   <motion.div
@@ -1101,6 +1176,16 @@ function App() {
                   </motion.button>
                 </div>
               </div>
+            </motion.div>
+          ) : currentView === 'history' ? (
+            <motion.div key="history" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <ConversationHistory
+                conversations={conversations}
+                onSelectConversation={handleSelectConversation}
+                onDeleteConversation={handleDeleteConversation}
+                onClearHistory={handleClearAllHistory}
+                onNewChat={handleNewChat}
+              />
             </motion.div>
           ) : currentView === 'businesses' ? (
             <motion.div key="businesses" className="panel-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>

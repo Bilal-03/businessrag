@@ -175,6 +175,51 @@ export const DOCUMENT = {
   indexed_at: '2026-08-03T10:01:00.000Z',
 };
 
+export const SAVED_CONVERSATIONS = [
+  {
+    id: '66666666-6666-4666-8666-666666666666',
+    owner_id: TEST_USER.id,
+    business_id: BUSINESSES[0].id,
+    title: 'FSSAI registration requirements',
+    created_at: '2026-08-04T10:00:00.000Z',
+    updated_at: '2026-08-04T10:05:00.000Z',
+    archived_at: null,
+  },
+];
+
+export const SAVED_MESSAGES = [
+  {
+    id: '88888888-8888-4888-8888-888888888888',
+    owner_id: TEST_USER.id,
+    conversation_id: SAVED_CONVERSATIONS[0].id,
+    role: 'user',
+    content: 'What documents do I need for FSSAI registration?',
+    agent_type: null,
+    grounding: 'general',
+    schema_version: 1,
+    answer_mode: null,
+    evidence_status: null,
+    trust_metadata: {},
+    client_message_id: `${SAVED_CONVERSATIONS[0].id}:0:user`,
+    created_at: '2026-08-04T10:00:00.000Z',
+  },
+  {
+    id: '99999999-9999-4999-8999-999999999999',
+    owner_id: TEST_USER.id,
+    conversation_id: SAVED_CONVERSATIONS[0].id,
+    role: 'assistant',
+    content: 'Start with the official FSSAI application requirements and verify the licence category for your activity.',
+    agent_type: 'General Agent',
+    grounding: 'general',
+    schema_version: 1,
+    answer_mode: 'general_business_guidance',
+    evidence_status: 'general_guidance',
+    trust_metadata: { context_used: ['business'] },
+    client_message_id: `${SAVED_CONVERSATIONS[0].id}:1:ai`,
+    created_at: '2026-08-04T10:05:00.000Z',
+  },
+];
+
 const JSON_HEADERS = {
   'Access-Control-Allow-Origin': 'http://127.0.0.1:4173',
   'Access-Control-Allow-Headers': 'apikey, authorization, content-type, x-client-info, prefer',
@@ -206,11 +251,13 @@ function bodyFromRequest(request) {
   }
 }
 
-export async function installMocks(page, { authenticated = true, chatMode = 'stream', activeBusinessId = null } = {}) {
+export async function installMocks(page, { authenticated = true, chatMode = 'stream', activeBusinessId = null, seedWorkspace = false } = {}) {
   const state = {
     tasks: [WORKFLOW_TASK],
     obligations: WORKFLOW_OBLIGATIONS,
-    documents: [],
+    documents: seedWorkspace ? [DOCUMENT] : [],
+    conversations: seedWorkspace ? SAVED_CONVERSATIONS.map(conversation => ({ ...conversation })) : [],
+    messages: seedWorkspace ? SAVED_MESSAGES.map(message => ({ ...message })) : [],
     nextTaskNumber: 1,
     complianceProfiles: COMPLIANCE_PROFILES.map(profile => ({ ...profile })),
   };
@@ -289,13 +336,21 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
     }
     if (table === 'conversations') {
       if (request.method() === 'GET') {
-        await fulfillJson(route, []);
+        await fulfillJson(route, state.conversations);
         return;
       }
       await fulfillJson(route, request.method() === 'DELETE' ? [] : [bodyFromRequest(request)]);
       return;
     }
-    if (table === 'messages' || table === 'message_sources' || table === 'user_data') {
+    if (table === 'messages') {
+      if (request.method() === 'GET') {
+        await fulfillJson(route, state.messages);
+        return;
+      }
+      await fulfillJson(route, []);
+      return;
+    }
+    if (table === 'message_sources' || table === 'user_data') {
       if (request.method() === 'GET') {
         await fulfillJson(route, []);
         return;
@@ -518,5 +573,14 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
 export async function openAuthenticatedApp(page, options = {}) {
   await installMocks(page, { authenticated: true, ...options });
   await page.goto('/');
-  await expect(page.getByText('Guided by your business context and sources')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
+}
+
+export async function openAuthenticatedChat(page, options = {}) {
+  await openAuthenticatedApp(page, options);
+  await page.getByRole('button', { name: 'Ask BizGuide', exact: true }).click();
+  // Navigation is opened by a button click, but the accessibility suite also
+  // verifies the document's first keyboard stop is the skip link.
+  await page.evaluate(() => document.activeElement?.blur());
+  await expect(page.getByRole('textbox', { name: 'Ask BizGuide a question' })).toBeVisible();
 }

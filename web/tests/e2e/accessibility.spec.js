@@ -18,13 +18,15 @@ test.describe('WCAG 2.2 AA device preflight', () => {
     await openAuthenticatedApp(page);
 
     await expect(page.locator('main#main-content')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Ask BizGuide a question' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Send message' })).toBeVisible();
 
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('main#main-content')).toBeFocused();
+
+    await page.getByRole('button', { name: 'Ask BizGuide', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: 'Ask BizGuide a question' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Send message' })).toBeVisible();
 
     const mobile = await page.evaluate(() => window.matchMedia('(max-width: 767px)').matches);
     if (mobile) {

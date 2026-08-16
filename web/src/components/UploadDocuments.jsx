@@ -6,6 +6,7 @@ import { captureEvent, captureException, sizeBucket } from '../lib/observability
 import BrandKicker from './BrandKicker';
 
 const UploadDocuments = ({ session, apiUrl, businessId }) => {
+  const deleteConfirmationWindow = 8000;
   const [uploadHistory, setUploadHistory] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -192,7 +193,7 @@ const UploadDocuments = ({ session, apiUrl, businessId }) => {
     if (!id) return;
     if (pendingDeleteId !== id) {
       setPendingDeleteId(id);
-      window.setTimeout(() => setPendingDeleteId(current => current === id ? null : current), 4000);
+      window.setTimeout(() => setPendingDeleteId(current => current === id ? null : current), deleteConfirmationWindow);
       return;
     }
     setPendingDeleteId(null);

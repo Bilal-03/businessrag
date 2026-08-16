@@ -1,17 +1,24 @@
 import { expect, test } from '@playwright/test';
-import { openAuthenticatedApp } from './fixtures';
+import { openAuthenticatedApp, openAuthenticatedChat } from './fixtures';
 
-test('authenticated home workspace visual baseline', async ({ page }) => {
+test('authenticated dashboard workspace visual baseline', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openAuthenticatedApp(page);
   await expect(page.locator('main#main-content')).toBeVisible();
-  await expect(page.getByRole('heading', { name: /What do you need to verify today/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
   const sidebarLogo = page.locator('.sidebar-logo img[alt="BizGuide AI"]');
   if (await sidebarLogo.count()) {
     await expect(sidebarLogo).toHaveAttribute('src', '/brand/bizguide-ai-logo-light.svg');
     await expect(sidebarLogo).toBeVisible();
   }
-  await expect(page).toHaveScreenshot('home-workspace.png', { fullPage: true });
+  await expect(page).toHaveScreenshot('dashboard-workspace.png', { fullPage: true });
+});
+
+test('authenticated chat workspace visual baseline', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openAuthenticatedChat(page);
+  await expect(page.getByRole('heading', { name: 'Common starting points' })).toBeVisible();
+  await expect(page).toHaveScreenshot('chat-workspace.png', { fullPage: true });
 });
 
 test('about page uses only the approved primary brand lockup', async ({ page }) => {

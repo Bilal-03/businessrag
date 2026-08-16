@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { BUSINESSES, openAuthenticatedApp } from './fixtures';
+import { BUSINESSES, openAuthenticatedApp, openAuthenticatedChat } from './fixtures';
 
 test('streams a source-aware answer with citation metadata', async ({ page }) => {
-  await openAuthenticatedApp(page, { chatMode: 'stream' });
+  await openAuthenticatedChat(page, { chatMode: 'stream' });
   const documentsToggle = page.getByRole('button', { name: 'Documents', exact: true });
   await expect(documentsToggle).toBeEnabled();
   await documentsToggle.click();
@@ -25,7 +25,7 @@ test('streams a source-aware answer with citation metadata', async ({ page }) =>
 });
 
 test('answers independently by default without workspace context', async ({ page }) => {
-  await openAuthenticatedApp(page, { chatMode: 'stream' });
+  await openAuthenticatedChat(page, { chatMode: 'stream' });
   await expect(page.getByText('Personal workspace', { exact: true }).first()).toBeVisible();
   const input = page.getByLabel('Ask BizGuide a question');
   const requestPromise = page.waitForRequest(request => request.url().endsWith('/api/chat/stream') && request.method() === 'POST');
@@ -45,7 +45,7 @@ test('answers independently by default without workspace context', async ({ page
 });
 
 test('sends business and document context only when both toggles are enabled', async ({ page }) => {
-  await openAuthenticatedApp(page, { chatMode: 'stream', activeBusinessId: BUSINESSES[0].id });
+  await openAuthenticatedChat(page, { chatMode: 'stream', activeBusinessId: BUSINESSES[0].id });
   const businessToggle = page.getByRole('button', { name: 'Business', exact: true });
   const documentsToggle = page.getByRole('button', { name: 'Documents', exact: true });
   await expect(businessToggle).toBeEnabled();
@@ -69,7 +69,7 @@ test('sends business and document context only when both toggles are enabled', a
 
 test('keeps the mobile home hierarchy clear above the fixed composer', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 696 });
-  await openAuthenticatedApp(page, { chatMode: 'stream' });
+  await openAuthenticatedChat(page, { chatMode: 'stream' });
 
   await expect(page.locator('.hero-subtitle-mobile')).toBeVisible();
   await expect(page.locator('.hero-subtitle-desktop')).not.toBeVisible();
@@ -87,7 +87,7 @@ test('keeps the mobile home hierarchy clear above the fixed composer', async ({ 
 });
 
 test('supports multiline questions and sends with Enter', async ({ page }) => {
-  await openAuthenticatedApp(page, { chatMode: 'stream' });
+  await openAuthenticatedChat(page, { chatMode: 'stream' });
   await page.getByRole('button', { name: 'Documents', exact: true }).click();
   const input = page.getByLabel('Ask BizGuide a question');
   await input.fill('First line');
@@ -99,7 +99,7 @@ test('supports multiline questions and sends with Enter', async ({ page }) => {
 });
 
 test('offers a retry action when the AI request fails', async ({ page }) => {
-  await openAuthenticatedApp(page, { chatMode: 'error' });
+  await openAuthenticatedChat(page, { chatMode: 'error' });
   const input = page.getByLabel('Ask BizGuide a question');
   await input.fill('This request should fail safely');
   await page.getByRole('button', { name: 'Send message' }).click();
@@ -109,7 +109,7 @@ test('offers a retry action when the AI request fails', async ({ page }) => {
 });
 
 test('retries a transient backend failure once', async ({ page }) => {
-  await openAuthenticatedApp(page, { chatMode: 'transient-error' });
+  await openAuthenticatedChat(page, { chatMode: 'transient-error' });
   const input = page.getByLabel('Ask BizGuide a question');
   await input.fill('This request should recover after a cold start');
   await page.getByRole('button', { name: 'Send message' }).click();

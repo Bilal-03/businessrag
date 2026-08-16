@@ -1,14 +1,18 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Folder, UploadCloud, ClipboardCheck, Settings, Plus, MessageSquare, Trash2, Menu, X, LogOut, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Folder, UploadCloud, ClipboardCheck, Settings, Plus, MessageSquare, Trash2, Menu, X, LogOut, ShieldCheck, History } from 'lucide-react';
 import Logo from './Logo';
 
 const NAV_ITEMS = [
-  { id: 'home',       label: 'Ask BizGuide',     shortLabel: 'Ask',        icon: Home },
-  { id: 'businesses', label: 'Businesses',       shortLabel: 'Businesses', icon: Folder },
-  { id: 'upload',     label: 'Source Library',   shortLabel: 'Sources',    icon: UploadCloud },
-  { id: 'workflow',   label: 'Compliance Plan',  shortLabel: 'Plan',       icon: ClipboardCheck },
+  { id: 'dashboard',  label: 'Dashboard',          shortLabel: 'Home',    icon: LayoutDashboard },
+  { id: 'chat',       label: 'Ask BizGuide',        shortLabel: 'Chat',    icon: MessageSquare },
+  { id: 'businesses', label: 'Businesses',          shortLabel: 'Business', icon: Folder },
+  { id: 'upload',     label: 'Source Library',      shortLabel: 'Sources', icon: UploadCloud },
+  { id: 'workflow',   label: 'Compliance Plan',     shortLabel: 'Plan',    icon: ClipboardCheck },
+  { id: 'history',    label: 'Conversation History', shortLabel: 'History', icon: History },
 ];
+
+const MOBILE_NAV_ITEMS = NAV_ITEMS.filter(item => ['dashboard', 'chat', 'upload', 'history'].includes(item.id));
 
 const Sidebar = ({
   currentView,
@@ -205,7 +209,7 @@ const Sidebar = ({
         </>
       )}
       <nav className={`mobile-bottom-nav ${!collapsed ? 'drawer-open' : ''}`} aria-label="Mobile navigation">
-        {NAV_ITEMS.map(item => (
+        {MOBILE_NAV_ITEMS.map(item => (
           <button
             key={item.id}
             type="button"

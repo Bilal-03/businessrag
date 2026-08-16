@@ -10,6 +10,6 @@ test('shows the sign-in experience and completes authentication', async ({ page 
   await page.getByLabel('Password').fill('safe-test-password');
   await page.getByRole('button', { name: 'Sign In' }).click();
 
-  await expect(page.getByText('Guided by your business context and sources')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Sign out e2e@example.com/i })).toBeVisible();
 });
