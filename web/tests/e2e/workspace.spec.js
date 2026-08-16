@@ -85,3 +85,14 @@ test('exposes settings sections as keyboard-operable tabs', async ({ page }) => 
   await expect(appearanceTab).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('tabpanel')).toBeVisible();
 });
+
+test('updates the shared header when the profile name is saved', async ({ page }) => {
+  await openAuthenticatedApp(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+
+  await page.getByLabel('Your Name').fill('Updated Name');
+  await page.getByRole('button', { name: 'Save Profile' }).click();
+
+  await expect(page.locator('.workspace-header-user-copy strong')).toHaveText('Updated Name');
+  await expect(page.locator('.workspace-header-user-copy small')).toHaveText('e2e@example.com');
+});

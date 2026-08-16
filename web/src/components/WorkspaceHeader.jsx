@@ -13,13 +13,13 @@ const VIEW_LABELS = {
   settings: 'Workspace settings',
 };
 
-function displayName(session) {
+function displayName(session, profile) {
   const metadata = session?.user?.user_metadata || {};
-  return metadata.full_name || metadata.name || session?.user?.email?.split('@')[0] || 'there';
+  return profile?.name?.trim() || metadata.full_name || metadata.name || session?.user?.email?.split('@')[0] || 'there';
 }
 
-function initials(session) {
-  const name = displayName(session);
+function initials(session, profile) {
+  const name = displayName(session, profile);
   return name
     .split(/\s+/)
     .filter(Boolean)
@@ -29,7 +29,7 @@ function initials(session) {
     .toUpperCase() || 'B';
 }
 
-const WorkspaceHeader = ({ currentView, activeBusinessProfile, session, onNewChat }) => (
+const WorkspaceHeader = ({ currentView, activeBusinessProfile, session, profile, onNewChat }) => (
   <header className="workspace-header">
     <div className="workspace-header-brand">
       <Logo size={34} showText tone="light" />
@@ -46,9 +46,9 @@ const WorkspaceHeader = ({ currentView, activeBusinessProfile, session, onNewCha
         <span>{activeBusinessProfile?.name || 'Personal workspace'}</span>
       </div>
       <div className="workspace-header-user" title={session?.user?.email || undefined}>
-        <span className="workspace-header-avatar" aria-hidden="true">{initials(session)}</span>
+        <span className="workspace-header-avatar" aria-hidden="true">{initials(session, profile)}</span>
         <span className="workspace-header-user-copy">
-          <strong>{displayName(session)}</strong>
+          <strong>{displayName(session, profile)}</strong>
           <small>{session?.user?.email || 'Signed-in workspace'}</small>
         </span>
         <CircleUserRound size={16} aria-hidden="true" />

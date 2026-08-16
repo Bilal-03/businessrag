@@ -52,6 +52,8 @@ const STARTER_PROMPTS = [
   { label: 'What permits or registrations may apply?', query: 'What permits or registrations may apply to my business?' },
 ];
 
+const EMPTY_USER_PROFILE = { name: '', email: '', company: '' };
+
 function generateTitle(firstMessage) {
   if (!firstMessage) return 'New Conversation';
   const words = firstMessage.trim().split(' ').slice(0, 6).join(' ');
@@ -211,6 +213,7 @@ function App() {
   );
   const [apiUrl, setApiUrl]               = useState(DEFAULT_API_URL);
   const [session, setSession]             = useState(null);
+  const [userProfile, setUserProfile]     = useState(EMPTY_USER_PROFILE);
   const [businesses, setBusinesses]       = useState([]);
   const [activeBusinessId, setActiveBusinessId] = useState(null);
   const [activeBusinessProfile, setActiveBusinessProfile] = useState(null);
@@ -246,6 +249,7 @@ function App() {
     currentConvIdRef.current = null;
     setCurrentView('dashboard');
     setApiUrl(DEFAULT_API_URL);
+    setUserProfile(EMPTY_USER_PROFILE);
     setActiveBusinessId(null);
     setActiveBusinessProfile(null);
     if (previousUserId) {
@@ -301,6 +305,23 @@ function App() {
       subscription.unsubscribe();
     };
   }, [applySession]);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) {
+      setUserProfile(EMPTY_USER_PROFILE);
+      return;
+    }
+
+    try {
+      const savedProfile = JSON.parse(localStorage.getItem(`bizguide_profile:${userId}`) || 'null');
+      setUserProfile(savedProfile && typeof savedProfile === 'object'
+        ? { ...EMPTY_USER_PROFILE, ...savedProfile }
+        : EMPTY_USER_PROFILE);
+    } catch {
+      setUserProfile(EMPTY_USER_PROFILE);
+    }
+  }, [session?.user?.id]);
 
   // Load normalized core data + settings. The legacy user_data row is used
   // only once by ensureCoreCutover(), never as a live write target.
@@ -487,6 +508,10 @@ function App() {
     };
     setBusinesses(current => current.map(business => business.id === businessId ? { ...business, ...patch } : business));
     setActiveBusinessProfile(current => current?.id === businessId ? { ...current, ...patch } : current);
+  }, []);
+
+  const handleProfileSaved = useCallback((profile) => {
+    setUserProfile({ ...EMPTY_USER_PROFILE, ...profile });
   }, []);
 
   // Save current messages to the active conversation
@@ -876,6 +901,7 @@ function App() {
           currentView={currentView}
           activeBusinessProfile={activeBusinessProfile}
           session={session}
+          profile={userProfile}
           onNewChat={handleNewChat}
         />
         {persistenceMessage && (
@@ -893,6 +919,7 @@ function App() {
                 businesses={businesses}
                 conversations={conversations}
                 activeBusinessProfile={activeBusinessProfile}
+                profile={userProfile}
                 onNavigate={setCurrentView}
                 onSelectConversation={handleSelectConversation}
                 onNewChat={handleNewChat}
@@ -1188,6 +1215,7 @@ function App() {
               <Suspense fallback={<PanelFallback />}>
                 <Settings
                   session={session}
+                  onProfileSaved={handleProfileSaved}
                   onClearHistory={handleClearAllHistory}
                   onApiUrlChange={setApiUrl}
                   currentApiUrl={apiUrl}

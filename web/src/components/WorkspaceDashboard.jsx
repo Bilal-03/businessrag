@@ -12,9 +12,9 @@ import {
   UploadCloud,
 } from 'lucide-react';
 
-function displayName(session) {
+function displayName(session, profile) {
   const metadata = session?.user?.user_metadata || {};
-  const name = metadata.full_name || metadata.name || session?.user?.email?.split('@')[0] || 'there';
+  const name = profile?.name?.trim() || metadata.full_name || metadata.name || session?.user?.email?.split('@')[0] || 'there';
   return name.trim().split(/\s+/)[0] || 'there';
 }
 
@@ -51,6 +51,7 @@ const WorkspaceDashboard = ({
   businesses = [],
   conversations = [],
   activeBusinessProfile,
+  profile,
   onNavigate,
   onSelectConversation,
   onNewChat,
@@ -134,7 +135,7 @@ const WorkspaceDashboard = ({
     <div className="dashboard-page">
       <section className="dashboard-welcome" aria-labelledby="dashboard-title">
         <div className="dashboard-welcome-copy">
-          <h1 id="dashboard-title">Welcome back, {displayName(session)}.</h1>
+          <h1 id="dashboard-title">Welcome back, {displayName(session, profile)}.</h1>
           <div className="dashboard-context-line">
             <span className="dashboard-context-dot" aria-hidden="true" />
             <span>Current workspace: <strong>{activeBusinessLabel}</strong></span>

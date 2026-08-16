@@ -55,7 +55,7 @@ const Sidebar = ({
           <aside className="sidebar" aria-label="Workspace navigation">
             {/* Logo */}
             <div className="sidebar-logo">
-              <Logo size={42} showText={!collapsed} tone="light" />
+              <Logo size={36} showText={!collapsed} tone="light" />
               <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title="Collapse sidebar" aria-label="Collapse sidebar" aria-expanded="true">
                 <X size={18} />
               </button>

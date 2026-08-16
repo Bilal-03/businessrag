@@ -12,7 +12,7 @@ const ACCENT_COLORS = [
   { name: 'Rosewood', primary: '#8f4650', secondary: '#6d333c' },
 ];
 
-const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) => {
+const Settings = ({ session, onProfileSaved, onClearHistory, onApiUrlChange, currentApiUrl }) => {
   const [profile, setProfile] = useState({ name: '', email: '', company: '' });
   const [apiUrl, setApiUrl] = useState(currentApiUrl || import.meta.env.VITE_API_URL || 'https://businessrag.onrender.com');
   const [saved, setSaved] = useState(false);
@@ -45,6 +45,7 @@ const Settings = ({ session, onClearHistory, onApiUrlChange, currentApiUrl }) =>
 
   const handleSaveProfile = () => {
     localStorage.setItem(userKey('bizguide_profile'), JSON.stringify(profile));
+    onProfileSaved?.(profile);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
