@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="web/public/logo.png" alt="BizGuide AI logo" width="96" height="96" style="border-radius: 24px;" />
+  <img src="web/public/brand/bizguide-ai-logo-light.svg" alt="BizGuide AI full wordmark" width="360" />
   <h1>BizGuide AI</h1>
   <p><strong>Source-aware business guidance for Indian founders and SMEs</strong></p>
   <p>Ask better questions. Bring the right context. See what supports the answer.</p>
