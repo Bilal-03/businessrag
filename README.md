@@ -24,8 +24,23 @@
 > [!IMPORTANT]
 > BizGuide AI is an educational-beta product, not a law firm, tax advisor, or substitute for professional advice. Legal, tax, regulatory, deadline, rate, penalty, and eligibility decisions must be checked against the original authority and, where appropriate, a qualified professional.
 
+## Current status
+
+**Beta foundation — core workspace workflows are implemented, while compliance coverage remains intentionally narrow and review-gated.**
+
+| Area | Current state |
+| --- | --- |
+| **Workspace, authentication, and persistence** | Implemented with Supabase Auth, normalized owner-scoped tables, RLS, profile sync, and conversation history. |
+| **Chat and evidence** | Implemented with Gemini, explicit business/document context, streaming progress, citations, evidence states, and fallback handling. |
+| **Document workflow** | Implemented with PDF validation, owner-scoped inventory, synchronous processing, optional Redis-backed async ingestion, progress tracking, and cleanup. |
+| **Compliance Plan** | Implemented as a business-scoped, applicability-aware workflow; the published source slice is deliberately limited. |
+| **Review and governance** | Implemented with source/claim lifecycles, qualified-review roles, conflict handling, change events, publication gates, and audit history. |
+| **Quality and accessibility** | Repository checks cover backend tests, frontend lint/build, Chromium smoke tests, 12 accessibility checks, and desktop/tablet/mobile visual baselines. |
+| **Production status** | Active educational beta. Staging migration/RLS verification and domain-owner approval remain required before expanding the compliance catalog. |
+
 ## Contents
 
+- [Current status](#current-status)
 - [What it is](#what-it-is)
 - [Product experience](#product-experience)
 - [Trust model](#trust-model)
@@ -70,7 +85,7 @@ The central product decision is simple: context is explicit. A question is answe
 | **Conversation History** | Persists signed-in conversations, normalized messages, and document citations behind Supabase Row Level Security. |
 | **Settings** | Manages the profile, API target, appearance preferences, and local workspace controls. |
 
-The interface is responsive across desktop, tablet, and mobile layouts, with keyboard-operable controls, reduced-motion behavior, focus-visible states, and touch-sized actions.
+The interface is responsive across desktop, tablet, and mobile layouts, with keyboard-operable controls, reduced-motion behavior, focus-visible states, and touch-sized actions. The previews below are the latest approved dashboard visual baselines from the current workspace UI.
 
 <p align="center">
   <img src="audit-desktop.png" alt="BizGuide AI desktop workspace" width="94%" />
@@ -459,19 +474,14 @@ businessrag/
 
 ## Roadmap and current limits
 
-### Implemented foundation
+### Next external gates
 
-- Supabase authentication and owner-scoped RLS persistence.
-- Source-aware chat with streaming progress, citations, evidence states, and fallback handling.
-- Business profiles, applicability inputs, document inventory, async ingestion, and deletion cleanup.
-- Compliance Plan foundation with published-obligation gates, coverage messages, tasks, reminders, and evidence history.
-- Qualified-review console with source/claim lifecycles, conflict handling, change events, assignments, and audit history.
-- Privacy-safe observability, responsive layouts, keyboard/reduced-motion support, browser smoke tests, accessibility checks, and visual baselines.
-
-### Remaining work and external gates
-
+- Apply migrations `0004` and `0005` in staging and verify authenticated RLS reads, central/state jurisdiction behavior, and publish-state filtering.
 - Complete domain-owner review and coverage for India, Delhi, Maharashtra, and additional industries before any broad compliance claim.
 - Complete the 1,000-case trust evaluation review, security/backup drills, and representative SME pilot described in the release controls.
+
+### Planned product expansion
+
 - Add Telugu and Tamil support after the English trust contract is fully reviewed.
 - Add business document templates such as MOA, AOA, and MoU.
 - Consider a React Native mobile client after the web workflow and source catalog are mature.
