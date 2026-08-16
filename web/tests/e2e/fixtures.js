@@ -403,6 +403,7 @@ export async function installMocks(page, { authenticated = true, chatMode = 'str
           evidence_status: useDocumentContext ? 'partially_supported' : 'general_guidance',
           answer_mode: useDocumentContext ? 'user_document_analysis' : 'general_business_guidance',
           context_used: contextUsed,
+          effective_date: '2026-08-16',
           citations: useDocumentContext ? [{
             document_id: DOCUMENT.id,
             file_name: DOCUMENT.file_name,

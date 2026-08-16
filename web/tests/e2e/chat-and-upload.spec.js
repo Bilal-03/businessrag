@@ -19,6 +19,8 @@ test('streams a source-aware answer with citation metadata', async ({ page }) =>
 
   await expect(page.getByText('Grounded answer from your document.')).toBeVisible();
   await expect(page.getByText('Context used: uploaded documents')).toBeVisible();
+  await expect(page.getByText('Partial support')).toBeVisible();
+  await expect(page.getByText('evaluated for 16 Aug 2026')).toBeVisible();
   await expect(page.getByText(/Sources from your documents/)).toBeVisible();
   await expect(page.getByText('employee-handbook.pdf')).toBeVisible();
   await expect(page.getByText('page 2')).toBeVisible();
@@ -46,6 +48,11 @@ test('wraps long document citation snippets inside the chat panel', async ({ pag
   expect(widths.chat.scrollWidth).toBeLessThanOrEqual(widths.chat.clientWidth);
   expect(widths.message.scrollWidth).toBeLessThanOrEqual(widths.message.clientWidth);
   expect(widths.snippet.scrollWidth).toBeLessThanOrEqual(widths.snippet.clientWidth);
+
+  const expandButton = page.getByRole('button', { name: 'See more', exact: true }).first();
+  await expect(expandButton).toBeVisible();
+  await expandButton.click();
+  await expect(page.getByRole('button', { name: 'See less', exact: true }).first()).toBeVisible();
 });
 
 test('answers independently by default without workspace context', async ({ page }) => {

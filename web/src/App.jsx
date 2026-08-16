@@ -53,6 +53,7 @@ const STARTER_PROMPTS = [
 ];
 
 const EMPTY_USER_PROFILE = { name: '', email: '', company: '' };
+const CITATION_PREVIEW_LENGTH = 180;
 
 function generateTitle(firstMessage) {
   if (!firstMessage) return 'New Conversation';
@@ -132,6 +133,59 @@ function userFacingChatError(error) {
     return 'The chat service was temporarily unreachable. We retried once; please try again.';
   }
   return message || 'We could not generate an answer. Please try again.';
+}
+
+function formatEvidenceDate(value) {
+  if (!value) return '';
+  const dateValue = String(value).slice(0, 10);
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function evidenceStatusLabel(status) {
+  return {
+    verified: 'Verified from reviewed official evidence',
+    partially_supported: 'Partial support',
+    cannot_verify: 'Not verified from reviewed evidence',
+    general_guidance: 'General guidance',
+  }[status] || String(status || '').replaceAll('_', ' ');
+}
+
+function evidenceStatusHelp(status, formattedDate) {
+  const dateNote = formattedDate
+    ? ` The evaluation date is ${formattedDate}; it does not mean the uploaded document was published or updated on that date.`
+    : '';
+  if (status === 'partially_supported') {
+    return `Some of this answer is supported by the selected documents, but the complete answer is not fully verified.${dateNote}`;
+  }
+  if (status === 'verified') return `This answer is supported by reviewed official evidence.${dateNote}`;
+  if (status === 'cannot_verify') return `The reviewed evidence did not support a complete answer.${dateNote}`;
+  return `This is general guidance rather than a verified conclusion.${dateNote}`;
+}
+
+function CitationSnippet({ snippet }) {
+  const [expanded, setExpanded] = useState(false);
+  const text = String(snippet || 'Citation available.').trim() || 'Citation available.';
+  const canExpand = text.length > CITATION_PREVIEW_LENGTH || /\r?\n/.test(text);
+
+  return (
+    <div className="citation-snippet-block">
+      <div className={`citation-snippet ${expanded ? 'is-expanded' : 'is-collapsed'}`}>
+        “{text}”
+      </div>
+      {canExpand && (
+        <button
+          type="button"
+          className="citation-expand-button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(current => !current)}
+        >
+          {expanded ? 'See less' : 'See more'}
+        </button>
+      )}
+    </div>
+  );
 }
 
 async function requestChatResponse({ apiUrl, accessToken, requestBody, onStreamUpdate, onRetry }) {
@@ -993,12 +1047,19 @@ function App() {
                               <Suspense fallback={<div className="markdown-fallback">{msg.content}</div>}>
                                 <MarkdownMessage content={msg.content} />
                               </Suspense>
-                              {msg.evidenceStatus && (
-                                <div className={`evidence-status status-${msg.evidenceStatus.replaceAll('_', '-')}`} role="status">
-                                  {msg.evidenceStatus === 'verified' ? 'Verified from reviewed official evidence' : msg.evidenceStatus === 'cannot_verify' ? 'Cannot verify from the reviewed catalog' : msg.evidenceStatus.replaceAll('_', ' ')}
-                                  {msg.effectiveDate && <span> · as of {msg.effectiveDate}</span>}
-                                </div>
-                              )}
+                              {msg.evidenceStatus && (() => {
+                                const formattedDate = formatEvidenceDate(msg.effectiveDate);
+                                return (
+                                  <div
+                                    className={`evidence-status status-${msg.evidenceStatus.replaceAll('_', '-')}`}
+                                    role="status"
+                                    title={evidenceStatusHelp(msg.evidenceStatus, formattedDate)}
+                                  >
+                                    {evidenceStatusLabel(msg.evidenceStatus)}
+                                    {formattedDate && <span> · evaluated for {formattedDate}</span>}
+                                  </div>
+                                );
+                              })()}
                               {Array.isArray(msg.contextUsed) && msg.contextUsed.length > 0 && (
                                 <div className="answer-context" role="status">
                                   {`Context used: ${msg.contextUsed.map(context => context === 'business' ? 'business profile' : 'uploaded documents').join(' + ')}`}
@@ -1022,7 +1083,7 @@ function App() {
                                           {citation.anchor && <span> · {citation.anchor}</span>}
                                           {citation.page_number && <span> · page {citation.page_number}</span>}
                                         </div>
-                                        <div className="citation-snippet">“{citation.snippet}”</div>
+                                        <CitationSnippet snippet={citation.snippet} />
                                         {citation.last_checked_at && <div className="citation-freshness">Last checked {new Date(citation.last_checked_at).toLocaleDateString('en-IN')} · tier {citation.source_tier}</div>}
                                       </li>
                                     ))}
